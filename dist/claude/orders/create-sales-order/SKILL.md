@@ -57,7 +57,15 @@ See [`examples/request.json`](./examples/request.json) for the same body as a fi
 
 ## Handle the response
 
-- **`201`/`200`** → the created sales order (with its `id`) is returned. Capture the `id`.
+- **`201`/`200`** → the created sales order (with its `id`) is returned. Capture the `id`, then
+  **output the direct link to the sales order** so the user can click straight into it:
+
+  ```
+  https://{tenant}.sku.io/v2/orders/sales-orders/{id}
+  ```
+
+  Always end by giving the user this URL along with the SO number and order status — a sales order
+  buried in a table search or filter is easy to miss.
 - **`422`** → validation failed. The `errors` map names the offending fields with dot-notation
   for lines, e.g. `sales_order_lines.0.quantity`. Fix those specific fields and resubmit — never
   blind-retry the same body. See [`shared/errors.md`](shared/errors.md).
