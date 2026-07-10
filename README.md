@@ -56,12 +56,25 @@ Run `npm run build` to regenerate `dist/` and `dist/catalog.json` (the machine-r
 
 ## Quickstart — use a skill
 
-**Claude** — copy a skill folder into your project or personal skills directory:
+**Claude** — build once, then copy the skill folder into a directory Claude Code scans for skills
+(`.claude/skills/` inside a project, or `~/.claude/skills/` for every project):
 
 ```bash
-npm ci && npm run build
-cp -r dist/claude/products/find-product ~/.claude/skills/find-product
+git clone https://github.com/skuio/sku-skills && cd sku-skills
+npm ci && npm run build        # dist/ is generated (git-ignored) — you must build before installing
+
+# install into a project so sessions working there auto-discover it:
+cp -r dist/claude/products/build-product-catalog /path/to/project/.claude/skills/build-product-catalog
+
+# build-product-catalog composes with these — install them too for the full flow:
+cp -r dist/claude/platform/create-saved-view /path/to/project/.claude/skills/create-saved-view
+cp -r dist/claude/platform/connect-to-sku    /path/to/project/.claude/skills/connect-to-sku
+cp -r dist/claude/products/find-product      /path/to/project/.claude/skills/find-product
 ```
+
+A fresh session in that project discovers the skill by its `description` and reaches for it when the
+task matches (e.g. "import these products from this spreadsheet"). Authenticate with a SKU.io
+Personal Access Token — the `connect-to-sku` skill covers minting one.
 
 **OpenAI (Custom GPT)** — create a GPT, paste `dist/openai/products/find-product/instructions.md`
 into *Instructions*, and import `action.openapi.json` under *Actions* (auth: API Key → Bearer,
