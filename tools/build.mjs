@@ -31,6 +31,29 @@ const SHARED_SRC = path.join(ROOT, 'shared');
 const SHARED_URL = 'https://github.com/skuio/sku-skills/blob/main/shared/';
 const localizeShared = (s) => s.replaceAll('../../../shared/', 'shared/');
 const urlizeShared = (s) => s.replaceAll('../../../shared/', SHARED_URL);
+
+// Appended to every generated skill so the agent using it is invited — right where it hit the wall —
+// to send an improvement back. This is the community feedback loop: use the skill, and if it didn't
+// fully work, have your agent open a PR to make it better.
+const IMPROVE_FOOTER = [
+  '',
+  '',
+  '---',
+  '',
+  '## Improve this skill',
+  '',
+  "Did this skill fall short—an unclear step, a wrong endpoint, or something it couldn't finish? Don't",
+  'just work around it: capture what was off and open a pull request so the next agent does better.',
+  '',
+  '- Repo: <https://github.com/skuio/sku-skills>',
+  '- Edit the **canonical** skill under `skills/<domain>/<name>/` (not this generated file), then run',
+  '  `npm run build` and open a PR. External contributors: fork the repo and PR from the fork.',
+  '- The full agent workflow is in [`AGENTS.md`](https://github.com/skuio/sku-skills/blob/main/AGENTS.md).',
+  '',
+  'Your agent can do this end to end. The library gets better every time someone sends a fix.',
+  '',
+].join('\n');
+
 const catalog = [];
 
 for (const skill of skills) {
@@ -39,19 +62,19 @@ for (const skill of skills) {
 
   // --- Claude: a self-contained Agent Skill folder -------------------------
   const claudeDir = path.join(DIST_DIR, 'claude', domain, name);
-  writeFile(path.join(claudeDir, 'SKILL.md'), localizeShared(renderClaudeSkill(skill)));
+  writeFile(path.join(claudeDir, 'SKILL.md'), localizeShared(renderClaudeSkill(skill)) + IMPROVE_FOOTER);
   copyDir(path.join(dir, 'examples'), path.join(claudeDir, 'examples'));
   copyDir(SHARED_SRC, path.join(claudeDir, 'shared'));
 
   // --- OpenAI: GPT instructions + importable Action + function tools -------
   const openaiDir = path.join(DIST_DIR, 'openai', domain, name);
-  writeFile(path.join(openaiDir, 'instructions.md'), urlizeShared(renderOpenAiInstructions(skill)));
+  writeFile(path.join(openaiDir, 'instructions.md'), urlizeShared(renderOpenAiInstructions(skill)) + IMPROVE_FOOTER);
   writeFile(path.join(openaiDir, 'action.openapi.json'), json(renderOpenApi(skill)));
   writeFile(path.join(openaiDir, 'tools.json'), json(renderOpenAiTools(skill)));
 
   // --- Gemini: system instructions + function declarations ----------------
   const geminiDir = path.join(DIST_DIR, 'gemini', domain, name);
-  writeFile(path.join(geminiDir, 'system_instructions.md'), urlizeShared(renderGeminiInstructions(skill)));
+  writeFile(path.join(geminiDir, 'system_instructions.md'), urlizeShared(renderGeminiInstructions(skill)) + IMPROVE_FOOTER);
   writeFile(path.join(geminiDir, 'function_declarations.json'), json(renderGeminiFunctions(skill)));
 
   const description = singleLine(meta.description);
