@@ -95,15 +95,23 @@ Mapping rules:
 - **Capture leftover info as attributes.** Any source column that has no standard field of its own
   (carton/case pack, cubic feet, material, country of origin, care notes, remarks, …) goes into
   `attributes[]` as `{ name, value }` — don't silently drop it.
-- **Size and color → attributes; parse them from the name only if the source doesn't give them
-  separately.** If the source already has its own size/color columns, map those. Otherwise product
-  names usually encode the variant's **size** (a trailing/embedded `S`/`M`/`L`/`XL`/`XS`/`XXL`,
-  `Small`/`Medium`/`Large`, or a numeric size) and/or its **color** (`Orange`, `Pink`, `Black & White`,
-  …) — pull those out of the name and add them as `Size` / `Color` attributes so the variant is
-  filterable. Be conservative: only take a value you're confident is a genuine size or color — not a
-  brand, collection, or theme word (e.g. "Bitcoin Whale") — and never invent one that isn't there.
-  This name-parsing fallback applies to any such datapoint, not just size/color: prefer an explicit
-  source field, derive from the name only when there isn't one.
+- **Derive variant attributes from the names — but first read the whole catalog to sense what
+  products vary by.** Products in a range share a naming template and differ along a few dimensions.
+  Before parsing individual rows, **scan the full set of names together** to infer those dimensions.
+  Commonly **size**, **color**, and **style/design**, but also — depending on the catalog —
+  **scent**, **flavor**, **material**, **capacity/volume**, **pack count**, **format**, or **finish**.
+  Then, for each product, extract its value on each detected dimension into a consistently-named
+  attribute (`Size` / `Color` / `Style` / `Scent` / `Pack` / …). Rules:
+  - **Assess holistically, extract per row.** The axes come from looking across all the names; the
+    values come from each individual name.
+  - **Prefer explicit source fields.** Only parse a dimension out of the name when the source doesn't
+    already give it as its own column.
+  - **Name each dimension consistently** across the whole catalog, so products line up and stay
+    filterable (don't call it `Colour` on one row and `Color` on the next).
+  - **`Style` in lieu of `Color`** when the differentiator is a named design rather than a colorway —
+    many variants have a style but no color.
+  - **Keep the brand out of it** (that's `brand_name`, not an attribute), be conservative, and never
+    invent a value that isn't in the name.
 - **Don't invent data.** If a barcode, price, or weight isn't in the source, leave the field out.
   Never fabricate a barcode or guess a price.
 - **Units.** Coerce weight/dimension units to the allowed values; if the source uses something
