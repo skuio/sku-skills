@@ -65,18 +65,20 @@ If the supplier doesn't exist yet, stop and say so — creating suppliers is out
 ## Step 4 — Resolve the payment term (e.g. the consignment term)
 
 `payment_term_id` is optional, but when the request names a term ("use the consignment payment
-term") you must resolve it to an id. **There is no PAT-accessible endpoint that lists payment
-terms** — `GET /api/payment-terms` and `GET /api/v2/payment-terms` currently require session auth,
-not a token. So resolve the id in this order:
+term") resolve it to an id with `GET /api/payment-terms` (scope `settings:read`). Each term in the
+response carries an **`is_consignment`** boolean (and `consignment_settlement_frequency`), so you
+resolve the consignment term by that flag — not by guessing at its name. Work in this order:
 
-1. **Supplier default** — if the supplier's `default_payment_term_id` (Step 2) is the intended term
-   (common for a consignment supplier), use it.
-2. **Ask the user** for the `payment_term_id` — it's shown in the SKU.io UI under
-   **Settings → Payment Terms**. Pass what they give you.
-3. **Omit it** and create the PO without a term, telling the user it still needs to be set — only if
+1. **Consignment order** → pick the term whose `is_consignment` is `true`. If exactly one exists
+   (typical), use its `id`; if several do, disambiguate by `name` or ask.
+2. **Named term** → match the requested term against each `name` (case-insensitive). One match →
+   use its `id`; ambiguous → ask.
+3. **Supplier default** → otherwise fall back to the supplier's `default_payment_term_id` (Step 2).
+4. **Omit it** → create the PO without a term (telling the user it still needs setting) only if
    they're fine deferring it.
 
-Never guess a `payment_term_id`. A wrong id silently applies the wrong terms.
+The list is **paginated and has no search param**, so page through it (`?page=`) and match
+client-side. Never guess a `payment_term_id` — a wrong id silently applies the wrong terms.
 
 ## Step 5 — Resolve each product and its unit cost
 
@@ -96,7 +98,8 @@ distorts the PO value and, for consignment, the later settlement.
 ## Step 6 — Currency, status, approval
 
 - **Currency** — pass `currency_code` (e.g. `"USD"`, `"AUD"`) matching the account/supplier base
-  currency, or a known `currency_id`. There is no currency-list API; if you can't determine it, ask.
+  currency, or a known `currency_id`. Resolve or verify it with `GET /api/currencies` (scope
+  `settings:read`), which lists the account's enabled currencies with their `code` and `is_default`.
 - **Status** — omit `order_status` to create an **open** PO. Set `order_status: "draft"` (the only
   accepted value) to leave it as a draft for review. Default to a draft unless the user wants it open.
 - **Approval** — `approval_status` defaults to `"pending"`; set `"approved"` only if the user has
@@ -140,7 +143,8 @@ See [`examples/request.json`](./examples/request.json) for the same body as a fi
   `destination_warehouse_id` on a non-dropship PO. Fix the named fields and resubmit — never
   blind-retry. See [`shared/errors.md`](https://github.com/skuio/sku-skills/blob/main/shared/errors.md).
 - **`403`** → the token lacks a required scope (`purchase-orders:write` to create; `suppliers:read`
-  / `warehouses:read` / `products:read` for the lookups) or the user lacks `purchase_orders.create`.
+  / `warehouses:read` / `products:read` / `settings:read` for the lookups) or the user lacks
+  `purchase_orders.create`.
 
 ## Optionally: submit it to the supplier
 
@@ -169,6 +173,8 @@ review. (Approval is separate: create with `approval_status: "approved"`, or app
 | --- | --- | --- |
 | `GET` | `/api/v2/suppliers` | Find a supplier by name/email to get its id (and its default warehouse and payment term). |
 | `GET` | `/api/v2/warehouses` | List warehouses (id, name, code, is_default) to resolve the destination warehouse. |
+| `GET` | `/api/payment-terms` | List payment terms to resolve payment_term_id. Each term carries an is_consignment boolean (and consignment_settlement_frequency), so the consignment term is identified by that flag rather than by name-guessing. Paginated; there is no search param — page through and match on the returned fields (id, name, is_consignment, is_default, net_days). |
+| `GET` | `/api/currencies` | List the account's enabled currencies (id, code, conversion rate, is_default) to resolve or verify currency_code / currency_id. |
 | `GET` | `/api/products/{product}/last-purchase-price` | Most recent unit cost paid for a product on a non-draft PO — fills a line's amount when the source has no cost. |
 | `POST` | `/api/purchase-orders` | Create a purchase order with header fields and an array of line items. |
 | `POST` | `/api/purchase-orders/submit` | Submit (send to the supplier) one or more created POs. Sends the PO out — confirm first. |
@@ -182,7 +188,7 @@ Authorization: Bearer <YOUR_SKU_PAT>
 ```
 
 - **Base URL:** `https://{tenant}.sku.io` (replace `{tenant}` with your account subdomain)
-- **Required scopes:** `purchase-orders:write`, `suppliers:read`, `warehouses:read`, `products:read`
+- **Required scopes:** `purchase-orders:write`, `suppliers:read`, `warehouses:read`, `products:read`, `settings:read`
 
 Mint a token under **Settings → Developer → Personal Access Tokens** in the SKU.io web app.
 See [`shared/authentication.md`](https://github.com/skuio/sku-skills/blob/main/shared/authentication.md) for the full flow.
