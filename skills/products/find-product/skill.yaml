@@ -6,6 +6,7 @@ description: >-
   Look up a product in the SKU.io catalog by SKU, barcode, or a free-text search over name and
   SKU. Use this whenever you need to resolve a product reference to its SKU.io product record and
   id — for example before adding it to a sales order, checking stock, or reporting on it.
+tagline: Resolve a product by SKU, barcode, or fuzzy search
 tags: [products, catalog, lookup, search, sku, barcode]
 maintainers: [kmizzi]
 auth:

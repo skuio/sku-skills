@@ -49,6 +49,12 @@
       "maxLength": 1024,
       "description": "Model-facing 'when to use this' summary. This becomes the Claude SKILL.md description and the OpenAI/Gemini tool description, so write it for an agent deciding whether to invoke the skill."
     },
+    "tagline": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 100,
+      "description": "Short, human-facing one-liner ('what it does') for the root README index table. Punchy, not a full sentence. If omitted, the build falls back to the first sentence of `description`."
+    },
     "tags": {
       "type": "array",
       "items": { "type": "string", "pattern": "^[a-z0-9-]+$" },

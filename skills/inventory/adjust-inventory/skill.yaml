@@ -7,6 +7,7 @@ description: >-
   a set-to-value. Use this for stock takes, corrections, damage/shrinkage write-offs, or found
   stock. Resolve the product with find-product first so the adjustment targets the right product
   and warehouse.
+tagline: Increase / decrease / set on-hand stock at a warehouse
 tags: [inventory, stock, adjustment, stock-take, shrinkage]
 maintainers: [kmizzi]
 auth:

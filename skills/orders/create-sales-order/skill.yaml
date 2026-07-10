@@ -7,6 +7,7 @@ description: >-
   a customer — capturing the order status, order date, optional customer and store, and the SKUs,
   quantities, and unit prices being sold. Resolve products first with find-product so each line
   references a real product.
+tagline: Create a sales order with line items
 tags: [orders, sales-order, create, checkout, fulfilment]
 maintainers: [kmizzi]
 auth:

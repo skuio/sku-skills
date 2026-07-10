@@ -7,6 +7,7 @@ description: >-
   correct tenant base URL, send a Personal Access Token as a Bearer token, verify it works with
   a cheap identity call, and inspect the token's scopes so you know what you are allowed to do.
   Use this first whenever you are about to call the SKU.io API.
+tagline: Authenticate, verify the token, and check scopes before anything else
 tags: [auth, setup, getting-started, personal-access-token]
 maintainers: [kmizzi]
 auth:

@@ -8,6 +8,7 @@ description: >-
   raw rows, map them onto SKU.io's product fields, de-duplicate against the existing catalog, then
   create the products. Use this to onboard a new catalog, import a supplier's range, or bulk-load
   products from an external system.
+tagline: Import products from a spreadsheet, price list, web page, or pasted text
 tags: [products, catalog, import, onboarding, etl, spreadsheet, csv, google-sheets, scraping]
 maintainers: [kmizzi]
 auth:
