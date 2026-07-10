@@ -97,10 +97,17 @@ Mapping rules:
   the **sell price** → `default_price`. Prioritise the supplier wholesale price — it's the field
   most often forgotten. Don't collapse all three into one.
 - **Capture leftover info as attributes.** Any source column that has no standard field of its own
-  (carton/case pack, cubic feet, size, material, country of origin, care notes, remarks, …) goes
-  into `attributes[]` as `{ name, value }` — don't silently drop it. Also lift structured detail
-  buried in the product name (e.g. a trailing size ` - S`/` - M`/` - L`/` - XL`) into its own
-  attribute when it's clearly and consistently present.
+  (carton/case pack, cubic feet, material, country of origin, care notes, remarks, …) goes into
+  `attributes[]` as `{ name, value }` — don't silently drop it.
+- **Size and color → attributes; parse them from the name only if the source doesn't give them
+  separately.** If the source already has its own size/color columns, map those. Otherwise product
+  names usually encode the variant's **size** (a trailing/embedded `S`/`M`/`L`/`XL`/`XS`/`XXL`,
+  `Small`/`Medium`/`Large`, or a numeric size) and/or its **color** (`Orange`, `Pink`, `Black & White`,
+  …) — pull those out of the name and add them as `Size` / `Color` attributes so the variant is
+  filterable. Be conservative: only take a value you're confident is a genuine size or color — not a
+  brand, collection, or theme word (e.g. "Bitcoin Whale") — and never invent one that isn't there.
+  This name-parsing fallback applies to any such datapoint, not just size/color: prefer an explicit
+  source field, derive from the name only when there isn't one.
 - **Don't invent data.** If a barcode, price, or weight isn't in the source, leave the field out.
   Never fabricate a barcode or guess a price.
 - **Units.** Coerce weight/dimension units to the allowed values; if the source uses something

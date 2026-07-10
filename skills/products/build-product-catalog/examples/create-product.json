@@ -1,19 +1,20 @@
 {
-  "sku": "4897153961502",
+  "sku": "4897153961106",
   "type": "standard",
-  "name": "2 Reusable Swim Diapers + Travel Tote - Bitcoin Maxi Set - S",
+  "name": "1 Reusable Swim Diaper - Bitcoin Classic Orange - S",
   "brand_name": "The Whale Lounge",
-  "barcode": "4897153961502",
-  "unit_cost": 11.5,
-  "default_supplier_price": 11.5,
-  "default_price": 29.99,
+  "barcode": "4897153961106",
+  "unit_cost": 5.5,
+  "default_supplier_price": 5.5,
+  "default_price": 19.99,
   "case_quantity": 48,
   "suppliers": [
-    { "supplier_name": "The Whale Lounge", "supplier_sku": "150", "is_default": true }
+    { "supplier_name": "The Whale Lounge", "supplier_sku": "110", "is_default": true }
   ],
   "attributes": [
     { "name": "Size", "value": "S" },
+    { "name": "Color", "value": "Orange" },
     { "name": "Carton Pack", "value": "2 inner 2x 24" },
-    { "name": "Case Cu.ft", "value": "2.278" }
+    { "name": "Case Cu.ft", "value": "0.955" }
   ]
 }

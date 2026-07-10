@@ -44,11 +44,12 @@ The sheet had a title block and an "ORDER SUMMARY" tab; the real header row was 
 | `MSRP (USD)` | `default_price` | Sell price → default pricing tier |
 | `Carton pack` (`2 inner 2x 24`) | `attributes[].Carton Pack` | No standard field → attribute |
 | `Case pack qty/Cu.ft` (`48/2.278`) | `case_quantity` (`48`) + `attributes[].Case Cu.ft` (`2.278`) | Split; the cu.ft has no field → attribute |
-| trailing ` - S`/`- M`/`- L`/`- XL` in name | `attributes[].Size` | Lift the variant differentiator out of the name |
+| size + color in the name (`…Classic Orange - S`) | `attributes[].Size`, `attributes[].Color` | Parsed from the name **because there are no separate size/color columns**; skip if the source has them |
 | `Qty (unit)`, `Total (USD)` | — **ignored** | Order-specific, not product data |
 | _(none)_ | `brand_name` | Inferred from the collection/sender; confirmed with the user |
 
 Traps this example encodes: supplier code ≠ SKU; fill the supplier **wholesale** price, not only
-`unit_cost`; keep leftover info as **attributes**; ignore order-quantity columns; create the
-supplier before referencing it; and **hold out** rows with no EAN (no real SKU) for the user to
-resolve rather than inventing one.
+`unit_cost`; keep leftover info as **attributes**; parse **size and color out of the product name**
+into attributes (only because the source has no separate size/color columns); ignore order-quantity
+columns; create the supplier before referencing it; and **hold out** rows with no EAN (no real SKU)
+for the user to resolve rather than inventing one.
