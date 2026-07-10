@@ -34,6 +34,33 @@
   {
     "type": "function",
     "function": {
+      "name": "list_payment_terms",
+      "description": "List payment terms to resolve payment_term_id. Each term carries an is_consignment boolean (and consignment_settlement_frequency), so the consignment term is identified by that flag rather than by name-guessing. Paginated; there is no search param — page through and match on the returned fields (id, name, is_consignment, is_default, net_days). (GET /api/payment-terms)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "description": "Page number — the list is paginated; iterate if there are more terms than one page."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_currencies",
+      "description": "List the account's enabled currencies (id, code, conversion rate, is_default) to resolve or verify currency_code / currency_id. (GET /api/currencies)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
       "name": "get_last_purchase_price",
       "description": "Most recent unit cost paid for a product on a non-draft PO — fills a line's amount when the source has no cost. (GET /api/products/{product}/last-purchase-price)",
       "parameters": {
@@ -73,7 +100,7 @@
           },
           "currency_code": {
             "type": "string",
-            "description": "ISO currency code for the PO (e.g. \"USD\", \"AUD\"). Required unless you pass currency_id. Use the account/supplier base currency; ask if unknown — there is no currency-list API.",
+            "description": "ISO currency code for the PO (e.g. \"USD\", \"AUD\"). Required unless you pass currency_id. Use the account/supplier base currency; resolve or verify it with list-currencies.",
             "example": "USD"
           },
           "currency_id": {
@@ -86,7 +113,7 @@
           },
           "payment_term_id": {
             "type": "integer",
-            "description": "Payment term for the PO — e.g. the account's consignment term. Optional. There is no PAT-accessible endpoint to list payment terms, so source this id from the supplier's default_payment_term_id or from the user; do not invent it. See INSTRUCTIONS.md."
+            "description": "Payment term for the PO — e.g. the account's consignment term. Optional. Resolve the id with list-payment-terms: for a consignment order pick the term whose is_consignment is true; otherwise match by name or fall back to the supplier's default_payment_term_id. Don't invent it. See INSTRUCTIONS.md."
           },
           "order_status": {
             "type": "string",

@@ -13,7 +13,7 @@ tagline: Create a replenishment PO for a supplier from a description or document
 tags: [purchase-orders, purchasing, replenishment, consignment, supplier, create]
 maintainers: [kmizzi]
 auth:
-  scopes: [purchase-orders:write, suppliers:read, warehouses:read, products:read]
+  scopes: [purchase-orders:write, suppliers:read, warehouses:read, products:read, settings:read]
 api:
   base_url: https://{tenant}.sku.io
   operations:
@@ -37,6 +37,26 @@ api:
       method: GET
       path: /api/v2/warehouses
       summary: List warehouses (id, name, code, is_default) to resolve the destination warehouse.
+    - id: list-payment-terms
+      method: GET
+      path: /api/payment-terms
+      summary: >-
+        List payment terms to resolve payment_term_id. Each term carries an is_consignment boolean
+        (and consignment_settlement_frequency), so the consignment term is identified by that flag
+        rather than by name-guessing. Paginated; there is no search param — page through and match
+        on the returned fields (id, name, is_consignment, is_default, net_days).
+      parameters:
+        - name: page
+          in: query
+          type: integer
+          required: false
+          description: Page number — the list is paginated; iterate if there are more terms than one page.
+    - id: list-currencies
+      method: GET
+      path: /api/currencies
+      summary: >-
+        List the account's enabled currencies (id, code, conversion rate, is_default) to resolve or
+        verify currency_code / currency_id.
     - id: get-last-purchase-price
       method: GET
       path: /api/products/{product}/last-purchase-price
@@ -78,7 +98,7 @@ api:
           required: false
           description: >-
             ISO currency code for the PO (e.g. "USD", "AUD"). Required unless you pass currency_id.
-            Use the account/supplier base currency; ask if unknown — there is no currency-list API.
+            Use the account/supplier base currency; resolve or verify it with list-currencies.
           example: USD
         - name: currency_id
           in: body
@@ -98,9 +118,10 @@ api:
           type: integer
           required: false
           description: >-
-            Payment term for the PO — e.g. the account's consignment term. Optional. There is no
-            PAT-accessible endpoint to list payment terms, so source this id from the supplier's
-            default_payment_term_id or from the user; do not invent it. See INSTRUCTIONS.md.
+            Payment term for the PO — e.g. the account's consignment term. Optional. Resolve the id
+            with list-payment-terms: for a consignment order pick the term whose is_consignment is
+            true; otherwise match by name or fall back to the supplier's default_payment_term_id.
+            Don't invent it. See INSTRUCTIONS.md.
         - name: order_status
           in: body
           type: string

@@ -165,9 +165,10 @@
         "purchase-orders:write",
         "suppliers:read",
         "warehouses:read",
-        "products:read"
+        "products:read",
+        "settings:read"
       ],
-      "operations": 5,
+      "operations": 7,
       "tags": [
         "purchase-orders",
         "purchasing",
