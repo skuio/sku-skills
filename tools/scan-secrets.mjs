@@ -40,9 +40,11 @@ const mask = (s) => (s.length <= 4 ? '*'.repeat(s.length) : `${s.slice(0, 3)}${'
 function buildDenylist() {
   const raw = process.env.SECRET_DENYLIST || '';
   const terms = raw
-    .split(/[\n,]/)
+    .split('\n')
+    .map((line) => line.replace(/#.*$/, '')) // strip full-line and inline comments before splitting
+    .flatMap((line) => line.split(','))       // ...so a comma inside a comment can't leak a bogus term
     .map((t) => t.trim())
-    .filter((t) => t && !t.startsWith('#'));
+    .filter(Boolean);
   const escape = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return terms.map((t) => ({ term: t, re: new RegExp(`(?<![\\w.-])${escape(t)}(?![\\w.-])`, 'i') }));
 }
