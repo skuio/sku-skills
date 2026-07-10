@@ -16,7 +16,8 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "validate": "node tools/validate.mjs",
-    "check": "node tools/validate.mjs && node tools/build.mjs",
+    "scan": "node tools/scan-secrets.mjs",
+    "check": "node tools/validate.mjs && node tools/scan-secrets.mjs && node tools/build.mjs",
     "clean": "rm -rf dist"
   },
   "dependencies": {
