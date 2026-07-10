@@ -132,7 +132,15 @@ See [`examples/request.json`](./examples/request.json) for the same body as a fi
 ## Handle the response
 
 - **`200`** → `{ "data": { "id", "po_number", "order_status", "total" }, "message" }`. Capture the
-  `id` and `po_number`; report them.
+  `id` and `po_number`; report them, and **output the direct link to the PO** so the user can click
+  straight into it:
+
+  ```
+  https://{tenant}.sku.io/v2/orders/purchase-orders/{id}
+  ```
+
+  Always end by giving the user this URL along with the PO number and order status — a PO buried
+  in a table search or filter is easy to miss.
 - **`422`** → validation failed. The `errors` map names the fields; line errors use dot-notation,
   e.g. `purchase_order_lines.0.quantity`. Common causes: missing `purchase_order_date`, neither
   `supplier_id` nor `supplier_name`, neither `currency_id` nor `currency_code`, or a missing
