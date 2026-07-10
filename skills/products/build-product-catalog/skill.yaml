@@ -1,0 +1,132 @@
+name: build-product-catalog
+title: Build a Product Catalog from Any Source
+domain: products
+version: 1.0.0
+description: >-
+  Turn product information from any source — a spreadsheet or CSV, a Google Sheet, a supplier
+  price list, a website or product page, or pasted text — into products in SKU.io. Extract the
+  raw rows, map them onto SKU.io's product fields, de-duplicate against the existing catalog, then
+  create the products. Use this to onboard a new catalog, import a supplier's range, or bulk-load
+  products from an external system.
+tags: [products, catalog, import, onboarding, etl, spreadsheet, csv, google-sheets, scraping]
+maintainers: [kmizzi]
+auth:
+  scopes: [products:write, products:read]
+api:
+  base_url: https://{tenant}.sku.io
+  operations:
+    - id: get-product-constants
+      method: GET
+      path: /api/products/constants
+      summary: Fetch valid product types and weight/dimension units to validate your mapping against.
+    - id: find-product-by-sku
+      method: GET
+      path: /api/products/by-sku
+      summary: Check whether a SKU already exists (de-duplication) before creating it.
+      parameters:
+        - name: sku
+          in: query
+          type: string
+          required: true
+          description: The exact SKU to check.
+          example: WIDGET-BLUE-01
+    - id: barcode-lookup
+      method: GET
+      path: /api/products/barcode-lookup
+      summary: Check whether a barcode (UPC/EAN/GTIN) already maps to a product.
+      parameters:
+        - name: barcode
+          in: query
+          type: string
+          required: true
+          description: The barcode to check.
+          example: "0123456789012"
+    - id: create-product
+      method: POST
+      path: /api/products
+      summary: Create one product in the SKU.io catalog.
+      parameters:
+        - name: sku
+          in: body
+          type: string
+          required: true
+          description: Unique stock-keeping unit. Required; rejected if it already exists.
+          example: WIDGET-BLUE-01
+        - name: type
+          in: body
+          type: string
+          required: true
+          description: >-
+            Product type. One of: standard, bundle, kit, matrix, blemished, manufactured.
+            Use "standard" for an ordinary stocked product.
+          example: standard
+        - name: name
+          in: body
+          type: string
+          required: false
+          description: Product name/title.
+          example: Blue Widget
+        - name: barcode
+          in: body
+          type: string
+          required: false
+          description: UPC/EAN/GTIN barcode.
+        - name: brand_name
+          in: body
+          type: string
+          required: false
+          description: Brand name; SKU.io links or creates the brand by name.
+        - name: unit_cost
+          in: body
+          type: number
+          required: false
+          description: Cost of goods (what you pay).
+        - name: default_price
+          in: body
+          type: number
+          required: false
+          description: Default selling price.
+        - name: default_supplier_price
+          in: body
+          type: number
+          required: false
+          description: Default price from the supplier.
+        - name: weight
+          in: body
+          type: number
+          required: false
+          description: Unit weight; pair with weight_unit.
+        - name: weight_unit
+          in: body
+          type: string
+          required: false
+          description: One of lb, g, kg, oz.
+          example: lb
+        - name: length
+          in: body
+          type: number
+          required: false
+          description: Unit length; pair with dimension_unit.
+        - name: width
+          in: body
+          type: number
+          required: false
+          description: Unit width; pair with dimension_unit.
+        - name: height
+          in: body
+          type: number
+          required: false
+          description: Unit height; pair with dimension_unit.
+        - name: dimension_unit
+          in: body
+          type: string
+          required: false
+          description: One of in, cm, mm.
+          example: in
+        - name: images
+          in: body
+          type: array
+          required: false
+          description: >-
+            Array of image objects, each { url (required), name, sort_order, is_primary,
+            download }. Set download=true to have SKU.io fetch and host the image from the URL.

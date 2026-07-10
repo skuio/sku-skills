@@ -1,0 +1,20 @@
+{
+  "sku": "BW-01",
+  "type": "standard",
+  "name": "Blue Widget",
+  "brand_name": "Acme",
+  "barcode": "0123456789012",
+  "unit_cost": 4.20,
+  "default_price": 12.50,
+  "weight": 8,
+  "weight_unit": "oz",
+  "case_quantity": 24,
+  "images": [
+    {
+      "url": "https://example.com/images/blue-widget.jpg",
+      "name": "Blue Widget",
+      "is_primary": true,
+      "download": true
+    }
+  ]
+}
