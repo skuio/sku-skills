@@ -80,17 +80,22 @@ api:
           in: body
           type: number
           required: false
-          description: Cost of goods (what you pay).
+          description: >-
+            Cost of goods (COGS) held on the product. When the source is a supplier/vendor price
+            list, set this to the vendor's unit cost as well as default_supplier_price.
         - name: default_price
           in: body
           type: number
           required: false
-          description: Default selling price.
+          description: Default selling price (e.g. MSRP/retail). Seeds the default pricing tier.
         - name: default_supplier_price
           in: body
           type: number
           required: false
-          description: Default price from the supplier.
+          description: >-
+            The supplier's WHOLESALE price — what you pay the supplier. Fills the default supplier
+            pricing tier on the linked supplier, so it requires an entry in `suppliers`. Prioritise
+            filling this whenever the source gives a supplier/vendor cost.
         - name: weight
           in: body
           type: number
@@ -130,3 +135,21 @@ api:
           description: >-
             Array of image objects, each { url (required), name, sort_order, is_primary,
             download }. Set download=true to have SKU.io fetch and host the image from the URL.
+        - name: suppliers
+          in: body
+          type: array
+          required: false
+          description: >-
+            Array of supplier links, each { supplier_name (or supplier_id), supplier_sku,
+            is_default, leadtime, minimum_order_quantity }. Put the supplier's own item code in
+            supplier_sku (NOT the product sku). supplier_name must already exist as a supplier.
+            Combine with default_supplier_price to record the wholesale price on the link.
+        - name: attributes
+          in: body
+          type: array
+          required: false
+          description: >-
+            Array of custom product attributes, each { name, value }. Capture any source
+            information that has no standard field of its own (carton pack, cubic feet, size,
+            material, country of origin, …) here instead of dropping it. Unknown attribute names
+            are created automatically.

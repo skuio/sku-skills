@@ -1,20 +1,19 @@
 {
-  "sku": "BW-01",
+  "sku": "4897153961502",
   "type": "standard",
-  "name": "Blue Widget",
-  "brand_name": "Acme",
-  "barcode": "0123456789012",
-  "unit_cost": 4.20,
-  "default_price": 12.50,
-  "weight": 8,
-  "weight_unit": "oz",
-  "case_quantity": 24,
-  "images": [
-    {
-      "url": "https://example.com/images/blue-widget.jpg",
-      "name": "Blue Widget",
-      "is_primary": true,
-      "download": true
-    }
+  "name": "2 Reusable Swim Diapers + Travel Tote - Bitcoin Maxi Set - S",
+  "brand_name": "The Whale Lounge",
+  "barcode": "4897153961502",
+  "unit_cost": 11.5,
+  "default_supplier_price": 11.5,
+  "default_price": 29.99,
+  "case_quantity": 48,
+  "suppliers": [
+    { "supplier_name": "The Whale Lounge", "supplier_sku": "150", "is_default": true }
+  ],
+  "attributes": [
+    { "name": "Size", "value": "S" },
+    { "name": "Carton Pack", "value": "2 inner 2x 24" },
+    { "name": "Case Cu.ft", "value": "2.278" }
   ]
 }

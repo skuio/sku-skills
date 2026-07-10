@@ -43,13 +43,14 @@ Map your normalized columns to the create-product body. Fields:
 | `name` | Recommended | Product title. |
 | `barcode` | Optional | UPC/EAN/GTIN. |
 | `brand_name` | Optional | SKU.io links or creates the brand by name. |
-| `unit_cost` | Optional | Cost of goods (what you pay). |
-| `default_price` | Optional | Selling price. |
-| `default_supplier_price` | Optional | Supplier's price. |
+| `unit_cost` | Optional | Cost of goods (COGS) on the product. Set from the vendor's unit cost when importing a supplier list. |
+| `default_price` | Optional | Selling price (MSRP/retail). Seeds the default pricing tier. |
+| `default_supplier_price` | **Priority** | Supplier **wholesale** price — what you pay the supplier. Fills the supplier's default price tier; needs a `suppliers[]` entry. Fill this whenever the source gives a supplier/vendor cost. |
 | `weight` + `weight_unit` | Optional | `weight_unit` ∈ {lb, g, kg, oz}. |
 | `length`/`width`/`height` + `dimension_unit` | Optional | `dimension_unit` ∈ {in, cm, mm}. |
 | `images[]` | Optional | Each `{ url, name?, sort_order?, is_primary?, download? }`. Set `download: true` to have SKU.io host the image from the URL. |
-| `suppliers[]` | Optional | Each `{ supplier_id or supplier_name, is_default?, supplier_sku?, leadtime?, minimum_order_quantity? }`. |
+| `suppliers[]` | Optional | Each `{ supplier_id or supplier_name, is_default?, supplier_sku?, leadtime?, minimum_order_quantity? }`. `supplier_name` must already exist. |
+| `attributes[]` | Optional | Custom attributes: each `{ name, value }`. Capture any source info that has no standard field of its own here. Unknown attribute names are auto-created. |
 | `pricing[]` | Optional | Tiered pricing: `{ product_pricing_tier_id or product_pricing_tier_name, price }`. |
 
 > **Note on `default_price`:** it seeds the account's **default pricing tier** (often named
@@ -67,8 +68,16 @@ Mapping rules:
   don't assume the most prominent number is it.
 - **Clean numbers.** Strip currency symbols, thousands separators, and units before sending
   numeric fields (`"$1,299.00"` → `1299.00`; `"12 oz"` → `weight: 12, weight_unit: oz`).
-- **Cost vs price.** `unit_cost` is what you pay; `default_price` is what you sell for. Don't
-  conflate them — if the source only gives one, map it to the correct field and leave the other blank.
+- **Cost vs price — three distinct fields.** A supplier/vendor price list's "unit cost" is the
+  **supplier wholesale price** (what you pay the supplier) → `default_supplier_price` (with that
+  supplier in `suppliers[]`), and mirror it to `unit_cost` (COGS) too. A "retail"/"MSRP" column is
+  the **sell price** → `default_price`. Prioritise the supplier wholesale price — it's the field
+  most often forgotten. Don't collapse all three into one.
+- **Capture leftover info as attributes.** Any source column that has no standard field of its own
+  (carton/case pack, cubic feet, size, material, country of origin, care notes, remarks, …) goes
+  into `attributes[]` as `{ name, value }` — don't silently drop it. Also lift structured detail
+  buried in the product name (e.g. a trailing size ` - S`/` - M`/` - L`/` - XL`) into its own
+  attribute when it's clearly and consistently present.
 - **Don't invent data.** If a barcode, price, or weight isn't in the source, leave the field out.
   Never fabricate a barcode or guess a price.
 - **Units.** Coerce weight/dimension units to the allowed values; if the source uses something
