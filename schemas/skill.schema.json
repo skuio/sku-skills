@@ -1,0 +1,152 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://developer.sku.io/schemas/skill.schema.json",
+  "title": "SKU Skill",
+  "description": "Canonical, model-agnostic definition of a SKU.io e-commerce agent skill. The build tool renders this into Claude, OpenAI, and Gemini formats.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "title", "domain", "version", "description", "auth", "api"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Unique kebab-case identifier. Must match the containing folder name."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 3,
+      "description": "Human-readable title, e.g. 'Find a Product'."
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "platform",
+        "products",
+        "orders",
+        "inventory",
+        "purchase-orders",
+        "suppliers",
+        "customers",
+        "warehouses",
+        "returns",
+        "manufacturing",
+        "accounting",
+        "integrations",
+        "reports",
+        "subscriptions",
+        "settings"
+      ],
+      "description": "Business domain. Mirrors SKU.io PAT scope resources (plus 'platform' for auth/meta skills)."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semver. Bump on any behavioural change."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 40,
+      "maxLength": 1024,
+      "description": "Model-facing 'when to use this' summary. This becomes the Claude SKILL.md description and the OpenAI/Gemini tool description, so write it for an agent deciding whether to invoke the skill."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+      "uniqueItems": true
+    },
+    "maintainers": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "GitHub handles of people/agents responsible for the skill."
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scopes"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["bearer"],
+          "default": "bearer",
+          "description": "SKU.io uses Personal Access Tokens as Bearer tokens."
+        },
+        "scopes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z-]+:(read|write)$"
+          },
+          "description": "Required PAT scopes in '{resource}:{read|write}' form, e.g. 'products:read', 'orders:write'."
+        }
+      }
+    },
+    "api": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_url", "operations"],
+      "properties": {
+        "base_url": {
+          "type": "string",
+          "description": "Templated base URL. Almost always 'https://{tenant}.sku.io'."
+        },
+        "operations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/operation" }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "method", "path", "summary"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "Unique-within-skill kebab-case id. Becomes the OpenAI/Gemini tool function name (snake_cased)."
+        },
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"]
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^/",
+          "description": "Path relative to base_url, e.g. '/api/products/search'. Path params in {braces}."
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 5
+        },
+        "parameters": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/parameter" }
+        }
+      }
+    },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "in", "type"],
+      "properties": {
+        "name": { "type": "string" },
+        "in": {
+          "type": "string",
+          "enum": ["query", "path", "body", "header"]
+        },
+        "type": {
+          "type": "string",
+          "enum": ["string", "integer", "number", "boolean", "array", "object"]
+        },
+        "required": { "type": "boolean", "default": false },
+        "description": { "type": "string" },
+        "example": {}
+      }
+    }
+  }
+}

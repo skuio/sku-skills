@@ -1,0 +1,58 @@
+name: find-product
+title: Find a Product
+domain: products
+version: 1.0.0
+description: >-
+  Look up a product in the SKU.io catalog by SKU, barcode, or a free-text search over name and
+  SKU. Use this whenever you need to resolve a product reference to its SKU.io product record and
+  id — for example before adding it to a sales order, checking stock, or reporting on it.
+tags: [products, catalog, lookup, search, sku, barcode]
+maintainers: [kmizzi]
+auth:
+  scopes: [products:read]
+api:
+  base_url: https://{tenant}.sku.io
+  operations:
+    - id: search-products
+      method: GET
+      path: /api/products/search
+      summary: Fuzzy search products by name or SKU fragment.
+      parameters:
+        - name: query
+          in: query
+          type: string
+          required: true
+          description: Text to match against product name and SKU.
+          example: blue widget
+    - id: get-product-by-sku
+      method: GET
+      path: /api/products/by-sku
+      summary: Fetch a single product by its exact SKU.
+      parameters:
+        - name: sku
+          in: query
+          type: string
+          required: true
+          description: The exact product SKU.
+          example: WIDGET-BLUE-01
+    - id: barcode-lookup
+      method: GET
+      path: /api/products/barcode-lookup
+      summary: Resolve a scanned barcode (UPC/EAN/GTIN) to a product.
+      parameters:
+        - name: barcode
+          in: query
+          type: string
+          required: true
+          description: The scanned barcode value.
+          example: "0123456789012"
+    - id: get-product
+      method: GET
+      path: /api/products/{id}
+      summary: Fetch the full product record by its numeric id.
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+          description: The product id.

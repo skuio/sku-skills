@@ -1,0 +1,25 @@
+{
+  "name": "sku-skills",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Open-source e-commerce agent skills for the SKU.io API — authored once, generated for Claude, OpenAI, and Gemini.",
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://developer.sku.io",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/skuio/sku-skills.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "validate": "node tools/validate.mjs",
+    "check": "node tools/validate.mjs && node tools/build.mjs",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}
