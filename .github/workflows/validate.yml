@@ -17,6 +17,13 @@ jobs:
       - run: npm ci
       - name: Validate skills
         run: npm run validate
+      - name: Scan for secrets & tenant data
+        run: npm run scan
+        env:
+          # Newline/comma-separated denylist of real tenant slugs, server IPs, and SSH aliases.
+          # Stored as a repo secret so the denylist itself never appears in the public tree.
+          # Absent on fork PRs — the always-on pattern rules still run there.
+          SECRET_DENYLIST: ${{ secrets.SECRET_DENYLIST }}
       - name: Build all targets
         run: npm run build
       - name: Verify committed dist/ and README table are up to date

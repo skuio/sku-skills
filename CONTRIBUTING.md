@@ -52,6 +52,16 @@ A skill should be **accurate, scoped, and safe**:
   notes.
 - **Focused** — one skill = one coherent task. If it's sprawling, split it.
 
+## No secrets or tenant data
+
+Examples use placeholders only — `$SKU_PAT`, `$SKU_TENANT`, `sku_pat_xxxxxxxx`, and generic hosts
+like `acme.sku.io`. Never commit a real Personal Access Token, a live tenant slug/hostname, a server
+IP, or any private key. `npm run check` runs `npm run scan` (`tools/scan-secrets.mjs`), which fails
+on PAT shapes, private keys, cloud keys, and non-public `*.sku.io` subdomains — the same scan gates
+every PR in CI. Maintainers additionally configure a `SECRET_DENYLIST` repo secret (newline/comma
+separated tenant slugs, IPs, SSH aliases) that the CI scan checks against; it lives only in GitHub
+Actions secrets, never in the tree, and is unavailable to fork PRs by design.
+
 ## Pull requests
 
 - Keep PRs focused — ideally one skill (or one fix) per PR.
