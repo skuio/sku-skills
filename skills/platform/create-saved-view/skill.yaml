@@ -1,0 +1,111 @@
+name: create-saved-view
+title: Create a Saved View (and favorite it)
+domain: platform
+version: 1.0.0
+description: >-
+  Create a saved view for any SKU.io data table (products, sales orders, inventory, …) — a named,
+  reusable configuration of visible columns, filters, sort, and search — and favorite it so it
+  appears on the table's favorites bar. Use this to give a user a one-click way back to a specific
+  slice of data: a fresh import, an exception queue, a curated report. Composable — other skills
+  (e.g. build-product-catalog) call it to leave behind a view of what they just created.
+tags: [saved-views, datatable, favorite, views, ui, review]
+maintainers: [kmizzi]
+auth:
+  scopes: [settings:write]
+api:
+  base_url: https://{tenant}.sku.io
+  operations:
+    - id: list-saved-views
+      method: GET
+      path: /api/data-tables/saved-views
+      summary: List existing saved views for a data-table model (use to avoid duplicate names).
+      parameters:
+        - name: model
+          in: query
+          type: string
+          required: true
+          description: The data-table model FQCN, e.g. "App\\Models\\Product".
+          example: App\Models\Product
+    - id: create-saved-view
+      method: POST
+      path: /api/data-tables/saved-views
+      summary: Create a saved view; set is_user_favorite to pin it to the favorites bar.
+      parameters:
+        - name: model
+          in: body
+          type: string
+          required: true
+          description: >-
+            The data-table model this view belongs to, as the exact class string the page uses —
+            e.g. "App\\Models\\Product" for the Products table. Must match the target page.
+          example: App\Models\Product
+        - name: name
+          in: body
+          type: string
+          required: true
+          description: Display name shown on the views list / favorites bar.
+          example: The Whale Lounge — New Import
+        - name: query_data
+          in: body
+          type: string
+          required: true
+          description: >-
+            JSON string of the view state. Shape:
+            { "columns": { "visible": ["sku","name",...] }, "search": "text",
+            "filters": { "type": "standard" }, "filterGroups": "<base64 advanced-filter tree>",
+            "sortBy": "-created_at", "pagination": { "per_page": 50 } }. All keys optional; include
+            only what the view needs. Column keys and filter keys must be valid for that table.
+        - name: is_user_favorite
+          in: body
+          type: boolean
+          required: false
+          description: >-
+            Pin the view to the table's favorites bar for the current user. Default false, but for a
+            view you create for someone to look at, set this true — an unfavorited view is easy to miss.
+          example: true
+        - name: is_user_default
+          in: body
+          type: boolean
+          required: false
+          description: Make this the user's default view — the table opens on it. Default false.
+        - name: is_shared
+          in: body
+          type: boolean
+          required: false
+          description: Whether other users can see the view. Default true.
+        - name: description
+          in: body
+          type: string
+          required: false
+          description: Optional longer description.
+        - name: color
+          in: body
+          type: string
+          required: false
+          description: Optional colour label for the favorites chip.
+    - id: favorite-saved-view
+      method: POST
+      path: /api/data-tables/saved-views/{saved_view}/favorite
+      summary: Favorite or unfavorite an existing saved view for the current user.
+      parameters:
+        - name: saved_view
+          in: path
+          type: integer
+          required: true
+          description: The saved view id.
+        - name: is_favorite
+          in: body
+          type: boolean
+          required: false
+          description: true to favorite, false to unfavorite. Omit to toggle.
+          example: true
+    - id: set-default-saved-view
+      method: POST
+      path: /api/data-tables/saved-views/{saved_view}/set-default
+      summary: Make a saved view the current user's default (landing) view for its table.
+      parameters:
+        - name: saved_view
+          in: path
+          type: integer
+          required: true
+          description: The saved view id.

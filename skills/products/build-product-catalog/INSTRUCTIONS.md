@@ -172,6 +172,16 @@ Loop rules:
   the reason for each failure). Surface anything you had to derive (generated SKUs, normalized
   units) so they can sanity-check.
 
+## Step 7 — Leave a favorited view of what you imported (recommended)
+
+Make the import easy to eyeball: create a **favorited saved view** on the Products table scoped to
+the products you just created — the `create-saved-view` skill does exactly this. Isolate the import
+(e.g. `sortBy: "-created_at"`, or `search`/`filters` on the brand you set), show the columns that
+matter for review (sku, `default_supplier_sku`, `unit_cost`, `default_price`, `created_at`), and set
+`is_user_favorite: true` so it lands on the favorites bar. Then give the user the view name so they
+know where to look. (Custom attributes typically aren't columns — those are on each product's detail
+page.)
+
 ## Guardrails
 
 - **De-dupe first, always.** `POST /api/products` is not idempotent and `sku` is unique — a
