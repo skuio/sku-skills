@@ -1,0 +1,25 @@
+{
+  "purchase_order_date": "2026-07-10",
+  "supplier_id": 42,
+  "currency_code": "USD",
+  "destination_warehouse_id": 7,
+  "payment_term_id": 5,
+  "order_status": "draft",
+  "approval_status": "pending",
+  "estimated_delivery_date": "2026-08-01",
+  "supplier_notes": "Consignment reorder — per Gaelle Wizenburg unit mix.",
+  "purchase_order_lines": [
+    {
+      "product_id": 1567,
+      "description": "Blue Widget",
+      "quantity": 200,
+      "amount": 4.20
+    },
+    {
+      "product_id": 1568,
+      "description": "Red Widget",
+      "quantity": 50,
+      "amount": 4.35
+    }
+  ]
+}

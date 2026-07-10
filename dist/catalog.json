@@ -1,6 +1,6 @@
 {
   "generatedFrom": "skills/",
-  "count": 6,
+  "count": 7,
   "skills": [
     {
       "name": "adjust-inventory",
@@ -152,6 +152,34 @@
         "claude": "dist/claude/products/find-product/SKILL.md",
         "openai": "dist/openai/products/find-product/",
         "gemini": "dist/gemini/products/find-product/"
+      }
+    },
+    {
+      "name": "create-purchase-order",
+      "domain": "purchase-orders",
+      "title": "Create a Purchase Order",
+      "version": "1.0.0",
+      "description": "Create a purchase order in SKU.io — a replenishment order placed with a supplier — from either a plain description of what to buy or a source document (a supplier email, an order-form spreadsheet, a demand-plan export) that supplies the SKUs and quantities. Resolves the supplier, destination warehouse, unit costs, currency, and (optionally) payment term, builds the line items, and creates the PO as a draft or an open order. Covers standard and consignment replenishment. Resolve products with find-product first so every line references a real product.",
+      "tagline": "Create a replenishment PO for a supplier from a description or document",
+      "scopes": [
+        "purchase-orders:write",
+        "suppliers:read",
+        "warehouses:read",
+        "products:read"
+      ],
+      "operations": 5,
+      "tags": [
+        "purchase-orders",
+        "purchasing",
+        "replenishment",
+        "consignment",
+        "supplier",
+        "create"
+      ],
+      "outputs": {
+        "claude": "dist/claude/purchase-orders/create-purchase-order/SKILL.md",
+        "openai": "dist/openai/purchase-orders/create-purchase-order/",
+        "gemini": "dist/gemini/purchase-orders/create-purchase-order/"
       }
     }
   ]

@@ -1,0 +1,174 @@
+name: create-purchase-order
+title: Create a Purchase Order
+domain: purchase-orders
+version: 1.0.0
+description: >-
+  Create a purchase order in SKU.io — a replenishment order placed with a supplier — from either a
+  plain description of what to buy or a source document (a supplier email, an order-form
+  spreadsheet, a demand-plan export) that supplies the SKUs and quantities. Resolves the supplier,
+  destination warehouse, unit costs, currency, and (optionally) payment term, builds the line items,
+  and creates the PO as a draft or an open order. Covers standard and consignment replenishment.
+  Resolve products with find-product first so every line references a real product.
+tagline: Create a replenishment PO for a supplier from a description or document
+tags: [purchase-orders, purchasing, replenishment, consignment, supplier, create]
+maintainers: [kmizzi]
+auth:
+  scopes: [purchase-orders:write, suppliers:read, warehouses:read, products:read]
+api:
+  base_url: https://{tenant}.sku.io
+  operations:
+    - id: find-supplier
+      method: GET
+      path: /api/v2/suppliers
+      summary: Find a supplier by name/email to get its id (and its default warehouse and payment term).
+      parameters:
+        - name: search
+          in: query
+          type: string
+          required: false
+          description: Search by supplier name, email, or company name. Narrow to a single match before using the id.
+          example: Wizenburg
+        - name: limit
+          in: query
+          type: integer
+          required: false
+          description: Items per page (default 10).
+    - id: list-warehouses
+      method: GET
+      path: /api/v2/warehouses
+      summary: List warehouses (id, name, code, is_default) to resolve the destination warehouse.
+    - id: get-last-purchase-price
+      method: GET
+      path: /api/products/{product}/last-purchase-price
+      summary: Most recent unit cost paid for a product on a non-draft PO — fills a line's amount when the source has no cost.
+      parameters:
+        - name: product
+          in: path
+          type: integer
+          required: true
+          description: Product id (from find-product).
+    - id: create-purchase-order
+      method: POST
+      path: /api/purchase-orders
+      summary: Create a purchase order with header fields and an array of line items.
+      parameters:
+        - name: purchase_order_date
+          in: body
+          type: string
+          required: true
+          description: PO date (ISO-8601, account timezone).
+          example: "2026-07-10"
+        - name: supplier_id
+          in: body
+          type: integer
+          required: false
+          description: >-
+            The supplier being ordered from (from find-supplier). Required unless you pass
+            supplier_name instead.
+        - name: supplier_name
+          in: body
+          type: string
+          required: false
+          description: >-
+            Supplier name, as an alternative to supplier_id. Prefer resolving supplier_id first;
+            an exact name the API doesn't match will 422.
+        - name: currency_code
+          in: body
+          type: string
+          required: false
+          description: >-
+            ISO currency code for the PO (e.g. "USD", "AUD"). Required unless you pass currency_id.
+            Use the account/supplier base currency; ask if unknown — there is no currency-list API.
+          example: USD
+        - name: currency_id
+          in: body
+          type: integer
+          required: false
+          description: Currency id, as an alternative to currency_code.
+        - name: destination_warehouse_id
+          in: body
+          type: integer
+          required: false
+          description: >-
+            Warehouse the stock is received into (from list-warehouses). Required for a standard PO;
+            omit only for a dropship PO that ships straight to the customer. For a consignment order,
+            this is the consignment (supplier-owned) warehouse.
+        - name: payment_term_id
+          in: body
+          type: integer
+          required: false
+          description: >-
+            Payment term for the PO — e.g. the account's consignment term. Optional. There is no
+            PAT-accessible endpoint to list payment terms, so source this id from the supplier's
+            default_payment_term_id or from the user; do not invent it. See INSTRUCTIONS.md.
+        - name: order_status
+          in: body
+          type: string
+          required: false
+          description: >-
+            The only accepted value is "draft" (creates a draft PO). Omit the field entirely to
+            create an open PO.
+          example: draft
+        - name: approval_status
+          in: body
+          type: string
+          required: false
+          description: '"pending" (default) or "approved".'
+          example: pending
+        - name: estimated_delivery_date
+          in: body
+          type: string
+          required: false
+          description: Expected arrival date (ISO-8601).
+          example: "2026-08-01"
+        - name: purchase_order_number
+          in: body
+          type: string
+          required: false
+          description: Custom PO number. Auto-generated if omitted.
+        - name: supplier_notes
+          in: body
+          type: string
+          required: false
+          description: Notes to the supplier, printed on the PO.
+        - name: submission_format
+          in: body
+          type: string
+          required: false
+          description: How the PO is sent to the supplier when submitted (e.g. "email").
+        - name: store_id
+          in: body
+          type: integer
+          required: false
+          description: Store/sales-channel the PO is attributed to.
+        - name: tags
+          in: body
+          type: array
+          required: false
+          description: Array of string tags for filtering/reporting.
+        - name: purchase_order_lines
+          in: body
+          type: array
+          required: false
+          description: >-
+            Array of line items. Each line: { product_id OR sku (required unless a pure cost line),
+            quantity (required, >= 0), amount (required unit cost, >= 0), description (recommended),
+            discount, tax_rate_id, estimated_delivery_date, is_free_of_charge all optional }.
+        - name: financial_lines
+          in: body
+          type: array
+          required: false
+          description: >-
+            Optional non-product charges (freight, duties). Each: { description, quantity, amount,
+            financial_line_type_id, allocate_to_products, proration_strategy }.
+    - id: submit-purchase-order
+      method: POST
+      path: /api/purchase-orders/submit
+      summary: Submit (send to the supplier) one or more created POs. Sends the PO out — confirm first.
+      parameters:
+        - name: ids
+          in: body
+          type: array
+          required: true
+          description: Array of purchase-order ids to submit to their suppliers.
+          example: [102]

@@ -1,0 +1,153 @@
+{
+  "functionDeclarations": [
+    {
+      "name": "find_supplier",
+      "description": "Find a supplier by name/email to get its id (and its default warehouse and payment term). (GET /api/v2/suppliers)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "search": {
+            "type": "STRING",
+            "description": "Search by supplier name, email, or company name. Narrow to a single match before using the id."
+          },
+          "limit": {
+            "type": "INTEGER",
+            "description": "Items per page (default 10)."
+          }
+        }
+      }
+    },
+    {
+      "name": "list_warehouses",
+      "description": "List warehouses (id, name, code, is_default) to resolve the destination warehouse. (GET /api/v2/warehouses)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_last_purchase_price",
+      "description": "Most recent unit cost paid for a product on a non-draft PO — fills a line's amount when the source has no cost. (GET /api/products/{product}/last-purchase-price)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "product": {
+            "type": "INTEGER",
+            "description": "Product id (from find-product)."
+          }
+        },
+        "required": [
+          "product"
+        ]
+      }
+    },
+    {
+      "name": "create_purchase_order",
+      "description": "Create a purchase order with header fields and an array of line items. (POST /api/purchase-orders)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "purchase_order_date": {
+            "type": "STRING",
+            "description": "PO date (ISO-8601, account timezone)."
+          },
+          "supplier_id": {
+            "type": "INTEGER",
+            "description": "The supplier being ordered from (from find-supplier). Required unless you pass supplier_name instead."
+          },
+          "supplier_name": {
+            "type": "STRING",
+            "description": "Supplier name, as an alternative to supplier_id. Prefer resolving supplier_id first; an exact name the API doesn't match will 422."
+          },
+          "currency_code": {
+            "type": "STRING",
+            "description": "ISO currency code for the PO (e.g. \"USD\", \"AUD\"). Required unless you pass currency_id. Use the account/supplier base currency; ask if unknown — there is no currency-list API."
+          },
+          "currency_id": {
+            "type": "INTEGER",
+            "description": "Currency id, as an alternative to currency_code."
+          },
+          "destination_warehouse_id": {
+            "type": "INTEGER",
+            "description": "Warehouse the stock is received into (from list-warehouses). Required for a standard PO; omit only for a dropship PO that ships straight to the customer. For a consignment order, this is the consignment (supplier-owned) warehouse."
+          },
+          "payment_term_id": {
+            "type": "INTEGER",
+            "description": "Payment term for the PO — e.g. the account's consignment term. Optional. There is no PAT-accessible endpoint to list payment terms, so source this id from the supplier's default_payment_term_id or from the user; do not invent it. See INSTRUCTIONS.md."
+          },
+          "order_status": {
+            "type": "STRING",
+            "description": "The only accepted value is \"draft\" (creates a draft PO). Omit the field entirely to create an open PO."
+          },
+          "approval_status": {
+            "type": "STRING",
+            "description": "\"pending\" (default) or \"approved\"."
+          },
+          "estimated_delivery_date": {
+            "type": "STRING",
+            "description": "Expected arrival date (ISO-8601)."
+          },
+          "purchase_order_number": {
+            "type": "STRING",
+            "description": "Custom PO number. Auto-generated if omitted."
+          },
+          "supplier_notes": {
+            "type": "STRING",
+            "description": "Notes to the supplier, printed on the PO."
+          },
+          "submission_format": {
+            "type": "STRING",
+            "description": "How the PO is sent to the supplier when submitted (e.g. \"email\")."
+          },
+          "store_id": {
+            "type": "INTEGER",
+            "description": "Store/sales-channel the PO is attributed to."
+          },
+          "tags": {
+            "type": "ARRAY",
+            "description": "Array of string tags for filtering/reporting.",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "purchase_order_lines": {
+            "type": "ARRAY",
+            "description": "Array of line items. Each line: { product_id OR sku (required unless a pure cost line), quantity (required, >= 0), amount (required unit cost, >= 0), description (recommended), discount, tax_rate_id, estimated_delivery_date, is_free_of_charge all optional }.",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "financial_lines": {
+            "type": "ARRAY",
+            "description": "Optional non-product charges (freight, duties). Each: { description, quantity, amount, financial_line_type_id, allocate_to_products, proration_strategy }.",
+            "items": {
+              "type": "STRING"
+            }
+          }
+        },
+        "required": [
+          "purchase_order_date"
+        ]
+      }
+    },
+    {
+      "name": "submit_purchase_order",
+      "description": "Submit (send to the supplier) one or more created POs. Sends the PO out — confirm first. (POST /api/purchase-orders/submit)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "ids": {
+            "type": "ARRAY",
+            "description": "Array of purchase-order ids to submit to their suppliers.",
+            "items": {
+              "type": "STRING"
+            }
+          }
+        },
+        "required": [
+          "ids"
+        ]
+      }
+    }
+  ]
+}

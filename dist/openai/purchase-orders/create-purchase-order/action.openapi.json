@@ -1,0 +1,247 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SKU.io — Create a Purchase Order",
+    "description": "Create a purchase order in SKU.io — a replenishment order placed with a supplier — from either a plain description of what to buy or a source document (a supplier email, an order-form spreadsheet, a demand-plan export) that supplies the SKUs and quantities. Resolves the supplier, destination warehouse, unit costs, currency, and (optionally) payment term, builds the line items, and creates the PO as a draft or an open order. Covers standard and consignment replenishment. Resolve products with find-product first so every line references a real product.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{tenant}.sku.io",
+      "variables": {
+        "tenant": {
+          "default": "app",
+          "description": "Your SKU.io account subdomain."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v2/suppliers": {
+      "get": {
+        "operationId": "find_supplier",
+        "summary": "Find a supplier by name/email to get its id (and its default warehouse and payment term).",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "description": "Search by supplier name, email, or company name. Narrow to a single match before using the id.",
+            "schema": {
+              "type": "string",
+              "description": "Search by supplier name, email, or company name. Narrow to a single match before using the id.",
+              "example": "Wizenburg"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Items per page (default 10).",
+            "schema": {
+              "type": "integer",
+              "description": "Items per page (default 10)."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/warehouses": {
+      "get": {
+        "operationId": "list_warehouses",
+        "summary": "List warehouses (id, name, code, is_default) to resolve the destination warehouse.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/products/{product}/last-purchase-price": {
+      "get": {
+        "operationId": "get_last_purchase_price",
+        "summary": "Most recent unit cost paid for a product on a non-draft PO — fills a line's amount when the source has no cost.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "product",
+            "in": "path",
+            "required": true,
+            "description": "Product id (from find-product).",
+            "schema": {
+              "type": "integer",
+              "description": "Product id (from find-product)."
+            }
+          }
+        ]
+      }
+    },
+    "/api/purchase-orders": {
+      "post": {
+        "operationId": "create_purchase_order",
+        "summary": "Create a purchase order with header fields and an array of line items.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "purchase_order_date": {
+                    "type": "string",
+                    "description": "PO date (ISO-8601, account timezone).",
+                    "example": "2026-07-10"
+                  },
+                  "supplier_id": {
+                    "type": "integer",
+                    "description": "The supplier being ordered from (from find-supplier). Required unless you pass supplier_name instead."
+                  },
+                  "supplier_name": {
+                    "type": "string",
+                    "description": "Supplier name, as an alternative to supplier_id. Prefer resolving supplier_id first; an exact name the API doesn't match will 422."
+                  },
+                  "currency_code": {
+                    "type": "string",
+                    "description": "ISO currency code for the PO (e.g. \"USD\", \"AUD\"). Required unless you pass currency_id. Use the account/supplier base currency; ask if unknown — there is no currency-list API.",
+                    "example": "USD"
+                  },
+                  "currency_id": {
+                    "type": "integer",
+                    "description": "Currency id, as an alternative to currency_code."
+                  },
+                  "destination_warehouse_id": {
+                    "type": "integer",
+                    "description": "Warehouse the stock is received into (from list-warehouses). Required for a standard PO; omit only for a dropship PO that ships straight to the customer. For a consignment order, this is the consignment (supplier-owned) warehouse."
+                  },
+                  "payment_term_id": {
+                    "type": "integer",
+                    "description": "Payment term for the PO — e.g. the account's consignment term. Optional. There is no PAT-accessible endpoint to list payment terms, so source this id from the supplier's default_payment_term_id or from the user; do not invent it. See INSTRUCTIONS.md."
+                  },
+                  "order_status": {
+                    "type": "string",
+                    "description": "The only accepted value is \"draft\" (creates a draft PO). Omit the field entirely to create an open PO.",
+                    "example": "draft"
+                  },
+                  "approval_status": {
+                    "type": "string",
+                    "description": "\"pending\" (default) or \"approved\".",
+                    "example": "pending"
+                  },
+                  "estimated_delivery_date": {
+                    "type": "string",
+                    "description": "Expected arrival date (ISO-8601).",
+                    "example": "2026-08-01"
+                  },
+                  "purchase_order_number": {
+                    "type": "string",
+                    "description": "Custom PO number. Auto-generated if omitted."
+                  },
+                  "supplier_notes": {
+                    "type": "string",
+                    "description": "Notes to the supplier, printed on the PO."
+                  },
+                  "submission_format": {
+                    "type": "string",
+                    "description": "How the PO is sent to the supplier when submitted (e.g. \"email\")."
+                  },
+                  "store_id": {
+                    "type": "integer",
+                    "description": "Store/sales-channel the PO is attributed to."
+                  },
+                  "tags": {
+                    "type": "array",
+                    "description": "Array of string tags for filtering/reporting.",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "purchase_order_lines": {
+                    "type": "array",
+                    "description": "Array of line items. Each line: { product_id OR sku (required unless a pure cost line), quantity (required, >= 0), amount (required unit cost, >= 0), description (recommended), discount, tax_rate_id, estimated_delivery_date, is_free_of_charge all optional }.",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "financial_lines": {
+                    "type": "array",
+                    "description": "Optional non-product charges (freight, duties). Each: { description, quantity, amount, financial_line_type_id, allocate_to_products, proration_strategy }.",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "purchase_order_date"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchase-orders/submit": {
+      "post": {
+        "operationId": "submit_purchase_order",
+        "summary": "Submit (send to the supplier) one or more created POs. Sends the PO out — confirm first.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "description": "Array of purchase-order ids to submit to their suppliers.",
+                    "example": [
+                      102
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "ids"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "SKU.io Personal Access Token."
+      }
+    }
+  }
+}
