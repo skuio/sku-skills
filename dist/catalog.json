@@ -1,0 +1,152 @@
+{
+  "generatedFrom": "skills/",
+  "count": 6,
+  "skills": [
+    {
+      "name": "adjust-inventory",
+      "domain": "inventory",
+      "title": "Adjust Inventory",
+      "version": "1.0.0",
+      "description": "Adjust the on-hand quantity of a product at a warehouse in SKU.io — an increase, a decrease, or a set-to-value. Use this for stock takes, corrections, damage/shrinkage write-offs, or found stock. Resolve the product with find-product first so the adjustment targets the right product and warehouse.",
+      "scopes": [
+        "inventory:write",
+        "products:read"
+      ],
+      "operations": 1,
+      "tags": [
+        "inventory",
+        "stock",
+        "adjustment",
+        "stock-take",
+        "shrinkage"
+      ],
+      "outputs": {
+        "claude": "dist/claude/inventory/adjust-inventory/SKILL.md",
+        "openai": "dist/openai/inventory/adjust-inventory/",
+        "gemini": "dist/gemini/inventory/adjust-inventory/"
+      }
+    },
+    {
+      "name": "create-sales-order",
+      "domain": "orders",
+      "title": "Create a Sales Order",
+      "version": "1.0.0",
+      "description": "Create a new sales order in SKU.io with one or more line items. Use this to place an order for a customer — capturing the order status, order date, optional customer and store, and the SKUs, quantities, and unit prices being sold. Resolve products first with find-product so each line references a real product.",
+      "scopes": [
+        "orders:write",
+        "products:read"
+      ],
+      "operations": 1,
+      "tags": [
+        "orders",
+        "sales-order",
+        "create",
+        "checkout",
+        "fulfilment"
+      ],
+      "outputs": {
+        "claude": "dist/claude/orders/create-sales-order/SKILL.md",
+        "openai": "dist/openai/orders/create-sales-order/",
+        "gemini": "dist/gemini/orders/create-sales-order/"
+      }
+    },
+    {
+      "name": "connect-to-sku",
+      "domain": "platform",
+      "title": "Connect to SKU.io",
+      "version": "1.0.0",
+      "description": "The entry point for any SKU.io task. Establish an authenticated connection: point at the correct tenant base URL, send a Personal Access Token as a Bearer token, verify it works with a cheap identity call, and inspect the token's scopes so you know what you are allowed to do. Use this first whenever you are about to call the SKU.io API.",
+      "scopes": [
+        "settings:read"
+      ],
+      "operations": 2,
+      "tags": [
+        "auth",
+        "setup",
+        "getting-started",
+        "personal-access-token"
+      ],
+      "outputs": {
+        "claude": "dist/claude/platform/connect-to-sku/SKILL.md",
+        "openai": "dist/openai/platform/connect-to-sku/",
+        "gemini": "dist/gemini/platform/connect-to-sku/"
+      }
+    },
+    {
+      "name": "create-saved-view",
+      "domain": "platform",
+      "title": "Create a Saved View (and favorite it)",
+      "version": "1.0.0",
+      "description": "Create a saved view for any SKU.io data table (products, sales orders, inventory, …) — a named, reusable configuration of visible columns, filters, sort, and search — and favorite it so it appears on the table's favorites bar. Use this to give a user a one-click way back to a specific slice of data: a fresh import, an exception queue, a curated report. Composable — other skills (e.g. build-product-catalog) call it to leave behind a view of what they just created.",
+      "scopes": [
+        "settings:write"
+      ],
+      "operations": 4,
+      "tags": [
+        "saved-views",
+        "datatable",
+        "favorite",
+        "views",
+        "ui",
+        "review"
+      ],
+      "outputs": {
+        "claude": "dist/claude/platform/create-saved-view/SKILL.md",
+        "openai": "dist/openai/platform/create-saved-view/",
+        "gemini": "dist/gemini/platform/create-saved-view/"
+      }
+    },
+    {
+      "name": "build-product-catalog",
+      "domain": "products",
+      "title": "Build a Product Catalog from Any Source",
+      "version": "1.0.0",
+      "description": "Turn product information from any source — a spreadsheet or CSV, a Google Sheet, a supplier price list, a website or product page, or pasted text — into products in SKU.io. Extract the raw rows, map them onto SKU.io's product fields, de-duplicate against the existing catalog, then create the products. Use this to onboard a new catalog, import a supplier's range, or bulk-load products from an external system.",
+      "scopes": [
+        "products:write",
+        "products:read"
+      ],
+      "operations": 4,
+      "tags": [
+        "products",
+        "catalog",
+        "import",
+        "onboarding",
+        "etl",
+        "spreadsheet",
+        "csv",
+        "google-sheets",
+        "scraping"
+      ],
+      "outputs": {
+        "claude": "dist/claude/products/build-product-catalog/SKILL.md",
+        "openai": "dist/openai/products/build-product-catalog/",
+        "gemini": "dist/gemini/products/build-product-catalog/"
+      }
+    },
+    {
+      "name": "find-product",
+      "domain": "products",
+      "title": "Find a Product",
+      "version": "1.0.0",
+      "description": "Look up a product in the SKU.io catalog by SKU, barcode, or a free-text search over name and SKU. Use this whenever you need to resolve a product reference to its SKU.io product record and id — for example before adding it to a sales order, checking stock, or reporting on it.",
+      "scopes": [
+        "products:read"
+      ],
+      "operations": 4,
+      "tags": [
+        "products",
+        "catalog",
+        "lookup",
+        "search",
+        "sku",
+        "barcode"
+      ],
+      "outputs": {
+        "claude": "dist/claude/products/find-product/SKILL.md",
+        "openai": "dist/openai/products/find-product/",
+        "gemini": "dist/gemini/products/find-product/"
+      }
+    }
+  ]
+}

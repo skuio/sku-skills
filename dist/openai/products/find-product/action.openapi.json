@@ -1,0 +1,130 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SKU.io — Find a Product",
+    "description": "Look up a product in the SKU.io catalog by SKU, barcode, or a free-text search over name and SKU. Use this whenever you need to resolve a product reference to its SKU.io product record and id — for example before adding it to a sales order, checking stock, or reporting on it.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{tenant}.sku.io",
+      "variables": {
+        "tenant": {
+          "default": "app",
+          "description": "Your SKU.io account subdomain."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/products/search": {
+      "get": {
+        "operationId": "search_products",
+        "summary": "Fuzzy search products by name or SKU fragment.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "description": "Text to match against product name and SKU.",
+            "schema": {
+              "type": "string",
+              "description": "Text to match against product name and SKU.",
+              "example": "blue widget"
+            }
+          }
+        ]
+      }
+    },
+    "/api/products/by-sku": {
+      "get": {
+        "operationId": "get_product_by_sku",
+        "summary": "Fetch a single product by its exact SKU.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "sku",
+            "in": "query",
+            "required": true,
+            "description": "The exact product SKU.",
+            "schema": {
+              "type": "string",
+              "description": "The exact product SKU.",
+              "example": "WIDGET-BLUE-01"
+            }
+          }
+        ]
+      }
+    },
+    "/api/products/barcode-lookup": {
+      "get": {
+        "operationId": "barcode_lookup",
+        "summary": "Resolve a scanned barcode (UPC/EAN/GTIN) to a product.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "description": "The scanned barcode value (query param is named \"code\").",
+            "schema": {
+              "type": "string",
+              "description": "The scanned barcode value (query param is named \"code\").",
+              "example": "0123456789012"
+            }
+          }
+        ]
+      }
+    },
+    "/api/products/{id}": {
+      "get": {
+        "operationId": "get_product",
+        "summary": "Fetch the full product record by its numeric id.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The product id.",
+            "schema": {
+              "type": "integer",
+              "description": "The product id."
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "SKU.io Personal Access Token."
+      }
+    }
+  }
+}

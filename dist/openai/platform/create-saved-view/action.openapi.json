@@ -1,0 +1,183 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SKU.io — Create a Saved View (and favorite it)",
+    "description": "Create a saved view for any SKU.io data table (products, sales orders, inventory, …) — a named, reusable configuration of visible columns, filters, sort, and search — and favorite it so it appears on the table's favorites bar. Use this to give a user a one-click way back to a specific slice of data: a fresh import, an exception queue, a curated report. Composable — other skills (e.g. build-product-catalog) call it to leave behind a view of what they just created.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{tenant}.sku.io",
+      "variables": {
+        "tenant": {
+          "default": "app",
+          "description": "Your SKU.io account subdomain."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/data-tables/saved-views": {
+      "get": {
+        "operationId": "list_saved_views",
+        "summary": "List existing saved views for a data-table model (use to avoid duplicate names).",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": true,
+            "description": "The data-table model FQCN, e.g. \"App\\\\Models\\\\Product\".",
+            "schema": {
+              "type": "string",
+              "description": "The data-table model FQCN, e.g. \"App\\\\Models\\\\Product\".",
+              "example": "App\\Models\\Product"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "create_saved_view",
+        "summary": "Create a saved view; set is_user_favorite to pin it to the favorites bar.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "model": {
+                    "type": "string",
+                    "description": "The data-table model this view belongs to, as the exact class string the page uses — e.g. \"App\\\\Models\\\\Product\" for the Products table. Must match the target page.",
+                    "example": "App\\Models\\Product"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Display name shown on the views list / favorites bar.",
+                    "example": "The Whale Lounge — New Import"
+                  },
+                  "query_data": {
+                    "type": "string",
+                    "description": "JSON string of the view state. Shape: { \"columns\": { \"visible\": [\"sku\",\"name\",...] }, \"search\": \"text\", \"filters\": { \"type\": \"standard\" }, \"filterGroups\": \"<base64 advanced-filter tree>\", \"sortBy\": \"-created_at\", \"pagination\": { \"per_page\": 50 } }. All keys optional; include only what the view needs. Column keys and filter keys must be valid for that table."
+                  },
+                  "is_user_favorite": {
+                    "type": "boolean",
+                    "description": "Pin the view to the table's favorites bar for the current user. Default false, but for a view you create for someone to look at, set this true — an unfavorited view is easy to miss.",
+                    "example": true
+                  },
+                  "is_user_default": {
+                    "type": "boolean",
+                    "description": "Make this the user's default view — the table opens on it. Default false."
+                  },
+                  "is_shared": {
+                    "type": "boolean",
+                    "description": "Whether other users can see the view. Default true."
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Optional longer description."
+                  },
+                  "color": {
+                    "type": "string",
+                    "description": "Optional colour label for the favorites chip."
+                  }
+                },
+                "required": [
+                  "model",
+                  "name",
+                  "query_data"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/data-tables/saved-views/{saved_view}/favorite": {
+      "post": {
+        "operationId": "favorite_saved_view",
+        "summary": "Favorite or unfavorite an existing saved view for the current user.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "saved_view",
+            "in": "path",
+            "required": true,
+            "description": "The saved view id.",
+            "schema": {
+              "type": "integer",
+              "description": "The saved view id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "is_favorite": {
+                    "type": "boolean",
+                    "description": "true to favorite, false to unfavorite. Omit to toggle.",
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/data-tables/saved-views/{saved_view}/set-default": {
+      "post": {
+        "operationId": "set_default_saved_view",
+        "summary": "Make a saved view the current user's default (landing) view for its table.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "saved_view",
+            "in": "path",
+            "required": true,
+            "description": "The saved view id.",
+            "schema": {
+              "type": "integer",
+              "description": "The saved view id."
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "SKU.io Personal Access Token."
+      }
+    }
+  }
+}

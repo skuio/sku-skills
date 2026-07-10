@@ -90,5 +90,6 @@ npm run build      # regenerate dist/ for all three models
 npm run check      # validate then build
 ```
 
-CI runs `npm run check` on every PR. Generated `dist/` is git-ignored — never edit it by hand;
-edit the canonical skill and rebuild.
+CI runs `npm run check` on every PR and verifies `dist/` is up to date. `dist/` is **committed** so
+skills install without a build — never edit it by hand; edit the canonical skill, run `npm run
+build`, and commit the refreshed `dist/`.

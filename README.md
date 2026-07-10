@@ -56,12 +56,12 @@ Run `npm run build` to regenerate `dist/` and `dist/catalog.json` (the machine-r
 
 ## Quickstart — use a skill
 
-**Claude** — build once, then copy the skill folder into a directory Claude Code scans for skills
-(`.claude/skills/` inside a project, or `~/.claude/skills/` for every project):
+**Claude** — copy the prebuilt skill folder into a directory Claude Code scans for skills
+(`.claude/skills/` inside a project, or `~/.claude/skills/` for every project). `dist/` is committed,
+so no build step is needed:
 
 ```bash
 git clone https://github.com/skuio/sku-skills && cd sku-skills
-npm ci && npm run build        # dist/ is generated (git-ignored) — you must build before installing
 
 # install into a project so sessions working there auto-discover it:
 cp -r dist/claude/products/build-product-catalog /path/to/project/.claude/skills/build-product-catalog
@@ -104,7 +104,7 @@ skills/        canonical skills — the source of truth (edit these)
 shared/        cross-cutting reference: auth, api overview, pagination, errors
 schemas/       JSON Schema for skill.yaml
 tools/         build.mjs (canonical → 3 targets) + validate.mjs
-dist/          generated outputs (git-ignored; produced by npm run build)
+dist/          generated outputs — COMMITTED so skills install without a build; rebuild with npm run build
 ```
 
 ## About SKU.io

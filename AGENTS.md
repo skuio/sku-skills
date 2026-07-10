@@ -8,12 +8,12 @@ convention — Claude Code, Codex, Cursor, Gemini CLI, and others read it automa
 
 A library of e-commerce agent skills for the [SKU.io](https://developer.sku.io) API. Each skill is
 authored **once** in a canonical format and compiled to Claude / OpenAI / Gemini outputs. Source of
-truth is `skills/`; `dist/` is generated — **never edit `dist/` by hand.**
+truth is `skills/`; `dist/` is generated and **committed** — **never edit `dist/` by hand; rebuild it.**
 
 ## Golden rules
 
 1. **Edit canonical source only** — `skills/<domain>/<name>/{skill.yaml,INSTRUCTIONS.md}` and
-   `shared/`. Regenerate `dist/` with `npm run build`; don't commit it (git-ignored).
+   `shared/`. Regenerate `dist/` with `npm run build` and commit the refreshed `dist/` with your change.
 2. **Use real endpoints.** Every path, method, and field must come from the live API
    (<https://developer.sku.io>) — do **not** invent or guess. If you can't verify an endpoint,
    don't add it.
@@ -31,7 +31,7 @@ npm ci
 # 2. Create/edit skills/<domain>/<name>/skill.yaml + INSTRUCTIONS.md  (see SKILL_SPEC.md)
 npm run check                       # 3. validate schema + build all three targets
 git checkout -b add-<domain>-<name> # 4. branch
-git add skills/ shared/             # 5. stage canonical source only (NOT dist/)
+git add skills/ shared/ dist/       # 5. stage source AND the rebuilt dist/
 git commit -m "feat(<domain>): add <name> skill"
 ```
 
@@ -51,7 +51,8 @@ Then open a PR against `main` and fill in the template.
 - Do **not** add credentials, real PAT values, or tenant-specific data to any file. Examples use
   placeholders (`$SKU_PAT`, `$SKU_TENANT`, fake ids).
 - Do **not** weaken `tools/validate.mjs` or the schema to make a skill pass — fix the skill.
-- Do **not** hand-edit or commit `dist/`, `node_modules/`, or lockfile churn unrelated to your change.
+- Do **not** hand-edit `dist/` (regenerate it), and don't commit `node_modules/` or lockfile churn
+  unrelated to your change.
 - If a task needs an endpoint you can't confirm exists, say so in the PR rather than fabricating it.
 
 ## Commands

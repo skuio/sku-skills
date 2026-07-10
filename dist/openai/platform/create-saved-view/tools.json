@@ -1,0 +1,117 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "list_saved_views",
+      "description": "List existing saved views for a data-table model (use to avoid duplicate names). (GET /api/data-tables/saved-views)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "The data-table model FQCN, e.g. \"App\\\\Models\\\\Product\".",
+            "example": "App\\Models\\Product"
+          }
+        },
+        "required": [
+          "model"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_saved_view",
+      "description": "Create a saved view; set is_user_favorite to pin it to the favorites bar. (POST /api/data-tables/saved-views)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "The data-table model this view belongs to, as the exact class string the page uses — e.g. \"App\\\\Models\\\\Product\" for the Products table. Must match the target page.",
+            "example": "App\\Models\\Product"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name shown on the views list / favorites bar.",
+            "example": "The Whale Lounge — New Import"
+          },
+          "query_data": {
+            "type": "string",
+            "description": "JSON string of the view state. Shape: { \"columns\": { \"visible\": [\"sku\",\"name\",...] }, \"search\": \"text\", \"filters\": { \"type\": \"standard\" }, \"filterGroups\": \"<base64 advanced-filter tree>\", \"sortBy\": \"-created_at\", \"pagination\": { \"per_page\": 50 } }. All keys optional; include only what the view needs. Column keys and filter keys must be valid for that table."
+          },
+          "is_user_favorite": {
+            "type": "boolean",
+            "description": "Pin the view to the table's favorites bar for the current user. Default false, but for a view you create for someone to look at, set this true — an unfavorited view is easy to miss.",
+            "example": true
+          },
+          "is_user_default": {
+            "type": "boolean",
+            "description": "Make this the user's default view — the table opens on it. Default false."
+          },
+          "is_shared": {
+            "type": "boolean",
+            "description": "Whether other users can see the view. Default true."
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional longer description."
+          },
+          "color": {
+            "type": "string",
+            "description": "Optional colour label for the favorites chip."
+          }
+        },
+        "required": [
+          "model",
+          "name",
+          "query_data"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "favorite_saved_view",
+      "description": "Favorite or unfavorite an existing saved view for the current user. (POST /api/data-tables/saved-views/{saved_view}/favorite)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "saved_view": {
+            "type": "integer",
+            "description": "The saved view id."
+          },
+          "is_favorite": {
+            "type": "boolean",
+            "description": "true to favorite, false to unfavorite. Omit to toggle.",
+            "example": true
+          }
+        },
+        "required": [
+          "saved_view"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "set_default_saved_view",
+      "description": "Make a saved view the current user's default (landing) view for its table. (POST /api/data-tables/saved-views/{saved_view}/set-default)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "saved_view": {
+            "type": "integer",
+            "description": "The saved view id."
+          }
+        },
+        "required": [
+          "saved_view"
+        ]
+      }
+    }
+  }
+]

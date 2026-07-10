@@ -1,0 +1,151 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "get_product_constants",
+      "description": "Fetch valid product types and weight/dimension units to validate your mapping against. (GET /api/products/constants)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "find_product_by_sku",
+      "description": "Check whether a SKU already exists (de-duplication) before creating it. (GET /api/products/by-sku)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "sku": {
+            "type": "string",
+            "description": "The exact SKU to check.",
+            "example": "WIDGET-BLUE-01"
+          }
+        },
+        "required": [
+          "sku"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "barcode_lookup",
+      "description": "Check whether a barcode (UPC/EAN/GTIN) already maps to a product. (GET /api/products/barcode-lookup)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The barcode to check (query param is named \"code\").",
+            "example": "0123456789012"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_product",
+      "description": "Create one product in the SKU.io catalog. (POST /api/products)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "sku": {
+            "type": "string",
+            "description": "Unique stock-keeping unit. Required; rejected if it already exists.",
+            "example": "WIDGET-BLUE-01"
+          },
+          "type": {
+            "type": "string",
+            "description": "Product type. One of: standard, bundle, kit, matrix, blemished, manufactured. Use \"standard\" for an ordinary stocked product.",
+            "example": "standard"
+          },
+          "name": {
+            "type": "string",
+            "description": "Product name/title.",
+            "example": "Blue Widget"
+          },
+          "barcode": {
+            "type": "string",
+            "description": "UPC/EAN/GTIN barcode."
+          },
+          "brand_name": {
+            "type": "string",
+            "description": "Brand name; SKU.io links or creates the brand by name."
+          },
+          "unit_cost": {
+            "type": "number",
+            "description": "Cost of goods (COGS) held on the product. When the source is a supplier/vendor price list, set this to the vendor's unit cost as well as default_supplier_price."
+          },
+          "default_price": {
+            "type": "number",
+            "description": "Default selling price (e.g. MSRP/retail). Seeds the default pricing tier."
+          },
+          "default_supplier_price": {
+            "type": "number",
+            "description": "The supplier's WHOLESALE price — what you pay the supplier. Fills the default supplier pricing tier on the linked supplier, so it requires an entry in `suppliers`. Prioritise filling this whenever the source gives a supplier/vendor cost."
+          },
+          "weight": {
+            "type": "number",
+            "description": "Unit weight; pair with weight_unit."
+          },
+          "weight_unit": {
+            "type": "string",
+            "description": "One of lb, g, kg, oz.",
+            "example": "lb"
+          },
+          "length": {
+            "type": "number",
+            "description": "Unit length; pair with dimension_unit."
+          },
+          "width": {
+            "type": "number",
+            "description": "Unit width; pair with dimension_unit."
+          },
+          "height": {
+            "type": "number",
+            "description": "Unit height; pair with dimension_unit."
+          },
+          "dimension_unit": {
+            "type": "string",
+            "description": "One of in, cm, mm.",
+            "example": "in"
+          },
+          "images": {
+            "type": "array",
+            "description": "Array of image objects, each { url (required), name, sort_order, is_primary, download }. Set download=true to have SKU.io fetch and host the image from the URL.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "suppliers": {
+            "type": "array",
+            "description": "Array of supplier links, each { supplier_name (or supplier_id), supplier_sku, is_default, leadtime, minimum_order_quantity }. Put the supplier's own item code in supplier_sku (NOT the product sku). supplier_name must already exist as a supplier. Combine with default_supplier_price to record the wholesale price on the link.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "attributes": {
+            "type": "array",
+            "description": "Array of custom product attributes, each { name, value }. Capture any source information that has no standard field of its own (carton pack, cubic feet, size, material, country of origin, …) here instead of dropping it. Unknown attribute names are created automatically.",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "sku",
+          "type"
+        ]
+      }
+    }
+  }
+]

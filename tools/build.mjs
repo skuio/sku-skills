@@ -22,6 +22,15 @@ if (skills.length === 0) {
 fs.rmSync(DIST_DIR, { recursive: true, force: true });
 
 const json = (obj) => `${JSON.stringify(obj, null, 2)}\n`;
+
+// Skills reference shared/ docs with `../../../shared/…` (relative to skills/<domain>/<name>/).
+// Each output target resolves that differently so an installed skill has no dead links:
+//   Claude — bundle shared/ into the skill folder, link to `shared/…`
+//   OpenAI/Gemini — no folder to bundle into (content is pasted), so link to the GitHub copy.
+const SHARED_SRC = path.join(ROOT, 'shared');
+const SHARED_URL = 'https://github.com/skuio/sku-skills/blob/main/shared/';
+const localizeShared = (s) => s.replaceAll('../../../shared/', 'shared/');
+const urlizeShared = (s) => s.replaceAll('../../../shared/', SHARED_URL);
 const catalog = [];
 
 for (const skill of skills) {
@@ -30,18 +39,19 @@ for (const skill of skills) {
 
   // --- Claude: a self-contained Agent Skill folder -------------------------
   const claudeDir = path.join(DIST_DIR, 'claude', domain, name);
-  writeFile(path.join(claudeDir, 'SKILL.md'), renderClaudeSkill(skill));
+  writeFile(path.join(claudeDir, 'SKILL.md'), localizeShared(renderClaudeSkill(skill)));
   copyDir(path.join(dir, 'examples'), path.join(claudeDir, 'examples'));
+  copyDir(SHARED_SRC, path.join(claudeDir, 'shared'));
 
   // --- OpenAI: GPT instructions + importable Action + function tools -------
   const openaiDir = path.join(DIST_DIR, 'openai', domain, name);
-  writeFile(path.join(openaiDir, 'instructions.md'), renderOpenAiInstructions(skill));
+  writeFile(path.join(openaiDir, 'instructions.md'), urlizeShared(renderOpenAiInstructions(skill)));
   writeFile(path.join(openaiDir, 'action.openapi.json'), json(renderOpenApi(skill)));
   writeFile(path.join(openaiDir, 'tools.json'), json(renderOpenAiTools(skill)));
 
   // --- Gemini: system instructions + function declarations ----------------
   const geminiDir = path.join(DIST_DIR, 'gemini', domain, name);
-  writeFile(path.join(geminiDir, 'system_instructions.md'), renderGeminiInstructions(skill));
+  writeFile(path.join(geminiDir, 'system_instructions.md'), urlizeShared(renderGeminiInstructions(skill)));
   writeFile(path.join(geminiDir, 'function_declarations.json'), json(renderGeminiFunctions(skill)));
 
   catalog.push({

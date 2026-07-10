@@ -36,7 +36,9 @@ npm run check     # validate + build; should be green before you start
    npm run check
    ```
 
-5. **Do not commit `dist/`** — it's generated and git-ignored. Commit only the canonical source.
+5. **Rebuild and commit `dist/`** — `dist/` is committed so consumers can install without a build.
+   Run `npm run build` and commit the refreshed `dist/` alongside your canonical-source change (CI
+   checks it's up to date). Never hand-edit `dist/`.
 
 ## Quality bar
 

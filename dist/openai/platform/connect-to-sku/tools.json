@@ -1,0 +1,24 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "get_profile",
+      "description": "Return the authenticated user and account. Cheapest way to verify a token works. (GET /api/auth/profile)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_personal_access_tokens",
+      "description": "List the account's Personal Access Tokens and the scopes granted to each. (GET /api/personal-access-tokens)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  }
+]

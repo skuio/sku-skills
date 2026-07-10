@@ -1,0 +1,134 @@
+{
+  "functionDeclarations": [
+    {
+      "name": "get_product_constants",
+      "description": "Fetch valid product types and weight/dimension units to validate your mapping against. (GET /api/products/constants)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "find_product_by_sku",
+      "description": "Check whether a SKU already exists (de-duplication) before creating it. (GET /api/products/by-sku)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "sku": {
+            "type": "STRING",
+            "description": "The exact SKU to check."
+          }
+        },
+        "required": [
+          "sku"
+        ]
+      }
+    },
+    {
+      "name": "barcode_lookup",
+      "description": "Check whether a barcode (UPC/EAN/GTIN) already maps to a product. (GET /api/products/barcode-lookup)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "code": {
+            "type": "STRING",
+            "description": "The barcode to check (query param is named \"code\")."
+          }
+        },
+        "required": [
+          "code"
+        ]
+      }
+    },
+    {
+      "name": "create_product",
+      "description": "Create one product in the SKU.io catalog. (POST /api/products)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "sku": {
+            "type": "STRING",
+            "description": "Unique stock-keeping unit. Required; rejected if it already exists."
+          },
+          "type": {
+            "type": "STRING",
+            "description": "Product type. One of: standard, bundle, kit, matrix, blemished, manufactured. Use \"standard\" for an ordinary stocked product."
+          },
+          "name": {
+            "type": "STRING",
+            "description": "Product name/title."
+          },
+          "barcode": {
+            "type": "STRING",
+            "description": "UPC/EAN/GTIN barcode."
+          },
+          "brand_name": {
+            "type": "STRING",
+            "description": "Brand name; SKU.io links or creates the brand by name."
+          },
+          "unit_cost": {
+            "type": "NUMBER",
+            "description": "Cost of goods (COGS) held on the product. When the source is a supplier/vendor price list, set this to the vendor's unit cost as well as default_supplier_price."
+          },
+          "default_price": {
+            "type": "NUMBER",
+            "description": "Default selling price (e.g. MSRP/retail). Seeds the default pricing tier."
+          },
+          "default_supplier_price": {
+            "type": "NUMBER",
+            "description": "The supplier's WHOLESALE price — what you pay the supplier. Fills the default supplier pricing tier on the linked supplier, so it requires an entry in `suppliers`. Prioritise filling this whenever the source gives a supplier/vendor cost."
+          },
+          "weight": {
+            "type": "NUMBER",
+            "description": "Unit weight; pair with weight_unit."
+          },
+          "weight_unit": {
+            "type": "STRING",
+            "description": "One of lb, g, kg, oz."
+          },
+          "length": {
+            "type": "NUMBER",
+            "description": "Unit length; pair with dimension_unit."
+          },
+          "width": {
+            "type": "NUMBER",
+            "description": "Unit width; pair with dimension_unit."
+          },
+          "height": {
+            "type": "NUMBER",
+            "description": "Unit height; pair with dimension_unit."
+          },
+          "dimension_unit": {
+            "type": "STRING",
+            "description": "One of in, cm, mm."
+          },
+          "images": {
+            "type": "ARRAY",
+            "description": "Array of image objects, each { url (required), name, sort_order, is_primary, download }. Set download=true to have SKU.io fetch and host the image from the URL.",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "suppliers": {
+            "type": "ARRAY",
+            "description": "Array of supplier links, each { supplier_name (or supplier_id), supplier_sku, is_default, leadtime, minimum_order_quantity }. Put the supplier's own item code in supplier_sku (NOT the product sku). supplier_name must already exist as a supplier. Combine with default_supplier_price to record the wholesale price on the link.",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "attributes": {
+            "type": "ARRAY",
+            "description": "Array of custom product attributes, each { name, value }. Capture any source information that has no standard field of its own (carton pack, cubic feet, size, material, country of origin, …) here instead of dropping it. Unknown attribute names are created automatically.",
+            "items": {
+              "type": "STRING"
+            }
+          }
+        },
+        "required": [
+          "sku",
+          "type"
+        ]
+      }
+    }
+  ]
+}

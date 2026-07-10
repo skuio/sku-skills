@@ -1,0 +1,68 @@
+{
+  "functionDeclarations": [
+    {
+      "name": "search_products",
+      "description": "Fuzzy search products by name or SKU fragment. (GET /api/products/search)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "query": {
+            "type": "STRING",
+            "description": "Text to match against product name and SKU."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "get_product_by_sku",
+      "description": "Fetch a single product by its exact SKU. (GET /api/products/by-sku)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "sku": {
+            "type": "STRING",
+            "description": "The exact product SKU."
+          }
+        },
+        "required": [
+          "sku"
+        ]
+      }
+    },
+    {
+      "name": "barcode_lookup",
+      "description": "Resolve a scanned barcode (UPC/EAN/GTIN) to a product. (GET /api/products/barcode-lookup)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "code": {
+            "type": "STRING",
+            "description": "The scanned barcode value (query param is named \"code\")."
+          }
+        },
+        "required": [
+          "code"
+        ]
+      }
+    },
+    {
+      "name": "get_product",
+      "description": "Fetch the full product record by its numeric id. (GET /api/products/{id})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "id": {
+            "type": "INTEGER",
+            "description": "The product id."
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SKU.io — Adjust Inventory",
+    "description": "Adjust the on-hand quantity of a product at a warehouse in SKU.io — an increase, a decrease, or a set-to-value. Use this for stock takes, corrections, damage/shrinkage write-offs, or found stock. Resolve the product with find-product first so the adjustment targets the right product and warehouse.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{tenant}.sku.io",
+      "variables": {
+        "tenant": {
+          "default": "app",
+          "description": "Your SKU.io account subdomain."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/inventory-adjustments": {
+      "post": {
+        "operationId": "create_inventory_adjustment",
+        "summary": "Create an inventory adjustment (increase, decrease, or set) for a product at a warehouse.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "adjustment_date": {
+                    "type": "string",
+                    "description": "Date of the adjustment (ISO-8601).",
+                    "example": "2026-07-09"
+                  },
+                  "product_id": {
+                    "type": "integer",
+                    "description": "The product being adjusted (from find-product)."
+                  },
+                  "warehouse_id": {
+                    "type": "integer",
+                    "description": "The warehouse whose on-hand quantity is adjusted."
+                  },
+                  "quantity": {
+                    "type": "number",
+                    "description": "The magnitude of the adjustment (for increase/decrease) or the target on-hand value (for set). Must be non-zero and < 1,000,000.",
+                    "example": 25
+                  },
+                  "adjustment_type": {
+                    "type": "string",
+                    "description": "One of \"increase\", \"decrease\", or \"set\". Defaults to \"increase\".",
+                    "example": "increase"
+                  },
+                  "unit_cost": {
+                    "type": "number",
+                    "description": "Unit cost of the added stock. Required for an \"increase\" when the product has no existing average cost; ignored for decreases."
+                  },
+                  "warehouse_location_id": {
+                    "type": "integer",
+                    "description": "Specific bin/location within the warehouse."
+                  },
+                  "notes": {
+                    "type": "string",
+                    "description": "Free-text reason for the adjustment (recommended for audit)."
+                  }
+                },
+                "required": [
+                  "adjustment_date",
+                  "product_id",
+                  "warehouse_id",
+                  "quantity",
+                  "adjustment_type"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "SKU.io Personal Access Token."
+      }
+    }
+  }
+}

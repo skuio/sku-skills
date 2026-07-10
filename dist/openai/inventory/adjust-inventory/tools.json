@@ -1,0 +1,56 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "create_inventory_adjustment",
+      "description": "Create an inventory adjustment (increase, decrease, or set) for a product at a warehouse. (POST /api/inventory-adjustments)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "adjustment_date": {
+            "type": "string",
+            "description": "Date of the adjustment (ISO-8601).",
+            "example": "2026-07-09"
+          },
+          "product_id": {
+            "type": "integer",
+            "description": "The product being adjusted (from find-product)."
+          },
+          "warehouse_id": {
+            "type": "integer",
+            "description": "The warehouse whose on-hand quantity is adjusted."
+          },
+          "quantity": {
+            "type": "number",
+            "description": "The magnitude of the adjustment (for increase/decrease) or the target on-hand value (for set). Must be non-zero and < 1,000,000.",
+            "example": 25
+          },
+          "adjustment_type": {
+            "type": "string",
+            "description": "One of \"increase\", \"decrease\", or \"set\". Defaults to \"increase\".",
+            "example": "increase"
+          },
+          "unit_cost": {
+            "type": "number",
+            "description": "Unit cost of the added stock. Required for an \"increase\" when the product has no existing average cost; ignored for decreases."
+          },
+          "warehouse_location_id": {
+            "type": "integer",
+            "description": "Specific bin/location within the warehouse."
+          },
+          "notes": {
+            "type": "string",
+            "description": "Free-text reason for the adjustment (recommended for audit)."
+          }
+        },
+        "required": [
+          "adjustment_date",
+          "product_id",
+          "warehouse_id",
+          "quantity",
+          "adjustment_type"
+        ]
+      }
+    }
+  }
+]

@@ -1,0 +1,44 @@
+{
+  "functionDeclarations": [
+    {
+      "name": "create_sales_order",
+      "description": "Create a sales order with header fields and an array of line items. (POST /api/sales-orders)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "order_status": {
+            "type": "STRING",
+            "description": "Order status. Use \"draft\" for an unconfirmed order (lines optional); any other status requires at least one line. Common values include draft, open/confirmed."
+          },
+          "order_date": {
+            "type": "STRING",
+            "description": "Order date (ISO-8601). Defaults to now if omitted by the client."
+          },
+          "customer_id": {
+            "type": "INTEGER",
+            "description": "Existing customer id to attach the order to."
+          },
+          "store_id": {
+            "type": "INTEGER",
+            "description": "Store/sales-channel id the order belongs to."
+          },
+          "customer_po_number": {
+            "type": "STRING",
+            "description": "The customer's purchase-order reference."
+          },
+          "sales_order_lines": {
+            "type": "ARRAY",
+            "description": "Array of line items. Required unless order_status is \"draft\". Each line: { description (required), quantity (required), amount (required unit price), product_id or sku (to link a catalog product), warehouse_id (optional) }.",
+            "items": {
+              "type": "STRING"
+            }
+          }
+        },
+        "required": [
+          "order_status",
+          "order_date"
+        ]
+      }
+    }
+  ]
+}

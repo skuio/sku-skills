@@ -21,5 +21,5 @@
 - [ ] `npm run check` passes (validate + build)
 - [ ] `auth.scopes` are least-privilege
 - [ ] `INSTRUCTIONS.md` has decision logic, a concrete request, response handling, and guardrails
-- [ ] I did **not** commit `dist/`, `node_modules/`, or any secrets/tenant data
-- [ ] Canonical source only (`skills/` / `shared/`)
+- [ ] I ran `npm run build` and committed the refreshed `dist/` (CI checks it's up to date)
+- [ ] I did **not** commit `node_modules/` or any secrets/tenant data

@@ -1,0 +1,20 @@
+{
+  "order_status": "open",
+  "order_date": "2026-07-09",
+  "customer_id": 4821,
+  "customer_po_number": "PO-99123",
+  "sales_order_lines": [
+    {
+      "product_id": 1567,
+      "description": "Blue Widget",
+      "quantity": 10,
+      "amount": 12.50
+    },
+    {
+      "sku": "GADGET-RED-02",
+      "description": "Red Gadget",
+      "quantity": 3,
+      "amount": 29.00
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SKU.io — Connect to SKU.io",
+    "description": "The entry point for any SKU.io task. Establish an authenticated connection: point at the correct tenant base URL, send a Personal Access Token as a Bearer token, verify it works with a cheap identity call, and inspect the token's scopes so you know what you are allowed to do. Use this first whenever you are about to call the SKU.io API.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{tenant}.sku.io",
+      "variables": {
+        "tenant": {
+          "default": "app",
+          "description": "Your SKU.io account subdomain."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/auth/profile": {
+      "get": {
+        "operationId": "get_profile",
+        "summary": "Return the authenticated user and account. Cheapest way to verify a token works.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/personal-access-tokens": {
+      "get": {
+        "operationId": "list_personal_access_tokens",
+        "summary": "List the account's Personal Access Tokens and the scopes granted to each.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "SKU.io Personal Access Token."
+      }
+    }
+  }
+}
