@@ -176,11 +176,16 @@ Loop rules:
 
 Make the import easy to eyeball: create a **favorited saved view** on the Products table scoped to
 the products you just created — the `create-saved-view` skill does exactly this. Isolate the import
-(e.g. `sortBy: "-created_at"`, or `search`/`filters` on the brand you set), show the columns that
-matter for review (sku, `default_supplier_sku`, `unit_cost`, `default_price`, `created_at`), and set
-`is_user_favorite: true` so it lands on the favorites bar. Then give the user the view name so they
-know where to look. (Custom attributes typically aren't columns — those are on each product's detail
-page.)
+(`sortBy: "-created_at"`, or `search`/`filters` on the brand you set) and set `is_user_favorite:
+true` so it lands on the favorites bar.
+
+**The view must show every field the import wrote — drop nothing.** Put `id` first, then a column
+for each populated field: `sku`, `name`, `brand_name`, `barcode`, `default_supplier_sku`, the
+supplier wholesale price `default_supplier_price`, the cost `unit_cost`, the sell price
+`default_price`, `created_at`, **and every attribute you set** — each is a real, selectable column
+keyed `attribute_<attributeId>` (resolve the attribute ids first). The supplier wholesale price and
+the attribute columns default to hidden, so they're the ones most often missed — name them
+explicitly. Then tell the user the view name so they know where to look.
 
 ## Guardrails
 
