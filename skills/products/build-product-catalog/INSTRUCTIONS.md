@@ -59,6 +59,12 @@ Map your normalized columns to the create-product body. Fields:
 
 Mapping rules:
 
+- **A supplier's code is not the product's SKU.** Vendor and supplier order forms usually show the
+  *supplier's* item code prominently (often a short number like `150`, `151`, …). That is the
+  **supplier SKU** — map it to `suppliers[].supplier_sku`, not to `sku`. The product's own SKU is
+  usually the identifier the business owns or the GTIN/EAN/UPC — frequently the barcode column
+  sitting right next to the supplier code. When in doubt which column is the real SKU, ask;
+  don't assume the most prominent number is it.
 - **Clean numbers.** Strip currency symbols, thousands separators, and units before sending
   numeric fields (`"$1,299.00"` → `1299.00`; `"12 oz"` → `weight: 12, weight_unit: oz`).
 - **Cost vs price.** `unit_cost` is what you pay; `default_price` is what you sell for. Don't
