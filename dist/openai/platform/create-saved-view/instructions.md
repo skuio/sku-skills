@@ -72,7 +72,19 @@ each to its column key, and include them all — don't stop at the "obvious" col
    with `{ "is_favorite": true }`. To make a view the landing view:
    `POST /api/data-tables/saved-views/{id}/set-default`.
 
-5. **Tell the user** the view name and that it's on the favorites bar of the relevant page.
+5. **Output the direct link to the view.** The create response returns the view's `hash`; a data
+   table opens with a view applied via the `?view=<hash>` query param. Build and give the user the
+   URL:
+
+   ```
+   https://{tenant}.sku.io/v2/{page}?view={hash}
+   ```
+
+   `{page}` is the table's page path — the SPA route where that data table lives (e.g. `products`
+   for the Products table, `sales-orders` for Sales Orders). Example:
+   `https://acme.sku.io/v2/products?view=7329136e-91b1-433b-be6f-23772f2b970e`. Always finish by
+   giving the user this clickable link (plus the view name and that it's on the favorites bar) — a
+   view they can't find isn't much use.
 
 ## Using this from another skill (composition)
 

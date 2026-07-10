@@ -96,9 +96,12 @@ Mapping rules:
   supplier in `suppliers[]`), and mirror it to `unit_cost` (COGS) too. A "retail"/"MSRP" column is
   the **sell price** → `default_price`. Prioritise the supplier wholesale price — it's the field
   most often forgotten. Don't collapse all three into one.
-- **Capture leftover info as attributes.** Any source column that has no standard field of its own
-  (carton/case pack, cubic feet, material, country of origin, care notes, remarks, …) goes into
-  `attributes[]` as `{ name, value }` — don't silently drop it.
+- **Capture leftover source columns as attributes — this is the obvious, primary case.** Any column
+  the source *explicitly provides* that has no standard field of its own (carton/case pack, cubic
+  feet, material, country of origin, care notes, remarks, …) becomes an `attributes[]` entry
+  `{ name, value }` under the column's own name — don't drop it just because it's unusual. Explicit
+  values like these always become attributes; the name-derivation below is an *additional* fallback,
+  only for dimensions the source doesn't already give as their own column.
 - **Derive variant attributes from the names — but first read the whole catalog to sense what
   products vary by.** Products in a range share a naming template and differ along a few dimensions.
   Before parsing individual rows, **scan the full set of names together** to infer those dimensions.
@@ -204,7 +207,11 @@ supplier wholesale price `default_supplier_price`, the cost `unit_cost`, the sel
 `default_price`, `created_at`, **and every attribute you set** — each is a real, selectable column
 keyed `attribute_<attributeId>` (resolve the attribute ids first). The supplier wholesale price and
 the attribute columns default to hidden, so they're the ones most often missed — name them
-explicitly. Then tell the user the view name so they know where to look.
+explicitly.
+
+Then **output the direct link to the view** so the user can click straight into it:
+`https://{tenant}.sku.io/v2/products?view=<hash>`, where `<hash>` is the `hash` returned by the
+create-saved-view call. Always end the import by giving the user this URL (and the view name).
 
 ## Guardrails
 
