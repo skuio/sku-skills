@@ -21,16 +21,35 @@ consistent columns.
 
 Source-specific tips:
 
-- **CSV / Excel (.xlsx)** — read the file; the first row is usually headers. Watch for merged
-  cells, multiple sheets, subtotal/blank rows, and thousands separators in numbers.
-- **Google Sheet** — export/read it as CSV (or use a Sheets tool). Confirm which tab holds the data.
-- **Email attachment / PDF** — extract the attachment first, then parse it as the file type it is
-  (spreadsheet, PDF table, etc.). For a scanned/PDF table, use vision/OCR and re-check numbers.
-- **Website / product page** — fetch the page(s) and pull out name, SKU, price, images, specs. Be
-  precise about which price (retail vs sale) and capture image URLs.
-- **Pasted text / freeform** — structure it into the same columns before continuing.
+- **CSV / Excel (.xlsx)** — a real-world spreadsheet is rarely clean. Before trusting it:
+  - **Find the real header row.** Data often starts well below row 1, under a logo, a title block,
+    or an "ORDER SUMMARY" section. Locate the row whose cells are the column labels (code, name,
+    price, …) and treat everything above it as noise.
+  - **Pick the right sheet.** Workbooks usually have several tabs — a summary tab, a blank
+    `Sheet1`, and the product tab. Enumerate them and choose the one holding the line items.
+  - **Skip non-product rows** — section headers ("SWIM DIAPERS"), sub-totals, and the grand-total
+    row at the bottom. A row with a name but no code/price (or a total with no name) is not a product.
+  - **Ignore phantom width & junk cells.** Reported dimensions can be huge (hundreds of empty
+    columns); embedded image/formula cells read as `#VALUE!` or binary blobs. Read only the
+    columns that have real labels.
+  - **Normalize as you read** — trim leading/trailing and repeated spaces in names, and coerce
+    mixed types (a code may be `150` in one row and `"150"` in the next).
+- **Google Sheet** — read/export the right tab as CSV; confirm which tab holds the data.
+- **Email attachment / PDF** — get the attachment first (it may arrive base64-encoded — decode it),
+  then parse it as the file type it actually is (spreadsheet, PDF table, …). For a scanned/PDF
+  table use vision/OCR and re-check every number.
+- **Website / product page** — fetch the page(s); pull name, SKU, price, images, specs. Be precise
+  about which price (retail vs sale) and capture image URLs.
+- **Pasted text / freeform** — structure it into the same columns first.
 
-Deliverable of this step: a normalized table plus a note of what each source column appears to mean.
+**Order forms, POs, and quotes are product lists too.** A purchase/order form doubles as a catalog
+source — but it mixes **product** columns (code, barcode, name, unit cost, MSRP, pack) with
+**order-specific** columns (quantity ordered, line total, order date, ship terms). Map the product
+columns; **ignore the order-specific ones** — a "Qty" of 48 is how many were ordered, not a product
+attribute.
+
+Deliverable of this step: a normalized table plus a note of what each source column appears to mean
+(and which columns you're deliberately ignoring).
 
 ## Step 2 — Map source columns onto SKU.io fields
 
@@ -82,6 +101,14 @@ Mapping rules:
   Never fabricate a barcode or guess a price.
 - **Units.** Coerce weight/dimension units to the allowed values; if the source uses something
   else (e.g. `lbs`, `inches`), normalize to `lb` / `in`.
+- **Referenced suppliers must already exist.** `brand_name` auto-creates a brand, but a
+  `suppliers[].supplier_name` must already be a supplier in SKU.io or the create returns `422`.
+  If you're recording a supplier (with its supplier SKU and wholesale price), create that supplier
+  first — via Suppliers settings or the suppliers API (needs the `suppliers:write` scope) — then
+  reference it by name.
+- **Hold out rows you can't complete.** If a row is missing a required field — no real `sku`/
+  identifier — don't fabricate one. Set it aside and list it in the final report for the user to
+  resolve, and create everything else.
 
 ## Step 3 — De-duplicate against the existing catalog
 
@@ -152,11 +179,13 @@ Loop rules:
   create dupes if you generated new SKUs. Resolve existing products up front.
 - **Confirm before bulk writes.** Never mass-create without showing the user the plan first.
 - **Don't invent data.** Blank beats wrong. Flag anything you inferred.
-- **Variants / matrix products.** If the source has variants (size/color of one product), that's a
-  `matrix` parent with variant children carrying attributes — more involved than a flat import.
-  For a first pass, either create them as separate `standard` products (if that's acceptable) or
-  surface the variant structure to the user and confirm the approach before proceeding. Don't
-  silently flatten variants into unrelated products.
+- **Variants / matrix products.** If the source lists variants (size/colour of one product), you
+  have two workable options: (a) import each variant as its own `standard` product and record the
+  differentiator (size, colour) as an `attributes[]` entry — clean and fast when every variant
+  already has its own SKU/barcode, as most order forms do; or (b) build a `matrix` parent with
+  variant children carrying attributes — richer but more involved. Default to (a); use (b) only
+  when the user wants a single parent product. Either way, don't silently flatten variants into
+  unrelated products.
 - **Large catalogs.** For very large files, SKU.io also has a UI-oriented bulk CSV import
   (`POST /api/products/import/preview` then `POST /api/products/import`, permission
   `products.import`) that uploads a file and a column mapping. The per-product API path above is
