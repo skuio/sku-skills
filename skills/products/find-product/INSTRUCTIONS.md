@@ -6,7 +6,7 @@ its `id`, `sku`, name, and details — so downstream skills have an unambiguous 
 | You have… | Call | Why |
 | --- | --- | --- |
 | An exact SKU | `GET /api/products/by-sku?sku=WIDGET-BLUE-01` | Direct, single result |
-| A scanned barcode (UPC/EAN/GTIN) | `GET /api/products/barcode-lookup?barcode=0123456789012` | Resolves the barcode to its product |
+| A scanned barcode (UPC/EAN/GTIN) | `GET /api/products/barcode-lookup?code=0123456789012` | Resolves the barcode to its product (param is `code`) |
 | A partial name or SKU | `GET /api/products/search?query=blue widget` | Fuzzy, may return several matches |
 | A numeric product id | `GET /api/products/{id}` | Full record when you already have the id |
 

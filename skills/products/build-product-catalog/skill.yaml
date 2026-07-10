@@ -35,11 +35,11 @@ api:
       path: /api/products/barcode-lookup
       summary: Check whether a barcode (UPC/EAN/GTIN) already maps to a product.
       parameters:
-        - name: barcode
+        - name: code
           in: query
           type: string
           required: true
-          description: The barcode to check.
+          description: The barcode to check (query param is named "code").
           example: "0123456789012"
     - id: create-product
       method: POST

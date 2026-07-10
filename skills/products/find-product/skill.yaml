@@ -40,11 +40,11 @@ api:
       path: /api/products/barcode-lookup
       summary: Resolve a scanned barcode (UPC/EAN/GTIN) to a product.
       parameters:
-        - name: barcode
+        - name: code
           in: query
           type: string
           required: true
-          description: The scanned barcode value.
+          description: The scanned barcode value (query param is named "code").
           example: "0123456789012"
     - id: get-product
       method: GET

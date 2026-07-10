@@ -52,6 +52,11 @@ Map your normalized columns to the create-product body. Fields:
 | `suppliers[]` | Optional | Each `{ supplier_id or supplier_name, is_default?, supplier_sku?, leadtime?, minimum_order_quantity? }`. |
 | `pricing[]` | Optional | Tiered pricing: `{ product_pricing_tier_id or product_pricing_tier_name, price }`. |
 
+> **Note on `default_price`:** it seeds the account's **default pricing tier** (often named
+> "Retail") as that tier's price. The value is stored as a tier price, so it may come back `null`
+> in the `default_price` field of a `by-sku` response even though it saved correctly — verify via
+> the product's pricing if you need to confirm. `unit_cost` is a direct column and echoes back.
+
 Mapping rules:
 
 - **Clean numbers.** Strip currency symbols, thousands separators, and units before sending
@@ -68,7 +73,7 @@ Mapping rules:
 Before creating anything, check what's already there so a re-run doesn't create duplicates:
 
 - For each mapped `sku`: `GET /api/products/by-sku?sku=...` → a `200` match means it already exists.
-- If the row has a barcode: `GET /api/products/barcode-lookup?barcode=...`.
+- If the row has a barcode: `GET /api/products/barcode-lookup?code=...` (the query param is `code`).
 
 Decide per row: **create** (no match) or **skip** (already exists). Updating existing products is
 out of scope for this skill — report skips so the user can decide. (For richer lookups, the
