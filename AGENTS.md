@@ -10,6 +10,25 @@ A library of e-commerce agent skills for the [SKU.io](https://developer.sku.io) 
 authored **once** in a canonical format and compiled to Claude / OpenAI / Gemini outputs. Source of
 truth is `skills/`; `dist/` is generated and **committed** — **never edit `dist/` by hand; rebuild it.**
 
+## You're probably here to improve a skill
+
+The most common reason an agent lands in this repo: you were **using** one of these skills and it
+fell short — a missing step, a wrong endpoint, a case it didn't cover. That's exactly the
+contribution we want. Don't just patch around it in your own project — fix the skill here so the
+next agent benefits, then open a PR for review.
+
+- **Maintainer (write access):** branch, edit, `npm run build`, PR — see the checklist below.
+- **External contributor:** **fork** the repo, push a branch to your fork, and open a PR against
+  `skuio/sku-skills:main`. With the GitHub CLI:
+
+  ```bash
+  gh repo fork skuio/sku-skills --clone && cd sku-skills
+  # …make the change + npm run build + commit…
+  gh pr create --repo skuio/sku-skills --title "improve <skill>: <what>" --body "<the gap + the fix>"
+  ```
+
+Everything below applies either way.
+
 ## Golden rules
 
 1. **Edit canonical source only** — `skills/<domain>/<name>/{skill.yaml,INSTRUCTIONS.md}` and

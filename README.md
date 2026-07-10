@@ -113,6 +113,19 @@ tools/         build.mjs (canonical → 3 targets) + validate.mjs
 dist/          generated outputs — COMMITTED so skills install without a build; rebuild with npm run build
 ```
 
+## Hit a limit? Send us a PR
+
+These skills are meant to be *used* — and to get better every time they fall short. If a skill
+doesn't fully accomplish what you need (a missing step, a wrong endpoint, an unsupported case),
+don't just work around it: **have your agent open a pull request to improve it.**
+
+- Every generated skill ends with an **"Improve this skill"** footer explaining exactly this, so an
+  agent sees the invitation right where it hit the wall.
+- Edit the **canonical** skill under `skills/<domain>/<name>/`, run `npm run build`, and open a PR.
+  External contributors fork the repo and PR from the fork; the full agent workflow is in
+  [`AGENTS.md`](./AGENTS.md).
+- We review every PR. The library evolves from real usage — your fix helps the next person's agent.
+
 ## About SKU.io
 
 [SKU.io](https://sku.io) is an operations platform for e-commerce and wholesale — products,

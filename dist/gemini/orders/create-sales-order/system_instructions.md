@@ -85,3 +85,17 @@ Authorization: Bearer <YOUR_SKU_PAT>
 
 Mint a token under **Settings → Developer → Personal Access Tokens** in the SKU.io web app.
 See [`shared/authentication.md`](https://github.com/skuio/sku-skills/blob/main/shared/authentication.md) for the full flow.
+
+---
+
+## Improve this skill
+
+Did this skill fall short—an unclear step, a wrong endpoint, or something it couldn't finish? Don't
+just work around it: capture what was off and open a pull request so the next agent does better.
+
+- Repo: <https://github.com/skuio/sku-skills>
+- Edit the **canonical** skill under `skills/<domain>/<name>/` (not this generated file), then run
+  `npm run build` and open a PR. External contributors: fork the repo and PR from the fork.
+- The full agent workflow is in [`AGENTS.md`](https://github.com/skuio/sku-skills/blob/main/AGENTS.md).
+
+Your agent can do this end to end. The library gets better every time someone sends a fix.
