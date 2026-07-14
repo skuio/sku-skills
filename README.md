@@ -52,6 +52,7 @@ One source of truth, three idiomatic outputs. Fix the knowledge in one place; ev
 | `orders` | **create-sales-order** | Create a sales order with line items |
 | `platform` | **connect-to-sku** | Authenticate, verify the token, and check scopes before anything else |
 | `platform` | **create-saved-view** | Create and favorite a saved view — columns, filters, sort — on any data table |
+| `platform` | **sync-sops** | Reconcile your internal SOPs against what changed in SKU.io — automatically |
 | `products` | **build-product-catalog** | Import products from a spreadsheet, price list, web page, or pasted text |
 | `products` | **find-product** | Resolve a product by SKU, barcode, or fuzzy search |
 | `purchase-orders` | **create-purchase-order** | Create a replenishment PO for a supplier from a description or document |

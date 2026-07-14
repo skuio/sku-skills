@@ -1,0 +1,13 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "verify_connection",
+      "description": "Confirm the SKU.io connection and identify the tenant/account so SOPs can be grounded in the customer's real setup (their warehouses, custom fields, pricing tiers). OPTIONAL — reading the public documentation and changelog (docs.sku.io) needs no token; only account-specific grounding does. (GET /api/auth/profile)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  }
+]

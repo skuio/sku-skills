@@ -1,0 +1,27 @@
+name: sync-sops
+title: Sync your SOPs with SKU.io changes
+domain: platform
+version: 1.0.0
+description: >-
+  Keep your internal Standard Operating Procedures (SOPs) in step with SKU.io. SKU.io ships often —
+  menus move, workflows change, features are added — which quietly breaks the step-by-step procedures
+  your team relies on. Give this skill your SOP content plus the date you last reviewed it: it reads
+  SKU.io's public changelog and documentation, finds the changes that affect your procedures, and
+  rewrites the exact stale steps — or drafts a brand-new SOP from the current docs, in your own
+  format. Use it whenever internal docs/SOPs may be out of date, or on a schedule to catch drift.
+tagline: Reconcile your internal SOPs against what changed in SKU.io — automatically
+tags: [sops, documentation, changelog, change-management, onboarding]
+maintainers: [kmizzi]
+auth:
+  scopes: [settings:read]
+api:
+  base_url: https://{tenant}.sku.io
+  operations:
+    - id: verify-connection
+      method: GET
+      path: /api/auth/profile
+      summary: >-
+        Confirm the SKU.io connection and identify the tenant/account so SOPs can be grounded in the
+        customer's real setup (their warehouses, custom fields, pricing tiers). OPTIONAL — reading the
+        public documentation and changelog (docs.sku.io) needs no token; only account-specific
+        grounding does.

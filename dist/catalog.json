@@ -1,6 +1,6 @@
 {
   "generatedFrom": "skills/",
-  "count": 7,
+  "count": 8,
   "skills": [
     {
       "name": "adjust-inventory",
@@ -98,6 +98,30 @@
         "claude": "dist/claude/platform/create-saved-view/SKILL.md",
         "openai": "dist/openai/platform/create-saved-view/",
         "gemini": "dist/gemini/platform/create-saved-view/"
+      }
+    },
+    {
+      "name": "sync-sops",
+      "domain": "platform",
+      "title": "Sync your SOPs with SKU.io changes",
+      "version": "1.0.0",
+      "description": "Keep your internal Standard Operating Procedures (SOPs) in step with SKU.io. SKU.io ships often — menus move, workflows change, features are added — which quietly breaks the step-by-step procedures your team relies on. Give this skill your SOP content plus the date you last reviewed it: it reads SKU.io's public changelog and documentation, finds the changes that affect your procedures, and rewrites the exact stale steps — or drafts a brand-new SOP from the current docs, in your own format. Use it whenever internal docs/SOPs may be out of date, or on a schedule to catch drift.",
+      "tagline": "Reconcile your internal SOPs against what changed in SKU.io — automatically",
+      "scopes": [
+        "settings:read"
+      ],
+      "operations": 1,
+      "tags": [
+        "sops",
+        "documentation",
+        "changelog",
+        "change-management",
+        "onboarding"
+      ],
+      "outputs": {
+        "claude": "dist/claude/platform/sync-sops/SKILL.md",
+        "openai": "dist/openai/platform/sync-sops/",
+        "gemini": "dist/gemini/platform/sync-sops/"
       }
     },
     {
