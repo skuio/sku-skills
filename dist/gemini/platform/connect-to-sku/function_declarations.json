@@ -1,16 +1,8 @@
 {
   "functionDeclarations": [
     {
-      "name": "get_profile",
-      "description": "Return the authenticated user and account. Cheapest way to verify a token works. (GET /api/auth/profile)",
-      "parameters": {
-        "type": "OBJECT",
-        "properties": {}
-      }
-    },
-    {
-      "name": "list_personal_access_tokens",
-      "description": "List the account's Personal Access Tokens and the scopes granted to each. (GET /api/personal-access-tokens)",
+      "name": "get_me",
+      "description": "Return the authenticated user and the tenant the token resolved to (tenant_id / tenant_name). Cheapest way to verify a token works and that you are on the right tenant. (GET /api/me)",
       "parameters": {
         "type": "OBJECT",
         "properties": {}

@@ -50,7 +50,7 @@ One source of truth, three idiomatic outputs. Fix the knowledge in one place; ev
 | --- | --- | --- |
 | `inventory` | **adjust-inventory** | Increase / decrease / set on-hand stock at a warehouse |
 | `orders` | **create-sales-order** | Create a sales order with line items |
-| `platform` | **connect-to-sku** | Authenticate, verify the token, and check scopes before anything else |
+| `platform` | **connect-to-sku** | Establish the tenant, authenticate, and verify the token before anything else |
 | `platform` | **create-saved-view** | Create and favorite a saved view — columns, filters, sort — on any data table |
 | `platform` | **sync-sops** | Reconcile your internal SOPs against what changed in SKU.io — automatically |
 | `products` | **build-product-catalog** | Import products from a spreadsheet, price list, web page, or pasted text |

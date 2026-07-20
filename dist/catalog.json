@@ -56,13 +56,13 @@
       "name": "connect-to-sku",
       "domain": "platform",
       "title": "Connect to SKU.io",
-      "version": "1.0.0",
-      "description": "The entry point for any SKU.io task. Establish an authenticated connection: point at the correct tenant base URL, send a Personal Access Token as a Bearer token, verify it works with a cheap identity call, and inspect the token's scopes so you know what you are allowed to do. Use this first whenever you are about to call the SKU.io API.",
-      "tagline": "Authenticate, verify the token, and check scopes before anything else",
+      "version": "1.1.0",
+      "description": "The entry point for any SKU.io task. First establish which tenant you are working in (`https://{tenant}.sku.io`) — ask for it if it was not given — then authenticate with a Personal Access Token sent as a Bearer token and verify it with a cheap identity call. Use this first whenever you are about to call the SKU.io API.",
+      "tagline": "Establish the tenant, authenticate, and verify the token before anything else",
       "scopes": [
         "settings:read"
       ],
-      "operations": 2,
+      "operations": 1,
       "tags": [
         "auth",
         "setup",
