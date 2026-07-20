@@ -1,13 +1,13 @@
 name: connect-to-sku
 title: Connect to SKU.io
 domain: platform
-version: 1.0.0
+version: 1.1.0
 description: >-
-  The entry point for any SKU.io task. Establish an authenticated connection: point at the
-  correct tenant base URL, send a Personal Access Token as a Bearer token, verify it works with
-  a cheap identity call, and inspect the token's scopes so you know what you are allowed to do.
-  Use this first whenever you are about to call the SKU.io API.
-tagline: Authenticate, verify the token, and check scopes before anything else
+  The entry point for any SKU.io task. First establish which tenant you are working in
+  (`https://{tenant}.sku.io`) — ask for it if it was not given — then authenticate with a Personal
+  Access Token sent as a Bearer token and verify it with a cheap identity call. Use this first
+  whenever you are about to call the SKU.io API.
+tagline: Establish the tenant, authenticate, and verify the token before anything else
 tags: [auth, setup, getting-started, personal-access-token]
 maintainers: [kmizzi]
 auth:
@@ -15,11 +15,9 @@ auth:
 api:
   base_url: https://{tenant}.sku.io
   operations:
-    - id: get-profile
+    - id: get-me
       method: GET
-      path: /api/auth/profile
-      summary: Return the authenticated user and account. Cheapest way to verify a token works.
-    - id: list-personal-access-tokens
-      method: GET
-      path: /api/personal-access-tokens
-      summary: List the account's Personal Access Tokens and the scopes granted to each.
+      path: /api/me
+      summary: >-
+        Return the authenticated user and the tenant the token resolved to (tenant_id /
+        tenant_name). Cheapest way to verify a token works and that you are on the right tenant.

@@ -6,7 +6,14 @@ the unit of programmatic access.
 
 ## 1. Mint a token
 
-In the SKU.io web app: **Settings → Developer → Personal Access Tokens → Create token**.
+In the SKU.io web app, go straight to the Personal Access Tokens page and **Create token** — the
+direct link (once you know your tenant) is:
+
+```
+https://{tenant}.sku.io/v2/settings/developer/personal-access-tokens
+```
+
+(equivalently, **Settings → Developer → Personal Access Tokens → Create token**).
 
 When creating a token you choose:
 
@@ -60,3 +67,4 @@ to resolve line items).
 | `401 Unauthenticated` | Missing/invalid/expired token | Re-check the `Authorization` header and token validity |
 | `403 Token is missing the required scope` | Token lacks the scope for this verb+resource | Recreate the token with the scope named in `required_scope` |
 | `404` on every path | Wrong tenant subdomain | Confirm the `{tenant}` in the base URL |
+| `403` "access denied" / HTML from Cloudflare | Your HTTP client's User-Agent is blocked as a bot | Send an ordinary User-Agent (curl's default is fine), not a bare library default like `python-urllib` |
