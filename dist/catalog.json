@@ -1,6 +1,6 @@
 {
   "generatedFrom": "skills/",
-  "count": 8,
+  "count": 10,
   "skills": [
     {
       "name": "adjust-inventory",
@@ -21,6 +21,7 @@
         "stock-take",
         "shrinkage"
       ],
+      "pages": [],
       "outputs": {
         "claude": "dist/claude/inventory/adjust-inventory/SKILL.md",
         "openai": "dist/openai/inventory/adjust-inventory/",
@@ -46,6 +47,7 @@
         "checkout",
         "fulfilment"
       ],
+      "pages": [],
       "outputs": {
         "claude": "dist/claude/orders/create-sales-order/SKILL.md",
         "openai": "dist/openai/orders/create-sales-order/",
@@ -69,6 +71,7 @@
         "getting-started",
         "personal-access-token"
       ],
+      "pages": [],
       "outputs": {
         "claude": "dist/claude/platform/connect-to-sku/SKILL.md",
         "openai": "dist/openai/platform/connect-to-sku/",
@@ -94,6 +97,7 @@
         "ui",
         "review"
       ],
+      "pages": [],
       "outputs": {
         "claude": "dist/claude/platform/create-saved-view/SKILL.md",
         "openai": "dist/openai/platform/create-saved-view/",
@@ -118,6 +122,7 @@
         "change-management",
         "onboarding"
       ],
+      "pages": [],
       "outputs": {
         "claude": "dist/claude/platform/sync-sops/SKILL.md",
         "openai": "dist/openai/platform/sync-sops/",
@@ -147,6 +152,7 @@
         "google-sheets",
         "scraping"
       ],
+      "pages": [],
       "outputs": {
         "claude": "dist/claude/products/build-product-catalog/SKILL.md",
         "openai": "dist/openai/products/build-product-catalog/",
@@ -172,6 +178,7 @@
         "sku",
         "barcode"
       ],
+      "pages": [],
       "outputs": {
         "claude": "dist/claude/products/find-product/SKILL.md",
         "openai": "dist/openai/products/find-product/",
@@ -201,10 +208,71 @@
         "supplier",
         "create"
       ],
+      "pages": [],
       "outputs": {
         "claude": "dist/claude/purchase-orders/create-purchase-order/SKILL.md",
         "openai": "dist/openai/purchase-orders/create-purchase-order/",
         "gemini": "dist/gemini/purchase-orders/create-purchase-order/"
+      }
+    },
+    {
+      "name": "edit-packing-slip-template",
+      "domain": "settings",
+      "title": "Edit a Packing-Slip PDF Template",
+      "version": "1.0.0",
+      "description": "Edit a SKU.io packing-slip PDF template with the packing-specific rules that keep the footer banner, logo, and per-store layouts consistent. Use this when changing a packing slip's footer banner or branding, or when the banner renders inconsistently — present on some orders or stores, missing or clipped on others. Enforces the exact footer-banner structure the PDF export requires to pin a banner to every page, the banner aspect ratio, cross-store consistency, and a multi-order visual QA pass against real orders. Extends edit-pdf-template — do the base edit/validate/save loop there; this adds the packing rules.",
+      "tagline": "Edit packing-slip templates without breaking the footer banner",
+      "scopes": [
+        "settings:read",
+        "settings:write"
+      ],
+      "operations": 11,
+      "tags": [
+        "pdf-templates",
+        "packing-slip",
+        "footer-banner",
+        "warehouse",
+        "branding",
+        "documents",
+        "settings"
+      ],
+      "pages": [
+        "/settings/pdf-templates/packing"
+      ],
+      "outputs": {
+        "claude": "dist/claude/settings/edit-packing-slip-template/SKILL.md",
+        "openai": "dist/openai/settings/edit-packing-slip-template/",
+        "gemini": "dist/gemini/settings/edit-packing-slip-template/"
+      }
+    },
+    {
+      "name": "edit-pdf-template",
+      "domain": "settings",
+      "title": "Edit a PDF Template",
+      "version": "1.0.0",
+      "description": "Edit any SKU.io PDF document template — packing slips, quotes, sales orders, pick lists, purchase orders, and vendor/sales credits — by editing its HTML content directly, then validating, previewing against real and mock documents, and visually QA-ing the rendered PDF before saving. Use this to change branding, layout, a logo or footer banner, or which fields a document shows. Runs a deterministic read → edit → validate → preview → verify → save loop; every save snapshots a version you can restore, so edits are reversible. Prefer this over the in-app AI builder, which is the fallback for users without an agent. For packing slips, load edit-packing-slip-template too.",
+      "tagline": "Edit, preview, and visually QA any PDF document template — safely",
+      "scopes": [
+        "settings:read",
+        "settings:write"
+      ],
+      "operations": 14,
+      "tags": [
+        "pdf-templates",
+        "documents",
+        "packing-slip",
+        "branding",
+        "preview",
+        "settings",
+        "templates"
+      ],
+      "pages": [
+        "/settings/pdf-templates"
+      ],
+      "outputs": {
+        "claude": "dist/claude/settings/edit-pdf-template/SKILL.md",
+        "openai": "dist/openai/settings/edit-pdf-template/",
+        "gemini": "dist/gemini/settings/edit-pdf-template/"
       }
     }
   ]

@@ -27,6 +27,8 @@ description: >-                    # 40–1024 chars. Model-facing "when to use 
   for a customer…
 tags: [orders, sales-order, create]
 maintainers: [your-github-handle]
+pages:                             # optional; app routes where this skill is contextually relevant
+  - /orders/sales-orders           # prefix match — also covers /orders/sales-orders/{id}
 
 auth:
   scopes: [orders:write, products:read]   # PAT scopes, "{resource}:{read|write}"
@@ -61,6 +63,15 @@ api:
 - **`operations`** should be the *real* endpoints from <https://developer.sku.io>. Keep paths and
   fields accurate — an agent will call them verbatim. Prefer the exact path the API exposes (some
   resources live under `/api/v2/…`).
+- **`pages`** (optional) — the SPA route patterns where this skill is contextually relevant. The
+  SKU.io web app matches the **active page's path** against these and surfaces the skill's action
+  there (the contextual skill icon). Write each **without** the app's `/v2` base prefix; matching is
+  segment-by-segment: a bare path is a **prefix** match (also matches pages nested under it), `*`
+  matches any single segment, and a trailing `$` forces an exact segment-count match. E.g.
+  `/settings/pdf-templates` covers the list page and every template editor under it; `/products$`
+  matches only the products list. These end up in `dist/catalog.json` (the machine-readable index the
+  app reads); they don't change the model outputs. Omit for skills with no natural home page
+  (auth/meta skills like `connect-to-sku`).
 - **`parameters`** — mark `required: true` only when the API rejects the request without it. Path
   params are always required. Body params become the request JSON; query/path/header map to the
   URL and headers.

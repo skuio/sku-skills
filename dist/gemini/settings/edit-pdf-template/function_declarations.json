@@ -1,0 +1,262 @@
+{
+  "functionDeclarations": [
+    {
+      "name": "list_pdf_templates",
+      "description": "List all PDF templates (global templates and per-store overrides). No server-side type filter — read the `type` field and filter client-side. Returns each template's `content`. (GET /api/pdf-templates)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_pdf_template",
+      "description": "Get one template, including its `content` HTML, `updated_at` (optimistic-lock token), `store_id`, and `schema`/`variables_tree` (the variables and assets the template may use). (GET /api/pdf-templates/{id})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "id": {
+            "type": "INTEGER",
+            "description": "PdfTemplate id."
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "validate_pdf_template",
+      "description": "Validate draft `content` WITHOUT rendering. Returns { ok, errors[], warnings[] }. Run this after every edit and fix all errors before previewing or saving. (POST /api/pdf-templates/{id}/validate)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "id": {
+            "type": "INTEGER",
+            "description": "PdfTemplate id."
+          },
+          "content": {
+            "type": "STRING",
+            "description": "The draft HTML/Mustache template source to validate."
+          }
+        },
+        "required": [
+          "id",
+          "content"
+        ]
+      }
+    },
+    {
+      "name": "preview_pdf_template",
+      "description": "Render draft `content` (unsaved) to a preview. format=pdf (default) returns { pdf: <base64>, type, rendered_with }; format=html returns { html: <string> }. For the `packing` type only, pass sales_order_id to render against a real order's data. (POST /api/pdf-templates/{id}/preview)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "id": {
+            "type": "INTEGER",
+            "description": "PdfTemplate id."
+          },
+          "content": {
+            "type": "STRING",
+            "description": "The draft HTML to render (renders THIS, not the stored content)."
+          },
+          "format": {
+            "type": "STRING",
+            "description": "pdf (default, base64 PDF) or html (interactive HTML string)."
+          },
+          "sales_order_id": {
+            "type": "INTEGER",
+            "description": "Render against a real sales order's data. Only honoured for the `packing` type; ignored (mock data used) for every other type."
+          }
+        },
+        "required": [
+          "id",
+          "content"
+        ]
+      }
+    },
+    {
+      "name": "search_sales_orders",
+      "description": "Find up to 20 real sales orders (newest first) to preview a packing slip against. Use this to build a QA matrix of different document shapes (short, multi-page, per-store, …). (GET /api/pdf-templates/search-sales-orders)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "search": {
+            "type": "STRING",
+            "description": "Match on sales order number (LIKE)."
+          },
+          "store_id": {
+            "type": "INTEGER",
+            "description": "Restrict to one store — use to get an order per store for cross-store QA."
+          }
+        }
+      }
+    },
+    {
+      "name": "preview_with_sales_order",
+      "description": "Render the store's EFFECTIVE saved packing-slip template against a real order (base64 PDF). Resolves the right template by the order's store. Packing slips only. (POST /api/pdf-templates/preview-sales-order)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "sales_order_id": {
+            "type": "INTEGER",
+            "description": "The sales order id to render."
+          }
+        },
+        "required": [
+          "sales_order_id"
+        ]
+      }
+    },
+    {
+      "name": "update_pdf_template",
+      "description": "Save new `content` for a template. Only `content` is writable. Pass back the `updated_at` you read from get-pdf-template for stale-write protection. Snapshots the prior version. Returns 422 if content fails validation. (PUT /api/pdf-templates/{id})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "id": {
+            "type": "INTEGER",
+            "description": "PdfTemplate id."
+          },
+          "content": {
+            "type": "STRING",
+            "description": "The new HTML/Mustache template source."
+          },
+          "updated_at": {
+            "type": "STRING",
+            "description": "Optimistic-lock guard — the `updated_at` value from get-pdf-template. If it no longer matches (someone else saved), the write is rejected so you don't clobber their change."
+          }
+        },
+        "required": [
+          "id",
+          "content"
+        ]
+      }
+    },
+    {
+      "name": "list_pdf_template_versions",
+      "description": "List saved versions of a template (paginated, newest first) — each with its historical `content`, `source`, and `created_at`. Use to find a good version to restore. (GET /api/pdf-templates/{id}/versions)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "id": {
+            "type": "INTEGER",
+            "description": "PdfTemplate id."
+          },
+          "page": {
+            "type": "INTEGER",
+            "description": "Page number (default 1)."
+          },
+          "per_page": {
+            "type": "INTEGER",
+            "description": "Page size (default 10)."
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "restore_pdf_template_version",
+      "description": "Roll a template back to a prior version's content (snapshots the current one first). The safety net if an edit goes wrong. (POST /api/pdf-templates/{id}/versions/{versionId}/restore)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "id": {
+            "type": "INTEGER",
+            "description": "PdfTemplate id."
+          },
+          "versionId": {
+            "type": "INTEGER",
+            "description": "The version id to restore."
+          }
+        },
+        "required": [
+          "id",
+          "versionId"
+        ]
+      }
+    },
+    {
+      "name": "reset_pdf_template",
+      "description": "Reset a template to SKU.io's stock default content (snapshots the prior version). (POST /api/pdf-templates/{id}/reset)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "id": {
+            "type": "INTEGER",
+            "description": "PdfTemplate id."
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "list_store_overrides",
+      "description": "List every per-store override template for a document type. Use to audit that all stores' templates are consistent before/after an edit. (GET /api/pdf-templates/{type}/store-overrides)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "type": {
+            "type": "STRING",
+            "description": "Template type value, e.g. packing, quote, sales_order, purchase_order."
+          }
+        },
+        "required": [
+          "type"
+        ]
+      }
+    },
+    {
+      "name": "create_store_override",
+      "description": "Clone a global template into a store-specific override so one store can differ. The override then has its own id/content you edit independently. (POST /api/pdf-templates/{id}/store-override)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "id": {
+            "type": "INTEGER",
+            "description": "The GLOBAL template id to clone."
+          },
+          "store_id": {
+            "type": "INTEGER",
+            "description": "The store the override is for."
+          }
+        },
+        "required": [
+          "id",
+          "store_id"
+        ]
+      }
+    },
+    {
+      "name": "list_pdf_template_assets",
+      "description": "List uploaded template image assets (logos, footer banners). Each returns its `slug`, `token` ({{{asset.<slug>}}}), `mime_type`, and `width`/`height`. (GET /api/pdf-template-assets)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "upload_pdf_template_asset",
+      "description": "Upload an image (multipart/form-data) to use in a template. Returns the `slug` and the ready-to-paste `token`. Reference it in `content` as {{{asset.<slug>}}}. (POST /api/pdf-template-assets)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "image": {
+            "type": "STRING",
+            "description": "The image file (multipart/form-data field `image`). mimes: jpg, jpeg, png, gif, webp; max 5 MB. Prefer PNG/JPG — webp can drop out of the exported PDF."
+          },
+          "name": {
+            "type": "STRING",
+            "description": "Display name (max 120 chars); the slug is derived from it."
+          }
+        },
+        "required": [
+          "image"
+        ]
+      }
+    }
+  ]
+}

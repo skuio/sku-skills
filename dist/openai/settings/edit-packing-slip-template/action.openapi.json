@@ -1,0 +1,402 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SKU.io — Edit a Packing-Slip PDF Template",
+    "description": "Edit a SKU.io packing-slip PDF template with the packing-specific rules that keep the footer banner, logo, and per-store layouts consistent. Use this when changing a packing slip's footer banner or branding, or when the banner renders inconsistently — present on some orders or stores, missing or clipped on others. Enforces the exact footer-banner structure the PDF export requires to pin a banner to every page, the banner aspect ratio, cross-store consistency, and a multi-order visual QA pass against real orders. Extends edit-pdf-template — do the base edit/validate/save loop there; this adds the packing rules.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{tenant}.sku.io",
+      "variables": {
+        "tenant": {
+          "default": "app",
+          "description": "Your SKU.io account subdomain."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/pdf-templates": {
+      "get": {
+        "operationId": "list_pdf_templates",
+        "summary": "List all templates; filter client-side to type=packing to find the global packing template and its per-store overrides (store_id != null).",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/pdf-templates/{type}/store-overrides": {
+      "get": {
+        "operationId": "list_store_overrides",
+        "summary": "List every per-store packing override so you can audit them for consistency.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "description": "Use \"packing\".",
+            "schema": {
+              "type": "string",
+              "description": "Use \"packing\".",
+              "example": "packing"
+            }
+          }
+        ]
+      }
+    },
+    "/api/pdf-templates/{id}": {
+      "get": {
+        "operationId": "get_pdf_template",
+        "summary": "Get a packing template's content, updated_at (optimistic lock), store_id, and schema.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "PdfTemplate id.",
+            "schema": {
+              "type": "integer",
+              "description": "PdfTemplate id."
+            }
+          }
+        ]
+      },
+      "put": {
+        "operationId": "update_pdf_template",
+        "summary": "Save new packing content. Round-trip updated_at. Snapshots a restorable version.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "PdfTemplate id.",
+            "schema": {
+              "type": "integer",
+              "description": "PdfTemplate id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "New HTML template source."
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "description": "Optimistic-lock token from get-pdf-template."
+                  }
+                },
+                "required": [
+                  "content"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pdf-template-assets": {
+      "post": {
+        "operationId": "upload_pdf_template_asset",
+        "summary": "Upload the footer-banner image (multipart field `image`). Returns slug + {{{asset.<slug>}}} token and the image width/height. Prefer PNG/JPG; keep the banner ~6.94:1 (e.g. 1734x250).",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "description": "Image file (multipart/form-data). mimes: jpg,jpeg,png,gif,webp; max 5 MB."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Display name; slug is derived from it."
+                  }
+                },
+                "required": [
+                  "image"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pdf-templates/{id}/validate": {
+      "post": {
+        "operationId": "validate_pdf_template",
+        "summary": "Validate draft content ({ ok, errors, warnings }) before rendering.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "PdfTemplate id.",
+            "schema": {
+              "type": "integer",
+              "description": "PdfTemplate id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "Draft HTML to validate."
+                  }
+                },
+                "required": [
+                  "content"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pdf-templates/search-sales-orders": {
+      "get": {
+        "operationId": "search_sales_orders",
+        "summary": "Find real orders (max 20, newest first) for the QA matrix. Filter by store_id to get one order per store for cross-store checks.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "description": "Match on sales order number.",
+            "schema": {
+              "type": "string",
+              "description": "Match on sales order number."
+            }
+          },
+          {
+            "name": "store_id",
+            "in": "query",
+            "required": false,
+            "description": "Restrict to one store.",
+            "schema": {
+              "type": "integer",
+              "description": "Restrict to one store."
+            }
+          }
+        ]
+      }
+    },
+    "/api/pdf-templates/{id}/preview": {
+      "post": {
+        "operationId": "preview_pdf_template",
+        "summary": "Render draft packing content to a base64 PDF. Pass sales_order_id to render against a real order (honoured for packing). Always QA format=pdf (the real export), not just format=html.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "PdfTemplate id.",
+            "schema": {
+              "type": "integer",
+              "description": "PdfTemplate id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "Draft HTML to render."
+                  },
+                  "sales_order_id": {
+                    "type": "integer",
+                    "description": "Real order to render against (packing type honours this)."
+                  },
+                  "format": {
+                    "type": "string",
+                    "description": "pdf (default; the real export engine) or html (sanity check only).",
+                    "example": "pdf"
+                  }
+                },
+                "required": [
+                  "content"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pdf-templates/preview-sales-order": {
+      "post": {
+        "operationId": "preview_with_sales_order",
+        "summary": "Render the store's effective SAVED packing template against a real order (base64 PDF).",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sales_order_id": {
+                    "type": "integer",
+                    "description": "The sales order id."
+                  }
+                },
+                "required": [
+                  "sales_order_id"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pdf-templates/{id}/versions/{versionId}/restore": {
+      "post": {
+        "operationId": "restore_pdf_template_version",
+        "summary": "Roll the packing template back to a prior version if an edit ships wrong.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "PdfTemplate id.",
+            "schema": {
+              "type": "integer",
+              "description": "PdfTemplate id."
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "description": "Version id to restore.",
+            "schema": {
+              "type": "integer",
+              "description": "Version id to restore."
+            }
+          }
+        ]
+      }
+    },
+    "/api/pdf-templates/{id}/store-override": {
+      "post": {
+        "operationId": "create_store_override",
+        "summary": "Clone the global packing template into a store-specific override to edit separately.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Global packing template id.",
+            "schema": {
+              "type": "integer",
+              "description": "Global packing template id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "store_id": {
+                    "type": "integer",
+                    "description": "Store the override is for."
+                  }
+                },
+                "required": [
+                  "store_id"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "SKU.io Personal Access Token."
+      }
+    }
+  }
+}
