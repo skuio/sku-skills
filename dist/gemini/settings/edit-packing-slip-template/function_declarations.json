@@ -1,0 +1,214 @@
+{
+  "functionDeclarations": [
+    {
+      "name": "list_pdf_templates",
+      "description": "List all templates; filter client-side to type=packing to find the global packing template and its per-store overrides (store_id != null). (GET /api/pdf-templates)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "list_store_overrides",
+      "description": "List every per-store packing override so you can audit them for consistency. (GET /api/pdf-templates/{type}/store-overrides)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "type": {
+            "type": "STRING",
+            "description": "Use \"packing\"."
+          }
+        },
+        "required": [
+          "type"
+        ]
+      }
+    },
+    {
+      "name": "get_pdf_template",
+      "description": "Get a packing template's content, updated_at (optimistic lock), store_id, and schema. (GET /api/pdf-templates/{id})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "id": {
+            "type": "INTEGER",
+            "description": "PdfTemplate id."
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "upload_pdf_template_asset",
+      "description": "Upload the footer-banner image (multipart field `image`). Returns slug + {{{asset.<slug>}}} token and the image width/height. Prefer PNG/JPG; keep the banner ~6.94:1 (e.g. 1734x250). (POST /api/pdf-template-assets)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "image": {
+            "type": "STRING",
+            "description": "Image file (multipart/form-data). mimes: jpg,jpeg,png,gif,webp; max 5 MB."
+          },
+          "name": {
+            "type": "STRING",
+            "description": "Display name; slug is derived from it."
+          }
+        },
+        "required": [
+          "image"
+        ]
+      }
+    },
+    {
+      "name": "validate_pdf_template",
+      "description": "Validate draft content ({ ok, errors, warnings }) before rendering. (POST /api/pdf-templates/{id}/validate)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "id": {
+            "type": "INTEGER",
+            "description": "PdfTemplate id."
+          },
+          "content": {
+            "type": "STRING",
+            "description": "Draft HTML to validate."
+          }
+        },
+        "required": [
+          "id",
+          "content"
+        ]
+      }
+    },
+    {
+      "name": "search_sales_orders",
+      "description": "Find real orders (max 20, newest first) for the QA matrix. Filter by store_id to get one order per store for cross-store checks. (GET /api/pdf-templates/search-sales-orders)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "search": {
+            "type": "STRING",
+            "description": "Match on sales order number."
+          },
+          "store_id": {
+            "type": "INTEGER",
+            "description": "Restrict to one store."
+          }
+        }
+      }
+    },
+    {
+      "name": "preview_pdf_template",
+      "description": "Render draft packing content to a base64 PDF. Pass sales_order_id to render against a real order (honoured for packing). Always QA format=pdf (the real export), not just format=html. (POST /api/pdf-templates/{id}/preview)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "id": {
+            "type": "INTEGER",
+            "description": "PdfTemplate id."
+          },
+          "content": {
+            "type": "STRING",
+            "description": "Draft HTML to render."
+          },
+          "sales_order_id": {
+            "type": "INTEGER",
+            "description": "Real order to render against (packing type honours this)."
+          },
+          "format": {
+            "type": "STRING",
+            "description": "pdf (default; the real export engine) or html (sanity check only)."
+          }
+        },
+        "required": [
+          "id",
+          "content"
+        ]
+      }
+    },
+    {
+      "name": "preview_with_sales_order",
+      "description": "Render the store's effective SAVED packing template against a real order (base64 PDF). (POST /api/pdf-templates/preview-sales-order)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "sales_order_id": {
+            "type": "INTEGER",
+            "description": "The sales order id."
+          }
+        },
+        "required": [
+          "sales_order_id"
+        ]
+      }
+    },
+    {
+      "name": "update_pdf_template",
+      "description": "Save new packing content. Round-trip updated_at. Snapshots a restorable version. (PUT /api/pdf-templates/{id})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "id": {
+            "type": "INTEGER",
+            "description": "PdfTemplate id."
+          },
+          "content": {
+            "type": "STRING",
+            "description": "New HTML template source."
+          },
+          "updated_at": {
+            "type": "STRING",
+            "description": "Optimistic-lock token from get-pdf-template."
+          }
+        },
+        "required": [
+          "id",
+          "content"
+        ]
+      }
+    },
+    {
+      "name": "restore_pdf_template_version",
+      "description": "Roll the packing template back to a prior version if an edit ships wrong. (POST /api/pdf-templates/{id}/versions/{versionId}/restore)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "id": {
+            "type": "INTEGER",
+            "description": "PdfTemplate id."
+          },
+          "versionId": {
+            "type": "INTEGER",
+            "description": "Version id to restore."
+          }
+        },
+        "required": [
+          "id",
+          "versionId"
+        ]
+      }
+    },
+    {
+      "name": "create_store_override",
+      "description": "Clone the global packing template into a store-specific override to edit separately. (POST /api/pdf-templates/{id}/store-override)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "id": {
+            "type": "INTEGER",
+            "description": "Global packing template id."
+          },
+          "store_id": {
+            "type": "INTEGER",
+            "description": "Store the override is for."
+          }
+        },
+        "required": [
+          "id",
+          "store_id"
+        ]
+      }
+    }
+  ]
+}

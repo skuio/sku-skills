@@ -65,6 +65,12 @@
       "items": { "type": "string" },
       "description": "GitHub handles of people/agents responsible for the skill."
     },
+    "pages": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^/" },
+      "uniqueItems": true,
+      "description": "App route patterns where this skill is contextually relevant. The SKU.io web app matches the active page's path against these to surface the skill's action (the contextual skill icon on a page). Each entry begins with '/', is written WITHOUT the app's '/v2' base prefix, and is matched segment-by-segment: a bare path is a prefix match (it also matches pages nested under it), '*' matches any single segment, and a trailing '$' requires an exact segment-count match (no deeper nesting). Example: '/settings/pdf-templates' covers the list page and every template editor under it; '/products$' matches only the products list, not detail pages. Optional — omit for skills with no natural home page."
+    },
     "auth": {
       "type": "object",
       "additionalProperties": false,

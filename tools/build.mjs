@@ -89,6 +89,8 @@ for (const skill of skills) {
     scopes: meta.auth.scopes,
     operations: meta.api.operations.length,
     tags: meta.tags ?? [],
+    // App route globs where the SKU.io web app surfaces this skill's contextual icon.
+    pages: meta.pages ?? [],
     outputs: {
       claude: `dist/claude/${slug}/SKILL.md`,
       openai: `dist/openai/${slug}/`,

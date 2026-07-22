@@ -1,0 +1,246 @@
+name: edit-pdf-template
+title: Edit a PDF Template
+domain: settings
+version: 1.0.0
+description: >-
+  Edit any SKU.io PDF document template — packing slips, quotes, sales orders, pick lists, purchase
+  orders, and vendor/sales credits — by editing its HTML content directly, then validating,
+  previewing against real and mock documents, and visually QA-ing the rendered PDF before saving.
+  Use this to change branding, layout, a logo or footer banner, or which fields a document shows.
+  Runs a deterministic read → edit → validate → preview → verify → save loop; every save snapshots
+  a version you can restore, so edits are reversible. Prefer this over the in-app AI builder, which
+  is the fallback for users without an agent. For packing slips, load edit-packing-slip-template too.
+tagline: Edit, preview, and visually QA any PDF document template — safely
+tags: [pdf-templates, documents, packing-slip, branding, preview, settings, templates]
+maintainers: [kmizzi]
+pages:
+  - /settings/pdf-templates
+auth:
+  scopes: [settings:read, settings:write]
+api:
+  base_url: https://{tenant}.sku.io
+  operations:
+    - id: list-pdf-templates
+      method: GET
+      path: /api/pdf-templates
+      summary: >-
+        List all PDF templates (global templates and per-store overrides). No server-side type
+        filter — read the `type` field and filter client-side. Returns each template's `content`.
+    - id: get-pdf-template
+      method: GET
+      path: /api/pdf-templates/{id}
+      summary: >-
+        Get one template, including its `content` HTML, `updated_at` (optimistic-lock token),
+        `store_id`, and `schema`/`variables_tree` (the variables and assets the template may use).
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+          description: PdfTemplate id.
+    - id: validate-pdf-template
+      method: POST
+      path: /api/pdf-templates/{id}/validate
+      summary: >-
+        Validate draft `content` WITHOUT rendering. Returns { ok, errors[], warnings[] }. Run this
+        after every edit and fix all errors before previewing or saving.
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+          description: PdfTemplate id.
+        - name: content
+          in: body
+          type: string
+          required: true
+          description: The draft HTML/Mustache template source to validate.
+    - id: preview-pdf-template
+      method: POST
+      path: /api/pdf-templates/{id}/preview
+      summary: >-
+        Render draft `content` (unsaved) to a preview. format=pdf (default) returns
+        { pdf: <base64>, type, rendered_with }; format=html returns { html: <string> }. For the
+        `packing` type only, pass sales_order_id to render against a real order's data.
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+          description: PdfTemplate id.
+        - name: content
+          in: body
+          type: string
+          required: true
+          description: The draft HTML to render (renders THIS, not the stored content).
+        - name: format
+          in: body
+          type: string
+          required: false
+          description: "pdf (default, base64 PDF) or html (interactive HTML string)."
+          example: pdf
+        - name: sales_order_id
+          in: body
+          type: integer
+          required: false
+          description: >-
+            Render against a real sales order's data. Only honoured for the `packing` type; ignored
+            (mock data used) for every other type.
+    - id: search-sales-orders
+      method: GET
+      path: /api/pdf-templates/search-sales-orders
+      summary: >-
+        Find up to 20 real sales orders (newest first) to preview a packing slip against. Use this
+        to build a QA matrix of different document shapes (short, multi-page, per-store, …).
+      parameters:
+        - name: search
+          in: query
+          type: string
+          required: false
+          description: Match on sales order number (LIKE).
+        - name: store_id
+          in: query
+          type: integer
+          required: false
+          description: Restrict to one store — use to get an order per store for cross-store QA.
+    - id: preview-with-sales-order
+      method: POST
+      path: /api/pdf-templates/preview-sales-order
+      summary: >-
+        Render the store's EFFECTIVE saved packing-slip template against a real order (base64 PDF).
+        Resolves the right template by the order's store. Packing slips only.
+      parameters:
+        - name: sales_order_id
+          in: body
+          type: integer
+          required: true
+          description: The sales order id to render.
+    - id: update-pdf-template
+      method: PUT
+      path: /api/pdf-templates/{id}
+      summary: >-
+        Save new `content` for a template. Only `content` is writable. Pass back the `updated_at`
+        you read from get-pdf-template for stale-write protection. Snapshots the prior version.
+        Returns 422 if content fails validation.
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+          description: PdfTemplate id.
+        - name: content
+          in: body
+          type: string
+          required: true
+          description: The new HTML/Mustache template source.
+        - name: updated_at
+          in: body
+          type: string
+          required: false
+          description: >-
+            Optimistic-lock guard — the `updated_at` value from get-pdf-template. If it no longer
+            matches (someone else saved), the write is rejected so you don't clobber their change.
+    - id: list-pdf-template-versions
+      method: GET
+      path: /api/pdf-templates/{id}/versions
+      summary: >-
+        List saved versions of a template (paginated, newest first) — each with its historical
+        `content`, `source`, and `created_at`. Use to find a good version to restore.
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+          description: PdfTemplate id.
+        - name: page
+          in: query
+          type: integer
+          required: false
+          description: Page number (default 1).
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Page size (default 10).
+    - id: restore-pdf-template-version
+      method: POST
+      path: /api/pdf-templates/{id}/versions/{versionId}/restore
+      summary: >-
+        Roll a template back to a prior version's content (snapshots the current one first). The
+        safety net if an edit goes wrong.
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+          description: PdfTemplate id.
+        - name: versionId
+          in: path
+          type: integer
+          required: true
+          description: The version id to restore.
+    - id: reset-pdf-template
+      method: POST
+      path: /api/pdf-templates/{id}/reset
+      summary: Reset a template to SKU.io's stock default content (snapshots the prior version).
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+          description: PdfTemplate id.
+    - id: list-store-overrides
+      method: GET
+      path: /api/pdf-templates/{type}/store-overrides
+      summary: >-
+        List every per-store override template for a document type. Use to audit that all stores'
+        templates are consistent before/after an edit.
+      parameters:
+        - name: type
+          in: path
+          type: string
+          required: true
+          description: "Template type value, e.g. packing, quote, sales_order, purchase_order."
+          example: packing
+    - id: create-store-override
+      method: POST
+      path: /api/pdf-templates/{id}/store-override
+      summary: >-
+        Clone a global template into a store-specific override so one store can differ. The override
+        then has its own id/content you edit independently.
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+          description: The GLOBAL template id to clone.
+        - name: store_id
+          in: body
+          type: integer
+          required: true
+          description: The store the override is for.
+    - id: list-pdf-template-assets
+      method: GET
+      path: /api/pdf-template-assets
+      summary: >-
+        List uploaded template image assets (logos, footer banners). Each returns its `slug`,
+        `token` ({{{asset.<slug>}}}), `mime_type`, and `width`/`height`.
+    - id: upload-pdf-template-asset
+      method: POST
+      path: /api/pdf-template-assets
+      summary: >-
+        Upload an image (multipart/form-data) to use in a template. Returns the `slug` and the
+        ready-to-paste `token`. Reference it in `content` as {{{asset.<slug>}}}.
+      parameters:
+        - name: image
+          in: body
+          type: string
+          required: true
+          description: >-
+            The image file (multipart/form-data field `image`). mimes: jpg, jpeg, png, gif, webp;
+            max 5 MB. Prefer PNG/JPG — webp can drop out of the exported PDF.
+        - name: name
+          in: body
+          type: string
+          required: false
+          description: Display name (max 120 chars); the slug is derived from it.

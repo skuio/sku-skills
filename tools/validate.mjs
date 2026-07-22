@@ -63,6 +63,18 @@ for (const entry of entries) {
     fail(`description must be 40–1024 chars (got ${desc.length})`);
   }
 
+  if (m.pages !== undefined) {
+    if (!Array.isArray(m.pages) || m.pages.length === 0) {
+      fail('pages, if present, must be a non-empty array of app route globs');
+    } else {
+      for (const p of m.pages) {
+        if (typeof p !== 'string' || !p.startsWith('/')) {
+          fail(`page "${p}" must be a string route glob starting with "/"`);
+        }
+      }
+    }
+  }
+
   if (!m.auth || !Array.isArray(m.auth.scopes) || m.auth.scopes.length === 0) {
     fail('auth.scopes must be a non-empty array');
   } else {
