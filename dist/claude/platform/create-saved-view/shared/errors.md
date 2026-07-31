@@ -5,9 +5,9 @@ The API uses conventional HTTP status codes and returns a JSON body describing t
 | Status | Meaning | What to do |
 | --- | --- | --- |
 | `200` / `201` | Success | — |
-| `401` | Unauthenticated | Missing/invalid/expired token — check the `Authorization` header |
+| `401` | Unauthenticated | Missing/invalid/expired token — check the `Authorization` header. Also check the tenant prefix: a wrong one resolves via wildcard DNS and returns this same `401` |
 | `403` | Forbidden / missing scope | Body includes `required_scope`; recreate the token with that scope |
-| `404` | Not found | Wrong id, path, or tenant subdomain |
+| `404` | Not found | Wrong id or path (all API routes live under `/api`) |
 | `409` | Conflict | The resource is locked or in a state that rejects the change |
 | `422` | Validation failed | Fix the request per the `errors` map (see below) |
 | `429` | Rate limited | Back off and retry after `Retry-After` |

@@ -6,7 +6,16 @@ the unit of programmatic access.
 
 ## 1. Mint a token
 
-In the SKU.io web app: **Settings → Developer → Personal Access Tokens → Create token**.
+Send the user straight to the page — don't describe the menu path:
+
+```
+https://{tenant}.sku.io/v2/settings/developer/personal-access-tokens
+```
+
+Substitute `{tenant}` for their prefix (`acme`, or `beta.acme` on a beta/demo account) and give
+them the finished URL, then have them click
+**Create Token** (top right). In the app this page is **Settings → Developer → Personal Access
+Tokens**, titled *Access Tokens*.
 
 When creating a token you choose:
 
@@ -27,12 +36,14 @@ Authorization: Bearer <YOUR_SKU_PAT>
 Accept: application/json
 ```
 
-- **Base URL:** `https://{tenant}.sku.io` — replace `{tenant}` with your account subdomain
-  (e.g. `app`, or your company's subdomain).
+- **Base URL:** `https://{tenant}.sku.io` — `{tenant}` is **everything before `.sku.io`** in the
+  URL the user logs in at. Usually a single label (`acme` → `https://acme.sku.io`), but beta,
+  demo, and sandbox accounts carry extra labels, making the prefix itself contain a dot (e.g.
+  `beta.acme`). Take the whole prefix verbatim — don't strip it back to the last label.
 - All API paths are prefixed with `/api`.
 
 ```bash
-export SKU_TENANT="acme"
+export SKU_TENANT="acme"          # or "beta.acme" for a beta/demo account
 export SKU_PAT="sku_pat_xxxxxxxx"
 
 curl -sS "https://$SKU_TENANT.sku.io/api/products/search?query=widget" \
@@ -59,4 +70,5 @@ to resolve line items).
 | --- | --- | --- |
 | `401 Unauthenticated` | Missing/invalid/expired token | Re-check the `Authorization` header and token validity |
 | `403 Token is missing the required scope` | Token lacks the scope for this verb+resource | Recreate the token with the scope named in `required_scope` |
-| `404` on every path | Wrong tenant subdomain | Confirm the `{tenant}` in the base URL |
+| `401` on every path, token looks fine | Possibly a **wrong tenant prefix**, not a bad token | `*.sku.io` is wildcard DNS: a wrong prefix resolves and returns the same `401`. Confirm `{tenant}` matches everything before `.sku.io` in the user's login URL — including extra labels on beta/demo accounts (`beta.acme`, not `acme`) |
+| `404` on every path | Wrong path prefix | All API routes live under `/api` |

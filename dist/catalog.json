@@ -105,7 +105,9 @@
         "getting-started",
         "personal-access-token"
       ],
-      "pages": [],
+      "pages": [
+        "/settings/developer/personal-access-tokens"
+      ],
       "outputs": {
         "claude": "dist/claude/platform/connect-to-sku/SKILL.md",
         "openai": "dist/openai/platform/connect-to-sku/",

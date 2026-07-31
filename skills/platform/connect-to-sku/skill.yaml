@@ -10,6 +10,8 @@ description: >-
 tagline: Authenticate, verify the token, and check scopes before anything else
 tags: [auth, setup, getting-started, personal-access-token]
 maintainers: [kmizzi]
+pages:
+  - /settings/developer/personal-access-tokens
 auth:
   scopes: [settings:read]
 api:
