@@ -1,7 +1,7 @@
 name: connect-to-sku
 title: Connect to SKU.io
 domain: platform
-version: 1.1.0
+version: 1.2.0
 description: >-
   The entry point for any SKU.io task. Establish an authenticated connection: point at the
   correct tenant base URL, send a Personal Access Token as a Bearer token, and prove it works with
