@@ -3,7 +3,7 @@
   "info": {
     "title": "SKU.io — Create a Sales Order",
     "description": "Create a new sales order in SKU.io with one or more line items. Use this to place an order for a customer — capturing the order status, order date, optional customer and store, and the SKUs, quantities, and unit prices being sold. Resolve products first with find-product so each line references a real product.",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "servers": [
     {

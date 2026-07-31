@@ -17,6 +17,21 @@ read → edit → validate → preview → verify → save, optimistic-lock `upd
 first-party/session auth (a user PAT gets `403`). This file adds only the packing-specific rules.
 Apply them on top.
 
+## Step 0 — Connect first
+
+Every call below authenticates as a SKU.io **Personal Access Token** against one specific
+tenant, so two things have to be true before Step 1: `$SKU_TENANT` and `$SKU_PAT` are set, and
+that token actually carries `settings:read`, `settings:write`.
+
+If you cannot confirm both, **run the `connect-to-sku` skill first** rather than trying a call
+to see what happens. It mints the token, confirms the tenant is the one the user meant, and reads
+the scopes back off the token — so a missing scope surfaces now, in one exchange with the user,
+instead of as a `403` midway through with half the work already committed. If that skill is not
+installed alongside this one, its instructions are at <https://github.com/skuio/sku-skills/tree/main/skills/platform/connect-to-sku>.
+
+Never invent a tenant or a token, and never quietly fall back to a different tenant than the one
+the user named. Writing to the wrong account is the one mistake here the API cannot undo for you.
+
 ## Why packing slips render differently from what you see in the editor
 
 The exported PDF is produced by **wkhtmltopdf**, not the browser. The in-editor "interactive
@@ -168,7 +183,9 @@ Every request authenticates with a SKU.io **Personal Access Token** sent as a Be
 Authorization: Bearer <YOUR_SKU_PAT>
 ```
 
-- **Base URL:** `https://{tenant}.sku.io` (replace `{tenant}` with your account subdomain)
+- **Base URL:** `https://{tenant}.sku.io` — replace `{tenant}` with your account subdomain.
+  The subdomain may itself contain a dot (beta and staging accounts often do), so take
+  **everything** before `.sku.io` in the URL you sign in at, not just the first label.
 - **Required scopes:** `settings:read`, `settings:write`
 
 Mint a token under **Settings → Developer → Personal Access Tokens** in the SKU.io web app.

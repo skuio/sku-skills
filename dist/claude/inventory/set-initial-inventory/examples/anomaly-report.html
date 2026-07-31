@@ -1,0 +1,216 @@
+<!doctype html>
+<!--
+  TEMPLATE — initial-count anomaly report.
+
+  Copy this file, replace the content, keep the structure and the CSS. It is
+  deliberately plain HTML with one <style> block and nothing else, because the
+  document stream serves uploaded HTML under
+      Content-Security-Policy: sandbox; default-src 'none'; img-src data: blob:;
+      style-src 'unsafe-inline'; font-src data:
+  so JavaScript, CDN fonts, remote images, and every external fetch are blocked.
+  A report that reaches for any of them renders broken inside the SKU.io UI.
+  Light mode only — these get printed and emailed.
+
+  Severity classes, used on both the summary pills and the item tags:
+    blocking       .p-block / .t-block   the opening balance is wrong and we cannot finalize
+    needs decision .p-dec   / .t-dec     finalizing is possible, but a number changes on the answer
+    fyi            .p-fyi   / .t-fyi     on the record for audit; no answer required
+
+  Every item carries the same four fields in the same order — it is the shape
+  that gets a reply back:
+    1. What the source said   — verbatim, typos included, in a <blockquote>
+    2. What the count did     — excluded / included at zero cost / collapsed / summed
+    3. Impact if left as-is   — units and dollars wherever it can be computed
+    4. The question           — in .ask, phrased so a one-line reply resolves it
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stock Take #NN — Anomaly Report — WAREHOUSE</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 32px 24px 64px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px; line-height: 1.55; color: #1f2430; background: #ffffff;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 940px; margin: 0 auto; }
+h1 { font-size: 24px; line-height: 1.25; margin: 0 0 4px; letter-spacing: -0.01em; }
+h2 { font-size: 17px; margin: 40px 0 12px; padding-bottom: 8px; border-bottom: 2px solid #e6e9ef; }
+h3 { font-size: 15px; margin: 0 0 10px; }
+.sub { color: #5b6472; font-size: 13px; margin: 0 0 24px; }
+
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px;
+  background: #e6e9ef; border: 1px solid #e6e9ef; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
+.fact { background: #fafbfc; padding: 12px 14px; }
+.fact dt { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7484; margin: 0 0 3px; }
+.fact dd { margin: 0; font-size: 15px; font-weight: 600; }
+
+.tally { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
+.pill { display: inline-flex; align-items: baseline; gap: 6px; border-radius: 999px;
+  padding: 5px 13px; font-size: 13px; font-weight: 600; border: 1px solid; }
+.pill b { font-size: 15px; }
+.p-block { background: #fdecec; border-color: #f0b4b4; color: #8c1d1d; }
+.p-dec   { background: #fff5e3; border-color: #efd08c; color: #7a5209; }
+.p-fyi   { background: #eef2f7; border-color: #ccd5e0; color: #48525f; }
+
+.lede { background: #f7f9fb; border-left: 3px solid #4c6ef5; padding: 12px 16px;
+  border-radius: 0 6px 6px 0; margin: 0 0 8px; font-size: 14px; }
+
+.item { border: 1px solid #e6e9ef; border-radius: 8px; margin: 0 0 16px; overflow: hidden;
+  page-break-inside: avoid; break-inside: avoid; }
+.item > header { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  padding: 11px 16px; background: #fafbfc; border-bottom: 1px solid #e6e9ef; }
+.tag { font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
+.t-block { background: #8c1d1d; color: #fff; }
+.t-dec   { background: #a06a06; color: #fff; }
+.t-fyi   { background: #6b7484; color: #fff; }
+.item > header .id { font-variant-numeric: tabular-nums; color: #6b7484; font-size: 13px; font-weight: 600; }
+.item > header .ttl { font-weight: 600; font-size: 15px; }
+.body { padding: 4px 16px 14px; }
+.field { margin-top: 12px; }
+.field > .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+  color: #6b7484; font-weight: 700; margin-bottom: 4px; }
+blockquote { margin: 0; padding: 9px 13px; background: #f4f6f8; border-left: 3px solid #b8c1cd;
+  border-radius: 0 4px 4px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px; white-space: pre-wrap; color: #333a45; }
+.ask { background: #fffaf0; border: 1px solid #efd08c; border-radius: 6px; padding: 10px 13px; font-weight: 500; }
+.money { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+
+table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 4px; }
+th, td { padding: 7px 10px; border-bottom: 1px solid #eceff3; text-align: left; }
+th { background: #fafbfc; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+  color: #6b7484; border-bottom: 2px solid #e6e9ef; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+tbody tr:last-child td { border-bottom: none; }
+tfoot td { font-weight: 700; border-top: 2px solid #e6e9ef; background: #fafbfc; }
+.zero td { color: #8b93a1; }
+.scroll { overflow-x: auto; border: 1px solid #e6e9ef; border-radius: 8px; }
+
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e6e9ef;
+  font-size: 12.5px; color: #6b7484; }
+@media print { body { padding: 0; font-size: 11pt; } .item { border-color: #bbb; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- Title carries the version. v1, v2, … A revision is a NEW attachment, never an overwrite. -->
+<h1>Stock Take #NN — Anomaly Report v1</h1>
+<p class="sub">WAREHOUSE · initial count · generated DD MONTH YYYY</p>
+
+<!-- The facts grid is what makes the report readable without opening the take. -->
+<dl class="facts">
+<div class="fact"><dt>Warehouse</dt><dd>Redbank</dd></div>
+<div class="fact"><dt>Count date</dt><dd>End of day DD MMM YYYY</dd></div>
+<div class="fact"><dt>Status</dt><dd>Draft (not yet initiated)</dd></div>
+<div class="fact"><dt>Lines</dt><dd>0</dd></div>
+<div class="fact"><dt>Units</dt><dd>0</dd></div>
+<div class="fact"><dt>Opening value</dt><dd>$0.00</dd></div>
+<div class="fact"><dt>Source</dt><dd>opening-count.xlsx</dd></div>
+<div class="fact"><dt>Supplied by</dt><dd>NAME · YYYY-MM-DD</dd></div>
+</dl>
+
+<!-- Counts by severity. Omit a pill entirely when its count is zero. -->
+<div class="tally">
+  <span class="pill p-block"><b>1</b> blocking</span>
+  <span class="pill p-dec"><b>1</b> needs a decision</span>
+  <span class="pill p-fyi"><b>1</b> fyi</span>
+</div>
+
+<!-- One paragraph the reader can act on without scrolling. Say what is fine,
+     then what is not, then whether anything blocks finalizing. -->
+<p class="lede">Summary the reader can act on without scrolling: how much counted cleanly, what
+changes the opening balance, and whether anything blocks finalizing.</p>
+
+<!-- Group by severity, never by SKU. Anything that moves the opening balance or
+     the valuation comes first; bookkeeping detail last. -->
+<h2>Blocking — the opening balance is wrong until this is answered</h2>
+
+<article class="item">
+<header><span class="tag t-block">Blocking</span><span class="id">A1</span><span class="ttl">Short title naming the SKU or the structural gap</span></header>
+<div class="body">
+  <div class="field"><div class="k">What the source said</div>
+    <blockquote>Quoted verbatim from the sheet or email, typos and all. Paraphrasing loses the evidence.</blockquote>
+  </div>
+  <div class="field"><div class="k">What the count did</div>
+    <p style="margin:0">Excluded / included at zero cost / collapsed onto one product / summed two rows. Be exact.</p>
+  </div>
+  <div class="field"><div class="k">Impact if left as-is</div>
+    <p style="margin:0">In units and dollars wherever it can be computed — <span class="money">$0.00</span>. Say what
+    goes wrong downstream, not just that something is missing.</p>
+  </div>
+  <div class="field"><div class="k">The question</div>
+    <div class="ask">Addressed to whoever can answer it, phrased so a one-line reply resolves it.</div>
+  </div>
+</div></article>
+
+<h2>Needs a decision — answerable in one line each, but the opening balance changes</h2>
+
+<article class="item">
+<header><span class="tag t-dec">Needs a decision</span><span class="id">B1</span><span class="ttl">ACME-TSR-01 — no cost basis anywhere</span></header>
+<div class="body">
+  <div class="field"><div class="k">What the source said</div>
+    <blockquote>ACME-TSR-01 | 0000000000000 | Count 12 | (cost column blank)</blockquote>
+  </div>
+  <div class="field"><div class="k">What the count did</div>
+    <p style="margin:0">Included the 12 units. The sheet carries no cost and the product has no
+    <code>best_available_cogs</code>, so the line opens a <b>zero-value FIFO layer</b>.</p>
+  </div>
+  <div class="field"><div class="k">Impact if left as-is</div>
+    <p style="margin:0">Everything sold from those 12 units books <b>100% margin</b> until the layer is
+    exhausted, and the opening valuation is understated by whatever they actually cost.</p>
+  </div>
+  <div class="field"><div class="k">The question</div>
+    <div class="ask">What did ACME-TSR-01 cost? A single landed unit cost is enough — or confirm
+    <b>$0.00</b> is intended (free samples, consignment).</div>
+  </div>
+</div></article>
+
+<h2>For the record — no answer needed</h2>
+
+<article class="item">
+<header><span class="tag t-fyi">FYI</span><span class="id">C1</span><span class="ttl">Duplicate rows summed</span></header>
+<div class="body">
+  <div class="field"><div class="k">What the source said</div>
+    <blockquote>ACME-TSR-01 | Count 7
+ACME-TSR-01 | Count 5</blockquote>
+  </div>
+  <div class="field"><div class="k">What the count did</div>
+    <p style="margin:0">Summed to a single line of <b>12</b>. A stock take carries one line per product.</p>
+  </div>
+  <div class="field"><div class="k">Impact if left as-is</div>
+    <p style="margin:0">None, provided the two rows were the same stock counted in two locations rather
+    than the same stock counted twice.</p>
+  </div>
+  <div class="field"><div class="k">The question</div>
+    <div class="ask">No action needed — flag only if 7 and 5 were the same physical units.</div>
+  </div>
+</div></article>
+
+<!-- Optional: a table when an item covers many rows (unresolved SKUs, zero-cost
+     lines). Wrap it in .scroll so it never breaks the page on a narrow screen. -->
+<h2>Appendix — lines as loaded</h2>
+<div class="scroll">
+<table>
+<thead><tr><th>SKU</th><th class="n">Qty</th><th class="n">Unit cost</th><th class="n">Value</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td>ACME-TSR-01</td><td class="n">12</td><td class="n">—</td><td class="n">$0.00</td><td>No cost basis (B1)</td></tr>
+<tr class="zero"><td>ACME-TSR-02</td><td class="n">0</td><td class="n">$4.5000</td><td class="n">$0.00</td><td>Explicit zero line</td></tr>
+</tbody>
+<tfoot><tr><td>Total</td><td class="n">12</td><td class="n"></td><td class="n">$0.00</td><td></td></tr></tfoot>
+</table>
+</div>
+
+<footer>
+Generated by the <code>set-initial-inventory</code> skill on YYYY-MM-DD from SOURCE FILE.
+Reply against the item ids (A1, B1, C1) — a one-line answer each is enough.
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Instructions for AI agents contributing to **sku-skills**. (Humans: see
+Instructions for AI agents working in **sku-skills**. (Humans: see
 [`CONTRIBUTING.md`](./CONTRIBUTING.md).) This file follows the [agents.md](https://agents.md)
 convention — Claude Code, Codex, Cursor, Gemini CLI, and others read it automatically.
 
@@ -9,6 +9,40 @@ convention — Claude Code, Codex, Cursor, Gemini CLI, and others read it automa
 A library of e-commerce agent skills for the [SKU.io](https://developer.sku.io) API. Each skill is
 authored **once** in a canonical format and compiled to Claude / OpenAI / Gemini outputs. Source of
 truth is `skills/`; `dist/` is generated and **committed** — **never edit `dist/` by hand; rebuild it.**
+
+## First: are you here to *use* a skill, or to *improve* one?
+
+Both are normal, and they are completely different jobs. Check which one you're on before reading
+further, because most of this file is about the second.
+
+### Using one — "set up my opening inventory", "import these products"
+
+The user pointed you at this repo to **get a real task done against their SKU.io account**. Cloning
+it does not install anything: the built skills sit in `dist/claude/<domain>/<name>/`, and Claude Code
+only discovers skills in `~/.claude/skills/` (every project) or `<project>/.claude/skills/` (one
+project). So install first, then work in the user's own project — not in this repo.
+
+```bash
+node tools/install.mjs --list                  # what's available
+node tools/install.mjs set-initial-inventory   # → ~/.claude/skills/, with the skills it composes with
+```
+
+Then start a session in the project the user actually works in and describe the task normally. The
+skill is selected from the request — it is not invoked by name. It will establish the tenant and a
+Personal Access Token itself (`connect-to-sku` is always installed alongside, and every skill's
+generated **Step 0 — Connect first** routes there), so don't hand-roll auth or ask for a token up
+front.
+
+**Do not follow the rest of this file for that job.** Everything below is about authoring skills —
+`npm run check`, never hand-editing `dist/`, PR checklists. None of it applies to running one, and
+treating a customer's opening stock take as a repo change is how the wrong thing gets committed.
+
+If the skill then falls short mid-task, *that* is when this file becomes relevant — carry on to the
+next section and send the fix back.
+
+### Improving one — a skill was wrong, thin, or missing a case
+
+That's the rest of this document. Read on.
 
 ## You're probably here to improve a skill
 

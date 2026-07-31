@@ -37,6 +37,21 @@ swallow. Steps 7–8 exist to make them visible and answerable: the source files
 as attachments, and the open questions go on as an HTML report. When the answers come back, see
 [Working the anomalies after feedback](#working-the-anomalies-after-feedback).
 
+## Step 0 — Connect first
+
+Every call below authenticates as a SKU.io **Personal Access Token** against one specific
+tenant, so two things have to be true before Step 1: `$SKU_TENANT` and `$SKU_PAT` are set, and
+that token actually carries `inventory:read`, `inventory:write`, `warehouses:read`, `settings:write`, `products:read`.
+
+If you cannot confirm both, **run the `connect-to-sku` skill first** rather than trying a call
+to see what happens. It mints the token, confirms the tenant is the one the user meant, and reads
+the scopes back off the token — so a missing scope surfaces now, in one exchange with the user,
+instead of as a `403` midway through with half the work already committed. If that skill is not
+installed alongside this one, its instructions are at <https://github.com/skuio/sku-skills/tree/main/skills/platform/connect-to-sku>.
+
+Never invent a tenant or a token, and never quietly fall back to a different tenant than the one
+the user named. Writing to the wrong account is the one mistake here the API cannot undo for you.
+
 ## Step 1 — Settle the inventory start date
 
 The inventory start date is an account-level setting: the line in the sand before which SKU.io
@@ -173,6 +188,11 @@ Max 5000 identifiers per request — chunk a larger sheet. Then:
 - **`not_found`** — the product doesn't exist in SKU.io yet. **Do not invent it.** Either create the
   catalog first (`build-product-catalog`) and re-resolve, or hold those rows out and list them in
   your report. Counting a partial catalog and back-filling later is worse than pausing.
+  > **Check the token's scopes before you get here, not after.** Resolving is fine on the scopes this
+  > skill lists — `resolve-skus` returns product ids without `products:read`. But an opening count
+  > routinely turns up SKUs with no product, and creating those needs **`products:write`**, which is
+  > not on the list because the happy path doesn't need it. Confirm it up front; discovering it from
+  > a `403` costs a round-trip with the user at the worst moment, with the sheet already parsed.
 - **`skipped`** — wrong product type. Stock takes cover standard and kit products only; bundles and
   matrix parents are excluded by design. Report them, don't force them.
 - **Duplicate rows for the same SKU** — sum them before sending; one line per product per take.
@@ -347,6 +367,14 @@ Sweep for all of these — they are the ones that actually recur:
 
 A complete, self-contained, **light-mode** HTML document — full `<!doctype html> … </html>`, all CSS in
 a `<style>` block, no external requests at all.
+
+**Start from [`examples/anomaly-report.html`](./examples/anomaly-report.html)** rather than writing one
+from scratch. It is a working skeleton with the CSS already solved: the facts grid, the severity pills
+and tags, the four-field item card, the appendix table, and print styles. Copy it, replace the
+content, keep the structure. Two reasons this matters beyond saving time — the CSS constraints below
+are easy to violate by habit (a Google Font `@import` is reflex for most of us), and an account with
+several warehouses gets several reports that a human reads side by side, so they should look like one
+document set rather than three unrelated ones.
 
 > **No JavaScript, no CDN fonts, no remote images.** The document stream serves user-uploaded HTML
 > under a `Content-Security-Policy: sandbox` with `default-src 'none'` — scripts and every external
@@ -766,8 +794,10 @@ Every request authenticates with a SKU.io **Personal Access Token** sent as a Be
 Authorization: Bearer <YOUR_SKU_PAT>
 ```
 
-- **Base URL:** `https://{tenant}.sku.io` (replace `{tenant}` with your account subdomain)
-- **Required scopes:** `inventory:read`, `inventory:write`, `warehouses:read`, `settings:write`
+- **Base URL:** `https://{tenant}.sku.io` — replace `{tenant}` with your account subdomain.
+  The subdomain may itself contain a dot (beta and staging accounts often do), so take
+  **everything** before `.sku.io` in the URL you sign in at, not just the first label.
+- **Required scopes:** `inventory:read`, `inventory:write`, `warehouses:read`, `settings:write`, `products:read`
 
 Mint a token under **Settings → Developer → Personal Access Tokens** in the SKU.io web app.
 See [`shared/authentication.md`](shared/authentication.md) for the full flow.

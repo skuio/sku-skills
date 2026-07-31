@@ -154,7 +154,9 @@ Every request authenticates with a SKU.io **Personal Access Token** sent as a Be
 Authorization: Bearer <YOUR_SKU_PAT>
 ```
 
-- **Base URL:** `https://{tenant}.sku.io` (replace `{tenant}` with your account subdomain)
+- **Base URL:** `https://{tenant}.sku.io` — replace `{tenant}` with your account subdomain.
+  The subdomain may itself contain a dot (beta and staging accounts often do), so take
+  **everything** before `.sku.io` in the URL you sign in at, not just the first label.
 - **Required scopes:** `settings:read`, `warehouses:read`
 
 Mint a token under **Settings → Developer → Personal Access Tokens** in the SKU.io web app.

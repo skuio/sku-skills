@@ -17,6 +17,10 @@ const SCOPE = /^[a-z-]+:(read|write)$/;
 const entries = findSkillEntries();
 const errors = [];
 const seenNames = new Set();
+// `composes` points at sibling skills, so it can only be resolved once every skill is known.
+// Collect the references here and check them after the per-skill loop.
+const allNames = new Set(entries.map((e) => e.name));
+const composeRefs = [];
 
 if (entries.length === 0) {
   console.error('No skills found under skills/.');
@@ -75,6 +79,24 @@ for (const entry of entries) {
     }
   }
 
+  if (m.composes !== undefined) {
+    if (!Array.isArray(m.composes) || m.composes.length === 0) {
+      fail('composes, if present, must be a non-empty array of skill names');
+    } else {
+      for (const c of m.composes) {
+        if (typeof c !== 'string' || !KEBAB.test(c)) {
+          fail(`composes entry "${c}" must be a kebab-case skill name`);
+        } else if (c === m.name) {
+          fail('composes must not list the skill itself');
+        } else if (c === 'connect-to-sku') {
+          fail('composes must not list connect-to-sku — the installer always includes it');
+        } else {
+          composeRefs.push({ id, ref: c });
+        }
+      }
+    }
+  }
+
   if (!m.auth || !Array.isArray(m.auth.scopes) || m.auth.scopes.length === 0) {
     fail('auth.scopes must be a non-empty array');
   } else {
@@ -124,6 +146,12 @@ for (const entry of entries) {
   const instructionsPath = path.join(entry.dir, 'INSTRUCTIONS.md');
   if (!fs.existsSync(instructionsPath) || fs.readFileSync(instructionsPath, 'utf8').trim().length < 200) {
     fail('INSTRUCTIONS.md is required and must be substantive (min 200 chars)');
+  }
+}
+
+for (const { id, ref } of composeRefs) {
+  if (!allNames.has(ref)) {
+    errors.push(`${id}: composes references "${ref}", which is not a skill in this repo`);
   }
 }
 

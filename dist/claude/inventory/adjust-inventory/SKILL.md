@@ -11,6 +11,21 @@ correction, a write-off for damage/shrinkage, or booking in found stock. It maps
 `POST /api/inventory-adjustments` (scope `inventory:write`; also requires the `inventory.adjust`
 permission on the token's user).
 
+## Step 0 — Connect first
+
+Every call below authenticates as a SKU.io **Personal Access Token** against one specific
+tenant, so two things have to be true before Step 1: `$SKU_TENANT` and `$SKU_PAT` are set, and
+that token actually carries `inventory:write`, `products:read`.
+
+If you cannot confirm both, **run the `connect-to-sku` skill first** rather than trying a call
+to see what happens. It mints the token, confirms the tenant is the one the user meant, and reads
+the scopes back off the token — so a missing scope surfaces now, in one exchange with the user,
+instead of as a `403` midway through with half the work already committed. If that skill is not
+installed alongside this one, its instructions are at <https://github.com/skuio/sku-skills/tree/main/skills/platform/connect-to-sku>.
+
+Never invent a tenant or a token, and never quietly fall back to a different tenant than the one
+the user named. Writing to the wrong account is the one mistake here the API cannot undo for you.
+
 ## Choose the adjustment type
 
 | Intent | `adjustment_type` | `quantity` means |
@@ -77,7 +92,9 @@ Every request authenticates with a SKU.io **Personal Access Token** sent as a Be
 Authorization: Bearer <YOUR_SKU_PAT>
 ```
 
-- **Base URL:** `https://{tenant}.sku.io` (replace `{tenant}` with your account subdomain)
+- **Base URL:** `https://{tenant}.sku.io` — replace `{tenant}` with your account subdomain.
+  The subdomain may itself contain a dot (beta and staging accounts often do), so take
+  **everything** before `.sku.io` in the URL you sign in at, not just the first label.
 - **Required scopes:** `inventory:write`, `products:read`
 
 Mint a token under **Settings → Developer → Personal Access Tokens** in the SKU.io web app.

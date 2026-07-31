@@ -1,7 +1,7 @@
 name: edit-pdf-template
 title: Edit a PDF Template
 domain: settings
-version: 1.0.0
+version: 1.1.0
 description: >-
   Edit any SKU.io PDF document template — packing slips, quotes, sales orders, pick lists, purchase
   orders, and vendor/sales credits — by editing its HTML content directly, then validating,

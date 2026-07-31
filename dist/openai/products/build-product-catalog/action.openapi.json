@@ -3,7 +3,7 @@
   "info": {
     "title": "SKU.io — Build a Product Catalog from Any Source",
     "description": "Turn product information from any source — a spreadsheet or CSV, a Google Sheet, a supplier price list, a website or product page, or pasted text — into products in SKU.io. Extract the raw rows, map them onto SKU.io's product fields, de-duplicate against the existing catalog, then create the products. Use this to onboard a new catalog, import a supplier's range, or bulk-load products from an external system.",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "servers": [
     {

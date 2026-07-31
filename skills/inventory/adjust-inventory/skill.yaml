@@ -1,7 +1,7 @@
 name: adjust-inventory
 title: Adjust Inventory
 domain: inventory
-version: 1.0.0
+version: 1.1.0
 description: >-
   Adjust the on-hand quantity of a product at a warehouse in SKU.io — an increase, a decrease, or
   a set-to-value. Use this for stock takes, corrections, damage/shrinkage write-offs, or found
@@ -10,6 +10,7 @@ description: >-
 tagline: Increase / decrease / set on-hand stock at a warehouse
 tags: [inventory, stock, adjustment, stock-take, shrinkage]
 maintainers: [kmizzi]
+composes: [find-product]
 auth:
   scopes: [inventory:write, products:read]
 api:

@@ -3,7 +3,7 @@
   "info": {
     "title": "SKU.io — Sync your SOPs with SKU.io changes",
     "description": "Keep your internal Standard Operating Procedures (SOPs) in step with SKU.io. SKU.io ships often — menus move, workflows change, features are added — which quietly breaks the step-by-step procedures your team relies on. Give this skill your SOP content plus the date you last reviewed it: it reads SKU.io's public changelog and documentation, finds the changes that affect your procedures, and rewrites the exact stale steps — or drafts a brand-new SOP from the current docs, in your own format. Use it whenever internal docs/SOPs may be out of date, or on a schedule to catch drift.",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "servers": [
     {

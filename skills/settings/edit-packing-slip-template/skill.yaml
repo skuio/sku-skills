@@ -1,7 +1,7 @@
 name: edit-packing-slip-template
 title: Edit a Packing-Slip PDF Template
 domain: settings
-version: 1.0.0
+version: 1.1.0
 description: >-
   Edit a SKU.io packing-slip PDF template with the packing-specific rules that keep the footer
   banner, logo, and per-store layouts consistent. Use this when changing a packing slip's footer
@@ -13,6 +13,7 @@ description: >-
 tagline: Edit packing-slip templates without breaking the footer banner
 tags: [pdf-templates, packing-slip, footer-banner, warehouse, branding, documents, settings]
 maintainers: [kmizzi]
+composes: [edit-pdf-template]
 pages:
   - /settings/pdf-templates/packing
 auth:

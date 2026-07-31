@@ -3,7 +3,7 @@
   "info": {
     "title": "SKU.io — Adjust Inventory",
     "description": "Adjust the on-hand quantity of a product at a warehouse in SKU.io — an increase, a decrease, or a set-to-value. Use this for stock takes, corrections, damage/shrinkage write-offs, or found stock. Resolve the product with find-product first so the adjustment targets the right product and warehouse.",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "servers": [
     {

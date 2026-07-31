@@ -165,6 +165,11 @@ Max 5000 identifiers per request — chunk a larger sheet. Then:
 - **`not_found`** — the product doesn't exist in SKU.io yet. **Do not invent it.** Either create the
   catalog first (`build-product-catalog`) and re-resolve, or hold those rows out and list them in
   your report. Counting a partial catalog and back-filling later is worse than pausing.
+  > **Check the token's scopes before you get here, not after.** Resolving is fine on the scopes this
+  > skill lists — `resolve-skus` returns product ids without `products:read`. But an opening count
+  > routinely turns up SKUs with no product, and creating those needs **`products:write`**, which is
+  > not on the list because the happy path doesn't need it. Confirm it up front; discovering it from
+  > a `403` costs a round-trip with the user at the worst moment, with the sheet already parsed.
 - **`skipped`** — wrong product type. Stock takes cover standard and kit products only; bundles and
   matrix parents are excluded by design. Report them, don't force them.
 - **Duplicate rows for the same SKU** — sum them before sending; one line per product per take.
@@ -339,6 +344,14 @@ Sweep for all of these — they are the ones that actually recur:
 
 A complete, self-contained, **light-mode** HTML document — full `<!doctype html> … </html>`, all CSS in
 a `<style>` block, no external requests at all.
+
+**Start from [`examples/anomaly-report.html`](./examples/anomaly-report.html)** rather than writing one
+from scratch. It is a working skeleton with the CSS already solved: the facts grid, the severity pills
+and tags, the four-field item card, the appendix table, and print styles. Copy it, replace the
+content, keep the structure. Two reasons this matters beyond saving time — the CSS constraints below
+are easy to violate by habit (a Google Font `@import` is reflex for most of us), and an account with
+several warehouses gets several reports that a human reads side by side, so they should look like one
+document set rather than three unrelated ones.
 
 > **No JavaScript, no CDN fonts, no remote images.** The document stream serves user-uploaded HTML
 > under a `Content-Security-Policy: sandbox` with `default-src 'none'` — scripts and every external
