@@ -32,7 +32,7 @@ exact class **`footer-banner`**:
 
 ```html
 <div class="footer-banner">
-    {{{asset.curvy_au_footer}}}
+    {{{asset.acme_au_footer}}}
 </div>
 ```
 

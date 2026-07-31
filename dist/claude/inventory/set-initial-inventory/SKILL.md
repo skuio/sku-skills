@@ -257,7 +257,7 @@ from three files, attach three files.
 curl -sS -X POST "https://$SKU_TENANT.sku.io/api/stock-takes/42/documents" \
   -H "Authorization: Bearer $SKU_PAT" -H "Accept: application/json" \
   -F "file=@/path/to/handwritten-count-sheet.jpg" \
-  -F "description=Photo of the handwritten count sheet from the Varennes floor, supplied by the warehouse manager 2026-07-30. Pages 1-2 of 2; page 2 covers the returns bay."
+  -F "description=Photo of the handwritten count sheet from the Redbank floor, supplied by the warehouse manager 2026-07-30. Pages 1-2 of 2; page 2 covers the returns bay."
 # → { "data": { "id": 91, "file_name": "...", "description": "...", "file_url": "...", "uploaded_by": "..." } }
 ```
 
@@ -308,7 +308,7 @@ Practical notes:
 
 Everything the count couldn't resolve cleanly goes into a **single HTML anomaly report**, attached to
 the take. Do this even when the list is short — an initial count is the most-audited record in the
-account, and "we asked about the damaged masks on the 30th" is worth having on the record rather than
+account, and "we asked about the damaged units on the 30th" is worth having on the record rather than
 in a chat scrollback.
 
 ### What counts as an anomaly
@@ -354,7 +354,7 @@ anything that changes the opening balance or the valuation first, bookkeeping de
 curl -sS -X POST "https://$SKU_TENANT.sku.io/api/stock-takes/42/documents" \
   -H "Authorization: Bearer $SKU_PAT" -H "Accept: application/json" \
   -F "file=@/tmp/stock-take-42-anomalies.html" \
-  -F "description=Anomaly report v1 — ShipPro CA (Varennes), count dated 2026-07-31. 6 open items: 1 blocking (count incomplete), 3 needing a decision, 2 FYI. Generated 2026-07-31."
+  -F "description=Anomaly report v1 — Northline CA (Redbank), count dated 2026-07-31. 6 open items: 1 blocking (count incomplete), 3 needing a decision, 2 FYI. Generated 2026-07-31."
 ```
 
 - Name the file `stock-take-{id}-anomalies.html` so it sorts next to the take it belongs to.
@@ -485,7 +485,7 @@ Every reply lands in exactly one of these:
 | "That SKU is `WMMAXG4`" | A `not_found` row was a naming mismatch, not a missing product | Resolve it and add the line |
 | "That's a new product, here are its details" | The product genuinely doesn't exist yet | Create it (below), then add the line |
 | "Those 14 are damaged, keep them out" | A judgement call, now made | Record the decision; the count stands |
-| "Use $28.40 for TSRG4" | A missing cost basis is now known | Set the unit cost |
+| "Use $28.40 for ACME-TSR-01" | A missing cost basis is now known | Set the unit cost |
 | "Here are the returns we missed" | The source was incomplete and now isn't | Add the lines |
 | "Ignore it" / "that was a duplicate" | No data change | Record it and close the item |
 
@@ -523,7 +523,7 @@ Then resolve and add:
 curl -sS -X POST "https://$SKU_TENANT.sku.io/api/stock-takes/resolve-skus" \
   -H "Authorization: Bearer $SKU_PAT" \
   -H "Content-Type: application/json" -H "Accept: application/json" \
-  -d '{"skus":["ROUGE-ULT-A10"]}'
+  -d '{"skus":["ACME-ULT-A10"]}'
 ```
 
 If it still comes back in `not_found`, the product wasn't created — fix that before touching the take.
@@ -538,7 +538,7 @@ the audit trail of what was asked, when, and what came back.
 curl -sS -X POST "https://$SKU_TENANT.sku.io/api/stock-takes/42/documents" \
   -H "Authorization: Bearer $SKU_PAT" -H "Accept: application/json" \
   -F "file=@/tmp/stock-take-42-anomalies-v2.html" \
-  -F "description=Anomaly report v2 — after Genevieve's 2026-08-04 reply. 4 of 6 resolved (lines added for the returns; TSRG4 costed at \$28.40); 2 still open (damaged masks pending inspection, ROUGE ULTIMATE A10 needs a product)."
+  -F "description=Anomaly report v2 — after the 3PL's 2026-08-04 reply. 4 of 6 resolved (lines added for the returns; ACME-TSR-01 costed at \$28.40); 2 still open (damaged units pending inspection, ACME-ULT-A10 needs a product)."
 
 # Mark v1 as superseded so nobody reads a stale question as live
 curl -sS -X PATCH "https://$SKU_TENANT.sku.io/api/stock-takes/42/documents/91" \
@@ -615,7 +615,7 @@ Hard rules for the fan-out:
   uniqueness check and create a duplicate initial count.
 - **A failing warehouse must not take down the others.** `agent()` returns `null` when an agent dies;
   filter those out and carry the failure into the report rather than aborting the run.
-- **`log()` each draft as it lands** — `log("Coghlan AU → draft #42, 14 lines, $20,580.39")` — so the
+- **`log()` each draft as it lands** — `log("Northline AU → draft #42, 14 lines, $18,240.00")` — so the
   user watches them arrive instead of staring at a silent tool call.
 
 ### Present them as a review queue

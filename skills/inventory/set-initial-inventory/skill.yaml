@@ -399,7 +399,7 @@ api:
           description: >-
             What this file is, up to 2000 characters. Far roomier than the take's 255-char notes, and
             the thing that tells the next reader what they are looking at.
-          example: "Photo of the handwritten count sheet from the Varennes floor, supplied by the warehouse manager 2026-07-30. Pages 1-2 of 2; page 2 covers the returns bay."
+          example: "Photo of the handwritten count sheet from the Redbank floor, supplied by the warehouse manager 2026-07-30. Pages 1-2 of 2; page 2 covers the returns bay."
     - id: update-stock-take-document
       method: PATCH
       path: /api/stock-takes/{stockTake}/documents/{document}
