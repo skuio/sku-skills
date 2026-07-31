@@ -1,6 +1,6 @@
 ---
 name: set-initial-inventory
-description: "Load opening stock into SKU.io as an initial (first-ever) count for one or more warehouses, dated to the account's inventory start date. Use this when going live on SKU.io, onboarding a new warehouse or 3PL, or importing an opening count sheet: it settles the inventory start date (read it from settings, infer it from the source data, or ask — and set it when the account has none), turns the count sheet into one initial stock take per warehouse, and drives each through draft → open → closed so the opening quantities and their cost layers land. An initial count can only happen once per warehouse and cannot be re-dated afterwards, so the date and the unit costs must be right before you finalize. For routine cycle counts, recounts, or one-off corrections use adjust-inventory instead."
+description: "Load opening stock into SKU.io as an initial (first-ever) count for one or more warehouses, dated to the account's inventory start date. Use this when going live on SKU.io, onboarding a new warehouse or 3PL, or importing an opening count sheet: it settles the inventory start date (taking it from an explicit date in the source data, or asking the user outright — the value configured in settings is often a stale placeholder and is treated as a default to confirm, never as authority), turns the count sheet into one initial stock take per warehouse, and drives each through draft → open → closed so the opening quantities and their cost layers land. An initial count can only happen once per warehouse and cannot be re-dated afterwards, so the date and the unit costs must be right before you finalize. For routine cycle counts, recounts, or one-off corrections use adjust-inventory instead."
 license: MIT
 ---
 
@@ -14,11 +14,14 @@ step: it seeds every product's on-hand quantity and creates the cost layers ever
 It is **not** for routine counting. A quarterly cycle count, a recount, or a one-off correction is
 `adjust-inventory` or a plain non-initial stock take.
 
-Two facts shape everything below:
+Three facts shape everything below:
 
 - **An initial count happens once per warehouse** (per `condition`), and the API enforces it.
 - **An initial count cannot be re-dated after it is finalized.** Ordinary stock takes can be moved;
   initial ones cannot. So the date has to be right *before* you finalize, not after.
+- **The date configured in settings is frequently wrong**, and reading it back is not confirmation.
+  The date must come from the source data or from the user — see Step 1. Combined with the point
+  above, an unconfirmed date is a permanent error.
 
 The pipeline, per warehouse:
 
@@ -50,15 +53,32 @@ In parallel, work out what the **source data implies**, in this order of strengt
 3. A date in the filename or tab name ("Opening Stock 2026-01.xlsx") — weak; treat as a suggestion
    to confirm, not a fact.
 
-Then reconcile the two:
+> **A configured start date is not evidence.** In practice it is very often wrong — a placeholder
+> dropped in during account setup, or a trial-era date nobody revisited. Reading a value back from
+> settings tells you what the account *says*, not when the stock was actually true. Treat it as a
+> default to confirm, never as authority.
 
-| Configured | Implied by source | Do this |
+So the date must come from one of exactly two places:
+
+1. **An explicit date in the source data** — an "as at" / "as of" header, or the user stating it
+   directly. This is real evidence.
+2. **The user, asked outright.** If the source doesn't carry one, ask. Always.
+
+Then reconcile against what's configured:
+
+| Configured | Source data | Do this |
 | --- | --- | --- |
-| Set, matches the source | — | Proceed. Echo the date back in your plan. |
-| Set, source implies a different date | conflict | **Stop and ask.** Don't quietly count on either date — one of them is wrong, and it can't be fixed after finalize. |
-| Set, source says nothing | — | Proceed on the configured date; state it explicitly. |
-| Not set | Some date | Propose it, get an explicit yes, then write it (below). |
+| Set | Explicit date, same day | Proceed. Echo the date back in your plan. |
+| Set | Explicit date, different day | **Stop and ask.** One of them is wrong. Show both and let the user say which is real — don't pick, and don't average. |
+| Set | Nothing explicit | **Ask the user to confirm the actual date.** Show them what's configured, but as a value to verify, not one to proceed on. A silent "the setting said so" is how a whole account ends up counted on the wrong day. |
+| Not set | Explicit date | Propose it, get an explicit yes, then write it (below). |
 | Not set | Nothing | **Ask the user for the date.** Never default to today. |
+
+**If the confirmed date differs from the configured one, stop before creating anything.** The
+setting is what the count is dated to, and it also drives order import, integration sync windows,
+and the accounting opening balance — so a mismatch is not a local problem you can route around by
+passing a different `date_count`. Surface the discrepancy, explain that the setting itself needs
+correcting first, and let the user decide (see the constraints on rewriting it below).
 
 When it isn't configured, write it once the user has confirmed the exact date:
 
@@ -75,7 +95,11 @@ curl -sS -X PUT "https://$SKU_TENANT.sku.io/api/v2/settings/inventory" \
   a wider payload silently rewrites unrelated inventory settings.
 - **Only write it when it is unset.** Changing an already-configured start date moves the line in the
   sand for order import, integration sync windows, and the effective accounting start date. If it is
-  set and you believe it is wrong, stop and say so — that is the user's call, not a repair you make.
+  set and the user has confirmed a different day, do **not** quietly overwrite it. Say plainly what
+  is configured, what they confirmed, and what else moves if it changes — then let them decide. If
+  they explicitly authorise the correction, make it in the same narrow way (only
+  `inventory_start_date`), read it back, and confirm the new value before creating any take. An
+  unconfirmed rewrite of this field is never in scope.
 - Read it back before creating anything, and confirm you got the day you asked for.
 
 Date-only values are interpreted in the account's timezone, so `"2026-01-01"` means that calendar day
@@ -318,7 +342,7 @@ expiry data for a lot-tracked product, **ask** — don't fabricate a batch numbe
 
 | Method | Path | What it does |
 | --- | --- | --- |
-| `GET` | `/api/stock-takes/inventory-start-date` | Read the account's configured inventory start date from application settings. This is the date initial counts are validated against and dated to. Returns { "inventory_start_date": "YYYY-MM-DD" } — null/absent means it has not been configured yet. |
+| `GET` | `/api/stock-takes/inventory-start-date` | Read the account's configured inventory start date from application settings. This is the date initial counts are validated against and dated to. Returns { "inventory_start_date": "YYYY-MM-DD" } — null/absent means it has not been configured yet. A returned value is often a stale placeholder from account setup: treat it as a default to confirm against the source data or with the user, never as evidence of when stock was true. |
 | `PUT` | `/api/v2/settings/inventory` | Set the account's inventory start date. Only use this when it has not been configured yet and the user has confirmed the exact day — changing an existing one moves the line in the sand for order import, integration sync windows, and the effective accounting start date. Send nothing but inventory_start_date; the endpoint writes every property the body carries. |
 | `GET` | `/api/v2/warehouses` | List warehouses to resolve names to ids. A stock take's warehouse must be a standard (non-virtual) warehouse; check type/subtype and archived_at before using an id. |
 | `POST` | `/api/stock-takes/check-initial-uniqueness` | Check whether an initial stock take already exists for a warehouse + condition. Returns { exists, stock_take_id }. Call before creating — only one initial count is allowed per pair. |

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "SKU.io — Set Initial Inventory",
-    "description": "Load opening stock into SKU.io as an initial (first-ever) count for one or more warehouses, dated to the account's inventory start date. Use this when going live on SKU.io, onboarding a new warehouse or 3PL, or importing an opening count sheet: it settles the inventory start date (read it from settings, infer it from the source data, or ask — and set it when the account has none), turns the count sheet into one initial stock take per warehouse, and drives each through draft → open → closed so the opening quantities and their cost layers land. An initial count can only happen once per warehouse and cannot be re-dated afterwards, so the date and the unit costs must be right before you finalize. For routine cycle counts, recounts, or one-off corrections use adjust-inventory instead.",
+    "description": "Load opening stock into SKU.io as an initial (first-ever) count for one or more warehouses, dated to the account's inventory start date. Use this when going live on SKU.io, onboarding a new warehouse or 3PL, or importing an opening count sheet: it settles the inventory start date (taking it from an explicit date in the source data, or asking the user outright — the value configured in settings is often a stale placeholder and is treated as a default to confirm, never as authority), turns the count sheet into one initial stock take per warehouse, and drives each through draft → open → closed so the opening quantities and their cost layers land. An initial count can only happen once per warehouse and cannot be re-dated afterwards, so the date and the unit costs must be right before you finalize. For routine cycle counts, recounts, or one-off corrections use adjust-inventory instead.",
     "version": "1.0.0"
   },
   "servers": [
@@ -25,7 +25,7 @@
     "/api/stock-takes/inventory-start-date": {
       "get": {
         "operationId": "get_inventory_start_date",
-        "summary": "Read the account's configured inventory start date from application settings. This is the date initial counts are validated against and dated to. Returns { \"inventory_start_date\": \"YYYY-MM-DD\" } — null/absent means it has not been configured yet.",
+        "summary": "Read the account's configured inventory start date from application settings. This is the date initial counts are validated against and dated to. Returns { \"inventory_start_date\": \"YYYY-MM-DD\" } — null/absent means it has not been configured yet. A returned value is often a stale placeholder from account setup: treat it as a default to confirm against the source data or with the user, never as evidence of when stock was true.",
         "responses": {
           "200": {
             "description": "Successful response"

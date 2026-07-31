@@ -2,7 +2,7 @@
   "functionDeclarations": [
     {
       "name": "get_inventory_start_date",
-      "description": "Read the account's configured inventory start date from application settings. This is the date initial counts are validated against and dated to. Returns { \"inventory_start_date\": \"YYYY-MM-DD\" } — null/absent means it has not been configured yet. (GET /api/stock-takes/inventory-start-date)",
+      "description": "Read the account's configured inventory start date from application settings. This is the date initial counts are validated against and dated to. Returns { \"inventory_start_date\": \"YYYY-MM-DD\" } — null/absent means it has not been configured yet. A returned value is often a stale placeholder from account setup: treat it as a default to confirm against the source data or with the user, never as evidence of when stock was true. (GET /api/stock-takes/inventory-start-date)",
       "parameters": {
         "type": "OBJECT",
         "properties": {}
