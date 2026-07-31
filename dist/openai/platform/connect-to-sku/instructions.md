@@ -46,9 +46,16 @@ credential.
 1. **Set your base URL and token.**
 
    ```bash
-   export SKU_TENANT="acme"          # multi-label on beta/demo, e.g. "beta.acme"
-   export SKU_PAT="sku_pat_xxxxxxxx"
+   export SKU_TENANT="acme"           # multi-label on beta/demo, e.g. "beta.acme"
+   export SKU_PAT="105|A1b2C3d4e5…"   # keep the quotes — see below
    ```
+
+   > **Always quote the token.** A PAT is `<id>|<secret>`, and that `|` is a pipe to the shell.
+   > Unquoted, `export SKU_PAT=105|A1b2…` is parsed as a two-stage pipeline: the `export` runs in
+   > a subshell and is discarded, so `SKU_PAT` ends up **empty**, and the secret half is run as a
+   > command. Verified in both bash and zsh. You then send `Authorization: Bearer ` and get a
+   > `401` — which reads as a bad token when the token was fine all along. Keep the double quotes
+   > on the `export` and on every `-H "Authorization: Bearer $SKU_PAT"`.
 
 2. **Verify the token** with `GET /api/me` — the one identity call a PAT can make:
 

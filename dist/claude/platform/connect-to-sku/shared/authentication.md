@@ -27,6 +27,12 @@ When creating a token you choose:
 Tokens are shown **once** at creation. Store the value in a secret manager or environment
 variable — never commit it.
 
+A PAT has the shape `<id>|<secret>` (e.g. `105|A1b2C3d4e5…`). **Always quote it** — that `|` is a
+pipe to the shell, so `export SKU_PAT=105|A1b2…` is parsed as a pipeline: the `export` runs in a
+subshell and is thrown away, leaving `SKU_PAT` **empty**, while the secret half is run as a
+command. The resulting `Authorization: Bearer ` returns `401`, which looks like a rejected token
+rather than one that was never set.
+
 ## 2. Send the token
 
 ```http
@@ -108,4 +114,5 @@ wrong tenant prefix returns `401` and never reaches it.
 | `403 Token is missing the required scope` | Token lacks the scope for this verb+resource | Recreate the token with the scope named in `required_scope` |
 | `403 This endpoint is not available to API tokens.` | Session-only endpoint, not a token fault | Confirms the token *and* host are correct — auth runs before this check, so a bad token or wrong prefix returns `401` instead. Call a domain resource instead; see §4 for what stays session-only |
 | `401` on every path, token looks fine | Possibly a **wrong tenant prefix**, not a bad token | `*.sku.io` is wildcard DNS: a wrong prefix resolves and returns the same `401`. Confirm `{tenant}` matches everything before `.sku.io` in the user's login URL — including extra labels on beta/demo accounts (`beta.acme`, not `acme`) |
+| `401`, and `$SKU_PAT` is empty | The token was assigned **unquoted** | A PAT contains a `|`, so the shell split the assignment into a pipeline and discarded it. Re-export it in double quotes (see §1) and `echo "${SKU_PAT:?unset}"` to confirm it stuck |
 | `404` on every path | Wrong path prefix | All API routes live under `/api` |
