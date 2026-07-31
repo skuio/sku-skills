@@ -66,25 +66,29 @@ Run the build to regenerate `dist/`, `dist/catalog.json` (the machine-readable i
 
 ## Quickstart — use a skill
 
-**Claude** — copy the prebuilt skill folder into a directory Claude Code scans for skills
-(`.claude/skills/` inside a project, or `~/.claude/skills/` for every project). `dist/` is committed,
-so no build step is needed:
+**Claude** — install into a directory Claude Code scans for skills. `dist/` is committed, so there's
+no build step:
 
 ```bash
 git clone https://github.com/skuio/sku-skills && cd sku-skills
 
-# install into a project so sessions working there auto-discover it:
-cp -r dist/claude/products/build-product-catalog /path/to/project/.claude/skills/build-product-catalog
-
-# build-product-catalog composes with these — install them too for the full flow:
-cp -r dist/claude/platform/create-saved-view /path/to/project/.claude/skills/create-saved-view
-cp -r dist/claude/platform/connect-to-sku    /path/to/project/.claude/skills/connect-to-sku
-cp -r dist/claude/products/find-product      /path/to/project/.claude/skills/find-product
+node tools/install.mjs --list                  # see what's available
+node tools/install.mjs build-product-catalog   # → ~/.claude/skills/ (available in every project)
 ```
 
-A fresh session in that project discovers the skill by its `description` and reaches for it when the
-task matches (e.g. "import these products from this spreadsheet"). Authenticate with a SKU.io
-Personal Access Token — the `connect-to-sku` skill covers minting one.
+That pulls in the skills it hands off to (`find-product`, `create-saved-view`) plus `connect-to-sku`,
+which every skill needs. To scope it to one project instead of your whole machine:
+
+```bash
+node tools/install.mjs build-product-catalog --project /path/to/project   # → <project>/.claude/skills/
+node tools/install.mjs all                                               # everything
+```
+
+Then **work in your own project, not in this clone** — start a session there and describe the task
+("import these products from this spreadsheet"). The skill is chosen from your request by its
+`description`; you don't invoke it by name. Authentication is handled for you: every skill opens with
+a **Step 0 — Connect first** that routes to `connect-to-sku`, which walks you through minting a
+Personal Access Token with the right scopes and confirms the tenant before anything is written.
 
 **OpenAI (Custom GPT)** — create a GPT, paste `dist/openai/products/find-product/instructions.md`
 into *Instructions*, and import `action.openapi.json` under *Actions* (auth: API Key → Bearer,

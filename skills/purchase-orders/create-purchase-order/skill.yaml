@@ -1,7 +1,7 @@
 name: create-purchase-order
 title: Create a Purchase Order
 domain: purchase-orders
-version: 1.0.0
+version: 1.1.0
 description: >-
   Create a purchase order in SKU.io — a replenishment order placed with a supplier — from either a
   plain description of what to buy or a source document (a supplier email, an order-form
@@ -12,6 +12,7 @@ description: >-
 tagline: Create a replenishment PO for a supplier from a description or document
 tags: [purchase-orders, purchasing, replenishment, consignment, supplier, create]
 maintainers: [kmizzi]
+composes: [build-product-catalog, find-product]
 auth:
   scopes: [purchase-orders:write, suppliers:read, warehouses:read, products:read, settings:read]
 api:

@@ -1,7 +1,7 @@
 name: build-product-catalog
 title: Build a Product Catalog from Any Source
 domain: products
-version: 1.0.0
+version: 1.1.0
 description: >-
   Turn product information from any source — a spreadsheet or CSV, a Google Sheet, a supplier
   price list, a website or product page, or pasted text — into products in SKU.io. Extract the
@@ -11,6 +11,7 @@ description: >-
 tagline: Import products from a spreadsheet, price list, web page, or pasted text
 tags: [products, catalog, import, onboarding, etl, spreadsheet, csv, google-sheets, scraping]
 maintainers: [kmizzi]
+composes: [create-saved-view, find-product]
 auth:
   scopes: [products:write, products:read]
 api:

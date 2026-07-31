@@ -3,7 +3,7 @@
   "info": {
     "title": "SKU.io — Edit a PDF Template",
     "description": "Edit any SKU.io PDF document template — packing slips, quotes, sales orders, pick lists, purchase orders, and vendor/sales credits — by editing its HTML content directly, then validating, previewing against real and mock documents, and visually QA-ing the rendered PDF before saving. Use this to change branding, layout, a logo or footer banner, or which fields a document shows. Runs a deterministic read → edit → validate → preview → verify → save loop; every save snapshots a version you can restore, so edits are reversible. Prefer this over the in-app AI builder, which is the fallback for users without an agent. For packing slips, load edit-packing-slip-template too.",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "servers": [
     {

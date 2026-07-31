@@ -1,7 +1,7 @@
 name: sync-sops
 title: Sync your SOPs with SKU.io changes
 domain: platform
-version: 1.0.0
+version: 1.1.0
 description: >-
   Keep your internal Standard Operating Procedures (SOPs) in step with SKU.io. SKU.io ships often —
   menus move, workflows change, features are added — which quietly breaks the step-by-step procedures
@@ -12,6 +12,7 @@ description: >-
 tagline: Reconcile your internal SOPs against what changed in SKU.io — automatically
 tags: [sops, documentation, changelog, change-management, onboarding]
 maintainers: [kmizzi]
+composes: [create-saved-view, find-product]
 auth:
   scopes: [settings:read]
 api:

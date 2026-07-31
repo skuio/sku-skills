@@ -1,7 +1,7 @@
 name: create-saved-view
 title: Create a Saved View (and favorite it)
 domain: platform
-version: 1.0.0
+version: 1.1.0
 description: >-
   Create a saved view for any SKU.io data table (products, sales orders, inventory, …) — a named,
   reusable configuration of visible columns, filters, sort, and search — and favorite it so it

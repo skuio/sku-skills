@@ -60,6 +60,12 @@
       "items": { "type": "string", "pattern": "^[a-z0-9-]+$" },
       "uniqueItems": true
     },
+    "composes": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+      "uniqueItems": true,
+      "description": "Names of other skills in this repo that this one hands off to mid-task, so the installer can pull them in alongside it (`tools/install.mjs` resolves this transitively). List a skill here only if an agent running this one would genuinely need to invoke it — e.g. set-initial-inventory hands unresolved SKUs to build-product-catalog. Do NOT list alternatives the instructions merely mention to steer the agent elsewhere, and do NOT list connect-to-sku: every skill needs it, so the installer always includes it."
+    },
     "maintainers": {
       "type": "array",
       "items": { "type": "string" },
