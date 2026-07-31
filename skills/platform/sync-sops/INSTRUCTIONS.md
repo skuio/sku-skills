@@ -98,8 +98,10 @@ Suggested footer: "Last reviewed against SKU.io: 2026-07-14."
 ## Grounding in live data (optional)
 
 When SOPs need the customer's *actual* configuration (warehouse names, custom-field labels, pricing-tier
-names, statuses in use), use `verify-connection` (`GET /api/auth/profile`) to confirm the tenant, then
-compose with the **`connect-to-sku`** skill and the relevant resource skills (e.g. `find-product`,
+names, statuses in use), use `verify-connection` (`GET /api/me`) to confirm the tenant — check the
+returned `tenant_id` is the customer you mean. It needs no scopes. `/api/auth/profile` cannot be used
+here: it is session-only and answers any PAT with `403 "This endpoint is not available to API tokens."`
+Then compose with the **`connect-to-sku`** skill and the relevant resource skills (e.g. `find-product`,
 `create-saved-view`) to read live values and drop them into the SOP. Without a token, keep SOPs generic
 and note where the customer should fill in their own names.
 

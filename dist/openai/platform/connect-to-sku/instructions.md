@@ -1,6 +1,6 @@
 # Connect to SKU.io
 
-_The entry point for any SKU.io task. Establish an authenticated connection: point at the correct tenant base URL, send a Personal Access Token as a Bearer token, verify it works with a cheap identity call, and inspect the token's scopes so you know what you are allowed to do. Use this first whenever you are about to call the SKU.io API._
+_The entry point for any SKU.io task. Establish an authenticated connection: point at the correct tenant base URL, send a Personal Access Token as a Bearer token, and prove it works with GET /api/me — the scope-free identity call whose tenant_id confirms you are on the account the user meant and whose token.scopes tell you what the token may do, so you can check for a missing scope up front instead of hitting a 403 mid-operation. Use this first whenever you are about to call the SKU.io API._
 
 Use this skill to get connected before running any other SKU.io skill. It answers three
 questions: *what URL do I call, how do I authenticate, and what am I allowed to do?*
@@ -50,46 +50,90 @@ credential.
    export SKU_PAT="sku_pat_xxxxxxxx"
    ```
 
-2. **Verify the token** with a cheap identity call. A `200` with your user/account means the
-   token is valid and reachable:
+2. **Verify the token** with `GET /api/me` — the one identity call a PAT can make:
 
    ```bash
-   curl -sS "https://$SKU_TENANT.sku.io/api/auth/profile" \
+   curl -sS "https://$SKU_TENANT.sku.io/api/me" \
      -H "Authorization: Bearer $SKU_PAT" \
      -H "Accept: application/json"
    ```
 
-   A `200` is the only real proof of connection: it confirms the token *and* the host, because a
-   wrong host can never return one. **Read the account in the response body and confirm it is the
-   account the user meant** — that is the check that catches a wrong prefix.
+   ```json
+   { "data": { "id": 1, "name": "Administrator", "email": "…", "role": "Admin" },
+     "tenant_id": "acme", "tenant_name": "acme",
+     "token": { "id": 105, "name": "stock-take agent", "type": "pat",
+                "scopes": ["inventory:read", "inventory:write"],
+                "expires_at": null, "is_expired": false } }
+   ```
+
+   This is the right probe for four reasons: it **requires no scopes**, so it works with any
+   token whatever you granted it; a `200` can only come from the correct host; it returns
+   **`tenant_id`**, which is the account confirmation; and it echoes back the **`token`** you
+   presented, including its scopes — see step 3.
+
+   > **Don't reach for `/api/auth/profile`.** It's the intuitive guess and it does not work —
+   > `/api/auth/*` is session-only and answers every PAT with
+   > `403 {"message":"This endpoint is not available to API tokens."}`. Use `/api/me`, which
+   > exists precisely as the lightweight "who am I" check.
+
+   **Read `tenant_id` back and confirm it is the account the user meant.** That is the check that
+   catches a wrong prefix — and the only one that does, since a `200` alone just means *some*
+   real tenant answered.
 
    - `401` → **two possible causes, and they look identical.** Either the token is
      missing/wrong/expired, *or* `SKU_TENANT` is wrong. Before concluding the token is bad,
      re-read the user's login URL and confirm the prefix matches it character for character —
      a dropped label on a beta/demo account (`acme` for `beta.acme`) lands on a live host that
      returns this same `401`.
+   - `403 "This endpoint is not available to API tokens."` → you hit a session-only route, not a
+     token problem. **It's actually positive evidence:** authentication runs *before* that check,
+     so a bad token or wrong prefix would have returned `401` and never reached it. The token and
+     host are good — just call a PAT-reachable route instead.
+   - `403` with a `required_scope` field → connected, but the token lacks that scope. See step 3.
    - `404` on *every* path → the path prefix is wrong; every API route lives under `/api`.
    - A redirect or HTML instead of JSON → you're missing `Accept: application/json`, or hitting
      a non-API route.
 
-3. **Confirm scopes.** List the account's tokens to see which scopes each holds, so you can tell
-   whether the current token can perform your intended task:
+3. **Confirm the token can do the job — read `token.scopes` from the step-2 response.**
+
+   A token can introspect itself. The `token` block you already have lists exactly what the
+   bearer is carrying, so check the scopes your task needs *before* you start, not halfway
+   through a multi-step operation with the first half already committed:
 
    ```bash
-   curl -sS "https://$SKU_TENANT.sku.io/api/personal-access-tokens" \
-     -H "Authorization: Bearer $SKU_PAT" -H "Accept: application/json"
+   curl -sS "https://$SKU_TENANT.sku.io/api/me" \
+     -H "Authorization: Bearer $SKU_PAT" -H "Accept: application/json" \
+     | jq -r '.token.scopes[]?'
    ```
 
-   If a later call returns `403` with a `required_scope` field, the token lacks that scope — the
-   user must mint a new one that includes it. Name the missing scope and give them the direct
-   link: `https://$SKU_TENANT.sku.io/v2/settings/developer/personal-access-tokens`. Scopes are
-   enforced per verb: `read` for `GET`, `write` for `POST`/`PUT`/`PATCH`/`DELETE`.
+   Scopes are enforced per verb: `read` covers `GET`, `write` covers
+   `POST`/`PUT`/`PATCH`/`DELETE`. For the full catalogue of what exists — every resource and
+   what each scope permits — call `GET /api/developer/scopes`, which a PAT may read.
+
+   If a needed scope is missing, say so up front rather than attempting the work: name the scope
+   and hand the user the direct link,
+   `https://$SKU_TENANT.sku.io/v2/settings/developer/personal-access-tokens`. Scopes are fixed at
+   creation, so this means minting a replacement token.
+
+   > **If the response has no `token` key at all**, the account is on a build predating token
+   > introspection. Fall back to the old method: ask the user what they ticked when minting, and
+   > treat any `403` carrying a `required_scope` field as the authoritative answer for that call.
+   > An empty `scopes` array is a different thing entirely — that is a real answer, meaning the
+   > token can call nothing scoped.
+
+   Note what is still **session-only**: `/api/developer/personal-access-tokens`. A token may
+   describe *itself*, but it cannot enumerate its siblings or mint new ones.
+
+   Before a first write, a cheap scoped read doubles as a scope check and a sanity check on the
+   account — e.g. `GET /api/v2/warehouses?per_page=5` (`warehouses:read`). Recognisable warehouse
+   names alongside a matching `tenant_id` is about as certain as connection gets.
 
 ## Then hand off
 
-Once `GET /api/auth/profile` returns `200`, you are connected. Proceed to the domain skill for
-your task (e.g. **find-product**, **create-sales-order**, **adjust-inventory**), reusing the same
-base URL and `Authorization` header.
+Once `GET /api/me` returns `200` and its `tenant_id` is the account the user meant, you are
+connected. Proceed to the domain skill for your task (e.g. **find-product**,
+**create-sales-order**, **adjust-inventory**), reusing the same base URL and `Authorization`
+header.
 
 See [`shared/authentication.md`](https://github.com/skuio/sku-skills/blob/main/shared/authentication.md) and
 [`shared/api-overview.md`](https://github.com/skuio/sku-skills/blob/main/shared/api-overview.md) for the full picture.
@@ -98,8 +142,9 @@ See [`shared/authentication.md`](https://github.com/skuio/sku-skills/blob/main/s
 
 | Method | Path | What it does |
 | --- | --- | --- |
-| `GET` | `/api/auth/profile` | Return the authenticated user and account. Cheapest way to verify a token works. |
-| `GET` | `/api/personal-access-tokens` | List the account's Personal Access Tokens and the scopes granted to each. |
+| `GET` | `/api/me` | Lightweight "who am I" check and the correct way to verify a connection. Requires NO scopes, so it works with any token; a 200 can only come from the correct host; and it returns tenant_id / tenant_name, which is how you confirm you are on the account the user meant. It also echoes back the presented token as a "token" block — id, name, type, scopes, expires_at, is_expired — so read token.scopes to confirm the token can do the job before starting. Session callers get "token": null; an absent key means a build predating token introspection. Do NOT use /api/auth/profile — /api/auth/* is session-only and answers every PAT with 403 "This endpoint is not available to API tokens." |
+| `GET` | `/api/developer/scopes` | The catalogue of every scope and what each one permits, grouped by resource. Static reference data, so it requires no scopes and a PAT may read it — useful for naming precisely which scope a token is missing. Its sibling /api/developer/personal-access-tokens stays session-only: a token may describe itself, but it cannot enumerate other tokens or mint new ones. |
+| `GET` | `/api/v2/warehouses` | List warehouses (needs warehouses:read). Real warehouse names are the practical way to confirm you are on the account the user meant, which no settings or identity call can tell you. Worth a per_page=5 call before any write. |
 
 ## Authentication
 
@@ -110,7 +155,7 @@ Authorization: Bearer <YOUR_SKU_PAT>
 ```
 
 - **Base URL:** `https://{tenant}.sku.io` (replace `{tenant}` with your account subdomain)
-- **Required scopes:** `settings:read`
+- **Required scopes:** `settings:read`, `warehouses:read`
 
 Mint a token under **Settings → Developer → Personal Access Tokens** in the SKU.io web app.
 See [`shared/authentication.md`](https://github.com/skuio/sku-skills/blob/main/shared/authentication.md) for the full flow.

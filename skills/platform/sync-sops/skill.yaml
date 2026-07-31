@@ -19,9 +19,10 @@ api:
   operations:
     - id: verify-connection
       method: GET
-      path: /api/auth/profile
+      path: /api/me
       summary: >-
-        Confirm the SKU.io connection and identify the tenant/account so SOPs can be grounded in the
-        customer's real setup (their warehouses, custom fields, pricing tiers). OPTIONAL — reading the
-        public documentation and changelog (docs.sku.io) needs no token; only account-specific
-        grounding does.
+        Confirm the SKU.io connection and identify the tenant (via tenant_id) so SOPs can be grounded
+        in the customer's real setup (their warehouses, custom fields, pricing tiers). Requires no
+        scopes. Do not use /api/auth/profile: it is session-only and returns 403 "This endpoint is
+        not available to API tokens." for every PAT. OPTIONAL — reading the public documentation
+        and changelog (docs.sku.io) needs no token; only account-specific grounding does.
