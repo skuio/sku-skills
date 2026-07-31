@@ -257,9 +257,19 @@ from three files, attach three files.
 curl -sS -X POST "https://$SKU_TENANT.sku.io/api/stock-takes/42/documents" \
   -H "Authorization: Bearer $SKU_PAT" -H "Accept: application/json" \
   -F "file=@/path/to/handwritten-count-sheet.jpg" \
-  -F "description=Photo of the handwritten count sheet from the Redbank floor, supplied by the warehouse manager 2026-07-30. Pages 1-2 of 2; page 2 covers the returns bay."
+  --form-string "description=Photo of the handwritten count sheet from the Redbank floor, supplied by the warehouse manager 2026-07-30. Pages 1-2 of 2; page 2 covers the returns bay."
 # → { "data": { "id": 91, "file_name": "...", "description": "...", "file_url": "...", "uploaded_by": "..." } }
 ```
+
+> **`--form-string` for the description, never `-F`.** In an `-F name=value`, curl reads `;` in the
+> *value* as the start of a parameter (the same syntax as `;type=` / `;filename=`) and **silently
+> discards everything after it**. A description like `"3PL export; sellable and damaged are not
+> split"` posts as `"3PL export"`, and the API returns `201` — nothing anywhere tells you it was
+> truncated. `--form-string` sends the value literally. This actually happened on a live run: six
+> attachments, every description cut at its first semicolon, only caught by reading the stored
+> values back. **Whichever flag you used, list the attachments afterwards and compare the stored
+> `description` lengths to what you sent** — and if one is short, fix it with the `PATCH` below,
+> which takes JSON and has no such trap.
 
 The rest of the operations:
 
@@ -295,7 +305,13 @@ Practical notes:
 
 - **Multipart, not JSON.** `-F file=@...`; sending a JSON body gets you a `422` on `file`.
 - Accepted: `pdf, jpg, jpeg, png, gif, webp, heic, doc, docx, xls, xlsx, csv, txt, html, htm, eml,
-  msg, zip`, **max 20 MB** each. Anything else is a `422` on `file`.
+  msg, zip`, **max 20 MB** each. Anything else is a `422` on `file`. The **filename extension**
+  decides the type — the file's contents are not sniffed to classify it, so a text or CSV export
+  whose contents happen to look like another format still uploads. Contents that are an executable
+  or script are refused under any name, with a different message ("contains a program or script").
+  If you hit `422 FileMimes` on a plainly-allowed extension, the pod predates that fix — wrap the
+  file (e.g. the text verbatim inside a `<pre>` in a self-contained HTML page) and say so in the
+  description rather than dropping the source.
 - `description` is optional and capped at **2000 characters** — longer is a `422`, not a truncation.
 - Writes need the `inventory.count` permission (same as every other stock take write); reading and
   streaming need only `inventory:read`.
@@ -354,7 +370,7 @@ anything that changes the opening balance or the valuation first, bookkeeping de
 curl -sS -X POST "https://$SKU_TENANT.sku.io/api/stock-takes/42/documents" \
   -H "Authorization: Bearer $SKU_PAT" -H "Accept: application/json" \
   -F "file=@/tmp/stock-take-42-anomalies.html" \
-  -F "description=Anomaly report v1 — Northline CA (Redbank), count dated 2026-07-31. 6 open items: 1 blocking (count incomplete), 3 needing a decision, 2 FYI. Generated 2026-07-31."
+  --form-string "description=Anomaly report v1 — Northline CA (Redbank), count dated 2026-07-31. 6 open items: 1 blocking (count incomplete), 3 needing a decision, 2 FYI. Generated 2026-07-31."
 ```
 
 - Name the file `stock-take-{id}-anomalies.html` so it sorts next to the take it belongs to.
@@ -538,7 +554,7 @@ the audit trail of what was asked, when, and what came back.
 curl -sS -X POST "https://$SKU_TENANT.sku.io/api/stock-takes/42/documents" \
   -H "Authorization: Bearer $SKU_PAT" -H "Accept: application/json" \
   -F "file=@/tmp/stock-take-42-anomalies-v2.html" \
-  -F "description=Anomaly report v2 — after the 3PL's 2026-08-04 reply. 4 of 6 resolved (lines added for the returns; ACME-TSR-01 costed at \$28.40); 2 still open (damaged units pending inspection, ACME-ULT-A10 needs a product)."
+  --form-string "description=Anomaly report v2 — after the 3PL's 2026-08-04 reply. 4 of 6 resolved (lines added for the returns; ACME-TSR-01 costed at \$28.40); 2 still open (damaged units pending inspection, ACME-ULT-A10 needs a product)."
 
 # Mark v1 as superseded so nobody reads a stale question as live
 curl -sS -X PATCH "https://$SKU_TENANT.sku.io/api/stock-takes/42/documents/91" \
