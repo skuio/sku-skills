@@ -7,6 +7,7 @@ The API uses conventional HTTP status codes and returns a JSON body describing t
 | `200` / `201` | Success | — |
 | `401` | Unauthenticated | Missing/invalid/expired token — check the `Authorization` header. Also check the tenant prefix: a wrong one resolves via wildcard DNS and returns this same `401` |
 | `403` | Forbidden / missing scope | Body includes `required_scope`; recreate the token with that scope |
+| `403 "This endpoint is not available to API tokens."` | Session-only endpoint | Not a token problem — it *proves* the token and host are good (auth runs first, so a bad token gives `401`). Account/identity routes like `/api/auth/*` and `/api/developer/*` are unreachable by design; use a domain resource instead |
 | `404` | Not found | Wrong id or path (all API routes live under `/api`) |
 | `409` | Conflict | The resource is locked or in a state that rejects the change |
 | `422` | Validation failed | Fix the request per the `errors` map (see below) |

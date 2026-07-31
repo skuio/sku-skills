@@ -2,8 +2,8 @@
   {
     "type": "function",
     "function": {
-      "name": "get_profile",
-      "description": "Return the authenticated user and account. Cheapest way to verify a token works. (GET /api/auth/profile)",
+      "name": "verify_connection",
+      "description": "Lightweight \"who am I\" check and the correct way to verify a connection. Requires NO scopes, so it works with any token; a 200 can only come from the correct host; and it returns tenant_id / tenant_name, which is how you confirm you are on the account the user meant. It also echoes back the presented token as a \"token\" block — id, name, type, scopes, expires_at, is_expired — so read token.scopes to confirm the token can do the job before starting. Session callers get \"token\": null; an absent key means a build predating token introspection. Do NOT use /api/auth/profile — /api/auth/* is session-only and answers every PAT with 403 \"This endpoint is not available to API tokens.\" (GET /api/me)",
       "parameters": {
         "type": "object",
         "properties": {}
@@ -13,8 +13,19 @@
   {
     "type": "function",
     "function": {
-      "name": "list_personal_access_tokens",
-      "description": "List the account's Personal Access Tokens and the scopes granted to each. (GET /api/personal-access-tokens)",
+      "name": "list_scopes",
+      "description": "The catalogue of every scope and what each one permits, grouped by resource. Static reference data, so it requires no scopes and a PAT may read it — useful for naming precisely which scope a token is missing. Its sibling /api/developer/personal-access-tokens stays session-only: a token may describe itself, but it cannot enumerate other tokens or mint new ones. (GET /api/developer/scopes)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_warehouses",
+      "description": "List warehouses (needs warehouses:read). Real warehouse names are the practical way to confirm you are on the account the user meant, which no settings or identity call can tell you. Worth a per_page=5 call before any write. (GET /api/v2/warehouses)",
       "parameters": {
         "type": "object",
         "properties": {}

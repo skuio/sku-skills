@@ -64,11 +64,48 @@ Grant a token the **least privilege** it needs. A product-lookup agent needs onl
 `products:read`; an order-creation agent needs `orders:write` (and usually `products:read`
 to resolve line items).
 
+`GET /api/developer/scopes` returns this catalogue with a description per scope, and
+`GET /api/me` reports which of them the current token actually holds (see §4).
+
+## 4. Verifying a connection
+
+Use **`GET /api/me`**. It requires no scopes, so it works with any token, and it answers both
+*who you are* and *what you may do*:
+
+```json
+{ "data": { "id": 1, "name": "Administrator", "role": "Admin" },
+  "tenant_id": "acme", "tenant_name": "acme",
+  "token": { "id": 105, "name": "stock-take agent", "type": "pat",
+             "scopes": ["inventory:read", "inventory:write"],
+             "expires_at": null, "is_expired": false } }
+```
+
+Check `tenant_id` against the account the user meant — a `200` alone only proves *some* real
+tenant answered, so this is what catches a wrong prefix.
+
+Read `token.scopes` to confirm the token carries what your task needs **before** starting, rather
+than discovering the gap from a `403` partway through. Session-authenticated callers (the SPA)
+carry no token and get `"token": null`. If the key is absent entirely, the account predates token
+introspection — fall back to asking the user what they granted and treating a `403` carrying
+`required_scope` as the authoritative answer for that call.
+
+`GET /api/developer/scopes` is also readable by a token: it is the static catalogue of every
+scope and what each permits, useful for naming precisely what is missing.
+
+**Not `/api/auth/profile`.** That's the intuitive guess and it fails: `/api/auth/*` is session-only,
+as is `/api/developer/personal-access-tokens` — a token may describe *itself*, but it **cannot
+enumerate its siblings or mint new ones**.
+
+Those return `403 {"message":"This endpoint is not available to API tokens."}` — which is
+**positive evidence about the token**: authentication runs before that check, so a bad token or a
+wrong tenant prefix returns `401` and never reaches it.
+
 ## Common auth failures
 
 | Status | Meaning | Fix |
 | --- | --- | --- |
 | `401 Unauthenticated` | Missing/invalid/expired token | Re-check the `Authorization` header and token validity |
 | `403 Token is missing the required scope` | Token lacks the scope for this verb+resource | Recreate the token with the scope named in `required_scope` |
+| `403 This endpoint is not available to API tokens.` | Session-only endpoint, not a token fault | Confirms the token *and* host are correct — auth runs before this check, so a bad token or wrong prefix returns `401` instead. Call a domain resource instead; see §4 for what stays session-only |
 | `401` on every path, token looks fine | Possibly a **wrong tenant prefix**, not a bad token | `*.sku.io` is wildcard DNS: a wrong prefix resolves and returns the same `401`. Confirm `{tenant}` matches everything before `.sku.io` in the user's login URL — including extra labels on beta/demo accounts (`beta.acme`, not `acme`) |
 | `404` on every path | Wrong path prefix | All API routes live under `/api` |
