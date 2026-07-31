@@ -1,6 +1,6 @@
 # Set Initial Inventory
 
-System instructions for a Gemini Gem / agent. Load opening stock into SKU.io as an initial (first-ever) count for one or more warehouses, dated to the account's inventory start date. Use this when going live on SKU.io, onboarding a new warehouse or 3PL, or importing an opening count sheet: it settles the inventory start date (taking it from an explicit date in the source data, or asking the user outright — the value configured in settings is often a stale placeholder and is treated as a default to confirm, never as authority), turns the count sheet into one initial stock take per warehouse, and drives each through draft → open → closed so the opening quantities and their cost layers land. An initial count can only happen once per warehouse and cannot be re-dated afterwards, so the date and the unit costs must be right before you finalize. For routine cycle counts, recounts, or one-off corrections use adjust-inventory instead.
+System instructions for a Gemini Gem / agent. Load opening stock into SKU.io as an initial (first-ever) count for one or more warehouses, dated to the account's inventory start date. Use this when going live, onboarding a new warehouse or 3PL, or importing an opening count sheet: it settles the start date (from the source data or by asking — the configured setting is often stale, so confirm it), turns the sheet into one initial stock take per warehouse, and drives each draft → open → closed so the quantities and their cost layers land. It also attaches the source documents to the take, files the rows it could not resolve cleanly — unmapped SKUs, lines with no cost basis, damaged stock nobody split out, sheets declared incomplete — as an HTML anomaly report, and works those anomalies once answers come back: creating missing products, updating lines, posting a revised report. An initial count happens once per warehouse and cannot be re-dated, so date and unit costs must be right before finalizing. For cycle counts or corrections use adjust-inventory.
 
 Use this skill to load a business's **opening stock** into SKU.io — the first-ever count for one or
 more warehouses — and to get it dated to the account's **inventory start date**. This is the go-live
@@ -23,8 +23,15 @@ The pipeline, per warehouse:
 
 ```
 Settle the start date → Resolve warehouse → Check uniqueness → Build lines → Price them
-  → Create draft → Initiate (snapshot) → Confirm → Finalize → Verify
+  → Create draft → Attach the sources → Report the anomalies → Confirm
+  → Initiate (snapshot) → Confirm → Finalize → Verify
 ```
+
+An opening count almost never arrives clean. Rows that don't resolve, stock the sheet calls damaged,
+costs nobody has — those are **anomalies**, and they are the substance of the handover, not noise to
+swallow. Steps 7–8 exist to make them visible and answerable: the source files go onto the stock take
+as attachments, and the open questions go on as an HTML report. When the answers come back, see
+[Working the anomalies after feedback](#working-the-anomalies-after-feedback).
 
 ## Step 1 — Settle the inventory start date
 
@@ -220,9 +227,168 @@ Notes:
 - For a very large sheet, create the take with a first batch and add the rest with
   `PUT /api/stock-takes/{stock_take}` (`items[]`, `to_delete` to remove a line) before initiating.
 - Always set `notes` naming the source file/sheet — an initial count is the most-audited record in
-  the account.
+  the account. Keep it **under 255 characters**: the column is `varchar(255)` and nothing validates
+  it, so a longer note comes back as a raw `500` ("Data too long for column 'notes'") rather than a
+  `422`. Source file, who supplied it, what you excluded — that's the useful 255.
+- **`date_count` is not yours to set on an initial count.** The server overwrites it with the
+  configured inventory start date and discards what you sent, without saying so. Read `date_count`
+  off the create response and compare it to the day you agreed in Step 1 — if they differ, the
+  setting is the thing to fix, not the take. Do not initiate on a date you didn't expect.
+- `variance_reason` on a line is a fixed **enum** — `receiving_error`, `picking_error`, `damage`,
+  `mislabel`, `shrinkage`, `unknown` — not a free-text field; anything else is rejected `422`. It
+  also rarely applies here: an initial count opens from zero, so a 3PL's own book-vs-physical
+  discrepancy is not a SKU.io variance. Put that detail in `notes` instead of forcing it into a code.
 
-## Step 7 — Initiate (take the snapshot)
+## Step 7 — Attach the source documents
+
+A stock take carries **attachments** — the backup documents the count was built from. Put them on the
+take now, while it is still a draft, so the reviewer can open the original next to the lines instead
+of hunting through an inbox for the spreadsheet you typed from.
+
+Attach whatever the count actually came from: the emailed workbook, a photo of the handwritten tally,
+the PDF the 3PL exported, the Slack export, the screenshot of a WMS page. If the count was assembled
+from three files, attach three files.
+
+```bash
+curl -sS -X POST "https://$SKU_TENANT.sku.io/api/stock-takes/42/documents" \
+  -H "Authorization: Bearer $SKU_PAT" -H "Accept: application/json" \
+  -F "file=@/path/to/handwritten-count-sheet.jpg" \
+  -F "description=Photo of the handwritten count sheet from the Varennes floor, supplied by the warehouse manager 2026-07-30. Pages 1-2 of 2; page 2 covers the returns bay."
+# → { "data": { "id": 91, "file_name": "...", "description": "...", "file_url": "...", "uploaded_by": "..." } }
+```
+
+The rest of the operations:
+
+```bash
+# List what's already attached
+curl -sS "https://$SKU_TENANT.sku.io/api/stock-takes/42/documents" \
+  -H "Authorization: Bearer $SKU_PAT" -H "Accept: application/json"
+
+# Re-describe an attachment (send description: null to clear it)
+curl -sS -X PATCH "https://$SKU_TENANT.sku.io/api/stock-takes/42/documents/91" \
+  -H "Authorization: Bearer $SKU_PAT" \
+  -H "Content-Type: application/json" -H "Accept: application/json" \
+  -d '{"description":"Superseded by the v2 report — kept for audit."}'
+
+# Remove one (deletes the file and the link)
+curl -sS -X DELETE "https://$SKU_TENANT.sku.io/api/stock-takes/42/documents/91" \
+  -H "Authorization: Bearer $SKU_PAT" -H "Accept: application/json"
+
+# Stream the file back (inline; also what the UI's preview uses)
+curl -sS "https://$SKU_TENANT.sku.io/api/stock-takes/42/documents/91/file" \
+  -H "Authorization: Bearer $SKU_PAT"
+```
+
+**The `description` is the point of the feature — always write one.** `notes` on the take is capped at
+255 characters and has to cover the whole count; the description is up to 2000 characters *per file*
+and is what tells the next person what they are looking at. Say what the file is, who supplied it,
+when, and what it does and doesn't cover:
+
+> ✅ `"3PL's emailed stock-on-hand export, received from Jay 2026-07-30. Sellable + damaged are not separated in this file — see the anomaly report."`
+> ❌ `"count sheet"` — tells the reader nothing they couldn't guess from the filename.
+
+Practical notes:
+
+- **Multipart, not JSON.** `-F file=@...`; sending a JSON body gets you a `422` on `file`.
+- Accepted: `pdf, jpg, jpeg, png, gif, webp, heic, doc, docx, xls, xlsx, csv, txt, html, htm, eml,
+  msg, zip`, **max 20 MB** each. Anything else is a `422` on `file`.
+- `description` is optional and capped at **2000 characters** — longer is a `422`, not a truncation.
+- Writes need the `inventory.count` permission (same as every other stock take write); reading and
+  streaming need only `inventory:read`.
+- **Attachments are not gated on status.** You can attach to a draft, an open, or a closed take — so
+  the resolution record can still go onto a count that was finalized weeks ago.
+- Attachments are per stock take. A document id from another take returns `404`, not someone else's
+  file.
+
+## Step 8 — Report the anomalies
+
+Everything the count couldn't resolve cleanly goes into a **single HTML anomaly report**, attached to
+the take. Do this even when the list is short — an initial count is the most-audited record in the
+account, and "we asked about the damaged masks on the 30th" is worth having on the record rather than
+in a chat scrollback.
+
+### What counts as an anomaly
+
+Sweep for all of these — they are the ones that actually recur:
+
+| Anomaly | Why it matters |
+| --- | --- |
+| `not_found` SKUs | Stock was counted that has no product in SKU.io. It is not in the take, so the opening balance is short by that much. |
+| `skipped` rows | Wrong product type (bundle / matrix parent). Silently absent unless reported. |
+| Lines with **no cost basis** | They open a **zero-value FIFO layer** — everything sold from it books 100% margin until the layer is exhausted. |
+| Damaged / unsellable stock not split out | Counted into sellable on-hand, so it becomes allocatable and sellable. |
+| Two source rows collapsed onto one product | E.g. an old and a new generation both mapped to one SKU — the quantity is right, the identity isn't. |
+| A source that says it is incomplete | "all that's missing are the returns" is a statement that the opening balance is wrong by an unknown amount. |
+| Quantities in a different unit or pack size | 12 cases vs 12 units is a 12× error in the opening valuation. |
+| Free-text on the sheet carrying a decision | "will inspect at my return", "check with the supplier" — an open action that dies with the spreadsheet unless it is captured. |
+| Duplicate rows you summed | Report the sum you took, so the counterparty can confirm it was a duplicate and not two locations. |
+
+### Write the report
+
+A complete, self-contained, **light-mode** HTML document — full `<!doctype html> … </html>`, all CSS in
+a `<style>` block, no external requests at all.
+
+> **No JavaScript, no CDN fonts, no remote images.** The document stream serves user-uploaded HTML
+> under a `Content-Security-Policy: sandbox` with `default-src 'none'` — scripts and every external
+> load are blocked by design, so a report that depends on them renders broken in the UI. Inline CSS,
+> system font stack, and `data:` URIs only. Dark mode is wrong here; these get printed and emailed.
+
+For each anomaly give four things, in this order — it is the shape that gets an actual answer back:
+
+1. **What the source said** — quoted verbatim, including the typos. Paraphrasing loses the evidence.
+2. **What the count did about it** — excluded / included at zero cost / collapsed / summed. Be exact.
+3. **The impact if it is left as-is** — in units and dollars where you can compute it.
+4. **The question**, addressed to whoever can answer it, phrased so a one-line reply resolves it.
+
+Open with a summary line the reader can act on without scrolling — warehouse, count date, lines,
+units, opening value, and the number of open items by severity. Group by severity, not by SKU:
+anything that changes the opening balance or the valuation first, bookkeeping detail last.
+
+### Attach it
+
+```bash
+curl -sS -X POST "https://$SKU_TENANT.sku.io/api/stock-takes/42/documents" \
+  -H "Authorization: Bearer $SKU_PAT" -H "Accept: application/json" \
+  -F "file=@/tmp/stock-take-42-anomalies.html" \
+  -F "description=Anomaly report v1 — ShipPro CA (Varennes), count dated 2026-07-31. 6 open items: 1 blocking (count incomplete), 3 needing a decision, 2 FYI. Generated 2026-07-31."
+```
+
+- Name the file `stock-take-{id}-anomalies.html` so it sorts next to the take it belongs to.
+- **Version the description, never the endpoint** — `v1`, `v2`, … Each revision is a *new* attachment;
+  see [Working the anomalies after feedback](#working-the-anomalies-after-feedback).
+- Post the same summary as text in the conversation too. The attachment is the durable record; the
+  chat message is what actually gets read today.
+
+## Step 9 — Hand the draft to the user and wait
+
+**Stop here and let the user see the draft in the UI before you initiate.** The response carries the
+new id — turn it into a link and give it to them:
+
+```
+https://$SKU_TENANT.sku.io/v2/inventory/stock-takes/{id}
+```
+
+Post that URL with a short summary of what they are about to check — warehouse, count date, line
+count, total units, opening value, anything you held out, and the anomalies you just filed. A draft is
+the last fully reversible state: they can edit a quantity or a cost on that page, or delete the whole
+take, and nothing has touched inventory yet.
+
+**Do not initiate until they reply.** This is a blocking gate, not a courtesy notification —
+a transcribed digit or a mis-mapped SKU is cheap to fix now and expensive after finalize. If they
+came back with edits, re-read the take (`GET /api/stock-takes/{id}`) before continuing so you are
+working from what is actually saved rather than what you sent.
+
+**An open anomaly is not automatically a blocker.** Some have to be settled before the count is real
+(the sheet is missing a whole section); others can ride along and be corrected later (a cost nobody
+has yet). Say which is which and let the user decide — don't hold the whole warehouse hostage to a
+question about five door hooks, and don't quietly initiate over a count the supplier has told you is
+incomplete.
+
+Because a draft is inert, Steps 3–8 are the part of the run that is safe to do concurrently for
+several warehouses — see [Multiple warehouses](#multiple-warehouses). The gate itself does not
+change: it is still one approval per warehouse, on that warehouse's own draft.
+
+## Step 10 — Initiate (take the snapshot)
 
 ```bash
 curl -sS -X POST "https://$SKU_TENANT.sku.io/api/stock-takes/42/initiate" \
@@ -239,12 +405,25 @@ For a fresh warehouse the snapshot is zeros, so counted quantity == variance.
 - `400` — the date falls in a locked accounting period, all items were excluded, or the take is in
   adjustment mode (an initial count shouldn't be).
 
-## Step 8 — Review, confirm, then finalize
+## Step 11 — Review, confirm, then finalize
 
 **Confirm with the user before finalizing.** Show: warehouse, count date (and where it came from),
 line count, total units, total opening value, how many lines had no cost, and anything held out
-(`not_found` / `skipped`). Finalizing is the point of no return in practice — it can only be reversed
-while its cost layers are untouched.
+(`not_found` / `skipped`) — and repeat the link, since initiating may have changed what the page
+shows:
+
+```
+https://$SKU_TENANT.sku.io/v2/inventory/stock-takes/{id}
+```
+
+Finalizing is the point of no return in practice — it can only be reversed while its cost layers are
+untouched. This is a second, separate approval: the Step 9 gate was "is the data right", this one is
+"commit it". Do not roll them into one question, and do not treat approval of the draft as approval
+to finalize.
+
+If anomalies are still open, say which ones are closing unresolved and what that bakes into the
+opening balance. Then attach the resolution — see
+[Working the anomalies after feedback](#working-the-anomalies-after-feedback).
 
 If the warehouse already holds stock or has orders in flight, check for conflicts first:
 
@@ -261,24 +440,207 @@ curl -sS -X POST "https://$SKU_TENANT.sku.io/api/stock-takes/42/finalize" \
 # → {"data":{"id":42,"status":"closed","value_change":12480.0,"variance_direction":"positive"}}
 ```
 
-## Step 9 — Verify and report
+## Step 12 — Verify and report
 
 - `GET /api/stock-takes/{stock_take}` → confirm `status: "closed"`, and that `value_change` matches
   the opening value you showed the user.
 - Spot-check two or three products' on-hand at that warehouse.
-- Report per warehouse: stock take id, count date, lines counted, units, opening value, and the
-  rows you held out with the reason. For a multi-warehouse run, give one row per warehouse plus the
-  totals.
+- Report per warehouse: stock take id, count date, lines counted, units, opening value, the rows you
+  held out with the reason, and the anomalies still open. For a multi-warehouse run, give one row per
+  warehouse plus the totals.
+- Confirm the attachments landed — `GET /api/stock-takes/{stock_take}/documents` should list the
+  source files and the current anomaly report. A count whose source documents are only in someone's
+  inbox is not auditable.
+
+## Working the anomalies after feedback
+
+The report from Step 8 is a question, and questions get answered — usually days later, in an email or
+a Slack reply, after the take is already closed. Closing the loop is part of this skill, not a
+separate job. Attachments are not status-gated, so a finalized count can still receive the resolution
+record.
+
+### 1. Re-read before you act
+
+Never work from the report you wrote — it is a snapshot, and the take may have moved since.
+
+```bash
+curl -sS "https://$SKU_TENANT.sku.io/api/stock-takes/42" \
+  -H "Authorization: Bearer $SKU_PAT" -H "Accept: application/json"
+curl -sS "https://$SKU_TENANT.sku.io/api/stock-takes/42/documents" \
+  -H "Authorization: Bearer $SKU_PAT" -H "Accept: application/json"
+```
+
+Note the take's **status** — it decides what you are allowed to do next (see step 3).
+
+### 2. Classify each answer
+
+Every reply lands in exactly one of these:
+
+| The answer | What it means | What to do |
+| --- | --- | --- |
+| "That SKU is `WMMAXG4`" | A `not_found` row was a naming mismatch, not a missing product | Resolve it and add the line |
+| "That's a new product, here are its details" | The product genuinely doesn't exist yet | Create it (below), then add the line |
+| "Those 14 are damaged, keep them out" | A judgement call, now made | Record the decision; the count stands |
+| "Use $28.40 for TSRG4" | A missing cost basis is now known | Set the unit cost |
+| "Here are the returns we missed" | The source was incomplete and now isn't | Add the lines |
+| "Ignore it" / "that was a duplicate" | No data change | Record it and close the item |
+
+Anything that isn't a clear answer stays open. Do not infer a decision from silence — carry it into
+the next report.
+
+### 3. What you can still change depends on the status
+
+- **Draft** — edit freely. `PUT /api/stock-takes/{id}` with the full `items` array (add lines, fix
+  quantities, set `unit_cost`), or `POST /api/stock-takes/{id}/bulk-insert` to add products by id.
+  Re-check the totals afterwards.
+- **Open (initiated, not finalized)** — lines are still editable, but the inventory snapshot was
+  taken at initiate. If the fix changes which products are in the count, re-snapshot rather than
+  leaving the take describing a set of products it no longer covers.
+- **Closed (finalized)** — **do not** try to edit the lines. The count has produced inventory
+  movements, FIFO layers, and a journal. The correct instruments are a **separate adjustment stock
+  take** for quantity corrections, `/apply-cost-correction` for a cost that was wrong, or `/reverse`
+  (check `/reverse-analysis` first — it only works while no FIFO layer has been consumed). Tell the
+  user which one you propose and get approval; a closed initial count is not something to quietly
+  rewrite.
+
+Whatever the status, the **resolution record still gets attached** — that part is always available.
+
+### 4. Missing products: create them properly
+
+When the answer is "that's a real product we don't have yet", don't hand-create a thin stub just to
+get a line into the count. Route it through the **`build-product-catalog`** skill so the product
+arrives with its SKU convention, name, type, cost, and attributes intact — the same shape as
+everything else in the catalog. A product invented to satisfy a stock take line is a product someone
+has to clean up later.
+
+Then resolve and add:
+
+```bash
+curl -sS -X POST "https://$SKU_TENANT.sku.io/api/stock-takes/resolve-skus" \
+  -H "Authorization: Bearer $SKU_PAT" \
+  -H "Content-Type: application/json" -H "Accept: application/json" \
+  -d '{"skus":["ROUGE-ULT-A10"]}'
+```
+
+If it still comes back in `not_found`, the product wasn't created — fix that before touching the take.
+
+### 5. Post a new report, don't overwrite the old one
+
+Each round gets its **own attachment**. Never delete v1 to replace it — the sequence of reports *is*
+the audit trail of what was asked, when, and what came back.
+
+```bash
+# v2 — the same structure, with the answers folded in
+curl -sS -X POST "https://$SKU_TENANT.sku.io/api/stock-takes/42/documents" \
+  -H "Authorization: Bearer $SKU_PAT" -H "Accept: application/json" \
+  -F "file=@/tmp/stock-take-42-anomalies-v2.html" \
+  -F "description=Anomaly report v2 — after Genevieve's 2026-08-04 reply. 4 of 6 resolved (lines added for the returns; TSRG4 costed at \$28.40); 2 still open (damaged masks pending inspection, ROUGE ULTIMATE A10 needs a product)."
+
+# Mark v1 as superseded so nobody reads a stale question as live
+curl -sS -X PATCH "https://$SKU_TENANT.sku.io/api/stock-takes/42/documents/91" \
+  -H "Authorization: Bearer $SKU_PAT" \
+  -H "Content-Type: application/json" -H "Accept: application/json" \
+  -d '{"description":"Anomaly report v1 (SUPERSEDED by v2, 2026-08-04) — original 6 open items as filed 2026-07-31."}'
+```
+
+The v2 report carries every item from v1, each now marked **Resolved** (with the answer, verbatim,
+and the change you made) or **Still open** (with the question restated). Resolved items stay in the
+document — deleting them destroys the record of what was decided. Also attach the reply itself when
+you have it as a file (`.eml`, a screenshot, the corrected spreadsheet) with a description saying
+which anomalies it answers.
+
+### 6. Report back
+
+Tell the user, in the conversation: what was answered, what changed on the take (lines added, costs
+set, quantities corrected — with the new totals), what is still open, and who owes the answer. If the
+take is closed and the fix needs an adjustment or a cost correction, say so and stop for approval —
+do not create either one unasked.
 
 ## Multiple warehouses
 
-Run the per-warehouse pipeline **sequentially**, not concurrently — each warehouse gets its own
-uniqueness check, its own draft, and its own confirmation. Share the inventory start date across all
-of them (it's account-level, so it's the same date for every warehouse).
+Split the run at the point where it stops being reversible. **Drafts are built in parallel; every
+write that touches inventory stays serial and gated.**
 
-If one warehouse fails (already counted, unresolvable SKUs, missing costs), **finish the others** and
-report the failure — don't abandon the run. Never batch the confirmations into one blanket "finalize
-everything"; each finalize is its own irreversible write.
+- **Steps 3–8 (uniqueness check → resolve SKUs → cost the lines → create the draft → attach the
+  sources → file the anomalies) are read-only plus reversible writes.** A draft moves no stock,
+  creates no FIFO layer, and posts no journal; it can be edited or deleted outright, and an
+  attachment is just a file on it. Building six of them concurrently costs nothing and saves the user
+  waiting through six serial round-trips of SKU resolution and cost lookups.
+- **Steps 10–12 (initiate → finalize → verify) stay one warehouse at a time**, each behind its own
+  two approvals. Nothing about the parallel phase changes that.
+
+### Settle the shared inputs first — before any fan-out
+
+These are account-level and must be decided **once**, with the user, ahead of the parallel phase:
+
+1. The **inventory start date** (Step 1). It is one date for every warehouse; resolving it inside
+   per-warehouse agents would ask the user N times and risk N different answers.
+2. The **cost basis** (Step 5) — which source of truth the unit costs come from, and what to do about
+   lines that have none.
+3. The **warehouse list and their ids** (Step 2), plus which source rows belong to which warehouse.
+
+Fanning out before these are settled is the one way to make the parallel phase worse than the serial
+one: you would be committing the same unreviewed assumption to every warehouse simultaneously.
+
+### Fan out the drafts
+
+Run one agent per warehouse via the `Workflow` tool — a single phase, one `agent()` call per
+warehouse, all concurrent. Give each agent only its own warehouse: its id and name, its slice of the
+source rows, the settled inventory start date, the settled cost basis, and the tenant + token.
+
+Each agent does Steps 3–8 for its warehouse and returns a structured summary — do not let it print
+prose. Use a `schema` so the result comes back validated:
+
+```
+{ warehouse_id, warehouse_name, stock_take_id, date_count, line_count, total_units,
+  opening_value, lines_without_cost, not_found: [], skipped: [],
+  anomalies: [ { severity, summary, question } ], document_ids: [], error: null }
+```
+
+Each agent attaches **its own warehouse's** source files and posts **its own** anomaly report — the
+anomalies are per-warehouse and the reviewer reads them on the take, not in one merged document. It
+returns the anomaly list as well so you can roll them into the review-queue table.
+
+Hard rules for the fan-out:
+
+- **Never put `initiate` or `finalize` inside the workflow.** No agent may call either endpoint. The
+  workflow's only write is `POST /api/stock-takes` in draft status. State this explicitly in every
+  agent prompt — it is the guardrail that makes the parallelism safe.
+- **One agent per warehouse, never per SKU batch.** The uniqueness key is warehouse + condition, so
+  agents on distinct warehouses cannot collide. Two agents on the *same* warehouse would race the
+  uniqueness check and create a duplicate initial count.
+- **A failing warehouse must not take down the others.** `agent()` returns `null` when an agent dies;
+  filter those out and carry the failure into the report rather than aborting the run.
+- **`log()` each draft as it lands** — `log("Coghlan AU → draft #42, 14 lines, $20,580.39")` — so the
+  user watches them arrive instead of staring at a silent tool call.
+
+### Present them as a review queue
+
+When the workflow returns, post **one table** of everything that got built — warehouse, stock take
+id, count date, lines, units, opening value, lines missing a cost, rows held out, open anomalies —
+with a live link per row:
+
+```
+https://$SKU_TENANT.sku.io/v2/inventory/stock-takes/{id}
+```
+
+Then say plainly that all of them are drafts, nothing has touched inventory, and they can be reviewed
+in any order. Ask which to take live first.
+
+From that point the gates are unchanged and strictly per-warehouse: approve *this* draft → initiate
+it → approve *this* finalize → close it → verify → move to the next. The parallel phase bought the
+user their review time; it does not buy a blanket "finalize everything." Never batch the finalize
+confirmations — each one is its own irreversible write.
+
+### When to skip the parallelism
+
+Do it serially if any of these hold — the fan-out is a speed optimization, not a requirement:
+
+- Only one or two warehouses (the workflow overhead exceeds the saving).
+- The SKU→product mapping or the cost basis is still uncertain. Take **one** warehouse through
+  Steps 3–8 first and let the user check the mapping on a real draft; a wrong assumption caught on
+  one draft is cheaper than the same assumption baked into six.
+- The `Workflow` tool isn't available in the current environment.
 
 ## Lot-tracked products
 
@@ -305,7 +667,8 @@ expiry data for a lot-tracked product, **ask** — don't fabricate a batch numbe
 
 - **`200`/`201`** — proceed to the next step in the pipeline.
 - **`422`** — validation failed. Common causes: a future `date_count`; a `product_id` that doesn't
-  exist; `bulk-insert` called without `ids`; a lot-tracked line missing `batch_number`/`expiry_date`.
+  exist; `bulk-insert` called without `ids`; a lot-tracked line missing `batch_number`/`expiry_date`;
+  an attachment with a disallowed extension, over 20 MB, or a `description` past 2000 characters.
   Read the `errors` map and fix the named field. See [`shared/errors.md`](https://github.com/skuio/sku-skills/blob/main/shared/errors.md).
 - **`400`** — a state/business-rule refusal, not a field error: locked accounting period, take not in
   the expected status, protected-inventory conflict, or insufficient stock on finalize. Read the
@@ -317,12 +680,28 @@ expiry data for a lot-tracked product, **ask** — don't fabricate a batch numbe
 ## Guardrails
 
 - **The date is one-way.** Initial counts cannot be re-dated once finalized. Confirm the date, and
-  its provenance, with the user before Step 7 — every time, even when it looks obvious.
+  its provenance, with the user before Step 10 — every time, even when it looks obvious.
+- **Attach the sources, always.** Every count is built from something; that something belongs on the
+  take with a description saying what it is and what it covers. "It's in the email thread" is not a
+  record. Undescribed attachments are barely better than none.
+- **Report the anomalies, don't absorb them.** An unresolved SKU, a zero-cost line, or damaged stock
+  counted as sellable is a decision the user has to make — surface it in the report and in the
+  conversation. Quietly excluding rows so the count looks clean is the worst outcome this skill can
+  produce.
+- **Uploaded HTML runs sandboxed.** The document stream serves it with `default-src 'none'` and no
+  script execution. Any report with JavaScript, a CDN stylesheet, a web font, or a remote image
+  renders broken in the UI. Self-contained, inline CSS, light mode.
+- **Never delete a superseded anomaly report.** Post a new version and PATCH the old one's
+  description to mark it superseded. The sequence of reports is the audit trail.
 - **Never invent the inventory start date.** Read it, infer it from the source, or ask. Write it only
   when it is unset and the user has confirmed the exact day, and send nothing but
   `inventory_start_date` in that payload. Never silently change one that is already configured.
 - **One initial count per warehouse (+condition).** Always run `check-initial-uniqueness` first; if
   one exists, stop and report it rather than creating a parallel count.
+- **Parallelism stops at the draft.** Warehouses may build their drafts concurrently; `initiate` and
+  `finalize` are always serial, one warehouse at a time, each behind its own approval. Never place
+  either call inside a workflow or subagent — the whole point of fanning out only the reversible
+  work is that an unattended agent can never move stock.
 - **Confirm before every finalize.** It creates real inventory movements, cost layers, and an
   accounting journal. Reversal (`/reverse`) only works while no FIFO layer has been consumed — check
   `/reverse-analysis` first, and expect a compensating adjustment instead once stock has moved.
@@ -353,6 +732,11 @@ expiry data for a lot-tracked product, **ask** — don't fabricate a batch numbe
 | `GET` | `/api/stock-takes/{stock_take}` | Fetch a stock take with its items, warehouse, and (once closed) value_change and variance_direction. Use to review before finalizing and to verify afterwards. |
 | `GET` | `/api/stock-takes/{stockTake}/reconciliation-preview` | Preview what finalizing will do, including items with conflicts and open fulfillments. Worth checking when counting a warehouse that already holds stock or has orders in flight. |
 | `GET` | `/api/stock-takes/{stockTake}/reverse-analysis` | Check whether a closed stock take can still be reversed — returns can_reverse and which items have consumed FIFO layers. Run this before proposing a reversal. |
+| `GET` | `/api/stock-takes/{stockTake}/documents` | List the source / backup documents attached to a stock take — count sheets, the 3PL's spreadsheet, anomaly reports — newest first, each with its description, file_url, and uploaded_by. |
+| `POST` | `/api/stock-takes/{stockTake}/documents` | Attach a source / backup document to a stock take. Multipart form-data, not JSON. Accepts pdf, jpg, jpeg, png, gif, webp, heic, doc, docx, xls, xlsx, csv, txt, html, htm, eml, msg, zip up to 20 MB. Always send a description saying what the file is, who supplied it, when, and what it does and doesn't cover. Not gated on status — a draft, open, or closed take can all receive attachments. Needs the inventory.count permission. |
+| `PATCH` | `/api/stock-takes/{stockTake}/documents/{document}` | Re-describe an attached document. Send description null to clear it. Used to mark a superseded anomaly report rather than deleting it. Needs the inventory.count permission. |
+| `DELETE` | `/api/stock-takes/{stockTake}/documents/{document}` | Remove an attachment — deletes the document, its link, and the stored file. Do not use this to replace a superseded anomaly report; post a new version and re-describe the old one. Needs the inventory.count permission. |
+| `GET` | `/api/stock-takes/{stockTake}/documents/{document}/file` | Stream an attachment's contents inline — the same URL the UI previews. Executable types (text/html, application/xhtml+xml, image/svg+xml) are served under a CSP sandbox with default-src 'none', so an uploaded HTML report must be fully self-contained: no JavaScript, no CDN fonts, no remote images. |
 
 ## Authentication
 

@@ -32,8 +32,8 @@
       "name": "set-initial-inventory",
       "domain": "inventory",
       "title": "Set Initial Inventory",
-      "version": "1.0.0",
-      "description": "Load opening stock into SKU.io as an initial (first-ever) count for one or more warehouses, dated to the account's inventory start date. Use this when going live on SKU.io, onboarding a new warehouse or 3PL, or importing an opening count sheet: it settles the inventory start date (taking it from an explicit date in the source data, or asking the user outright — the value configured in settings is often a stale placeholder and is treated as a default to confirm, never as authority), turns the count sheet into one initial stock take per warehouse, and drives each through draft → open → closed so the opening quantities and their cost layers land. An initial count can only happen once per warehouse and cannot be re-dated afterwards, so the date and the unit costs must be right before you finalize. For routine cycle counts, recounts, or one-off corrections use adjust-inventory instead.",
+      "version": "1.2.0",
+      "description": "Load opening stock into SKU.io as an initial (first-ever) count for one or more warehouses, dated to the account's inventory start date. Use this when going live, onboarding a new warehouse or 3PL, or importing an opening count sheet: it settles the start date (from the source data or by asking — the configured setting is often stale, so confirm it), turns the sheet into one initial stock take per warehouse, and drives each draft → open → closed so the quantities and their cost layers land. It also attaches the source documents to the take, files the rows it could not resolve cleanly — unmapped SKUs, lines with no cost basis, damaged stock nobody split out, sheets declared incomplete — as an HTML anomaly report, and works those anomalies once answers come back: creating missing products, updating lines, posting a revised report. An initial count happens once per warehouse and cannot be re-dated, so date and unit costs must be right before finalizing. For cycle counts or corrections use adjust-inventory.",
       "tagline": "Load opening stock per warehouse as an initial count on the inventory start date",
       "scopes": [
         "inventory:read",
@@ -41,7 +41,7 @@
         "warehouses:read",
         "settings:write"
       ],
-      "operations": 15,
+      "operations": 20,
       "tags": [
         "inventory",
         "stock-take",
@@ -49,7 +49,9 @@
         "opening-stock",
         "onboarding",
         "go-live",
-        "warehouses"
+        "warehouses",
+        "attachments",
+        "anomaly-report"
       ],
       "pages": [
         "/inventory/stock-takes",

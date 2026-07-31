@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "SKU.io — Set Initial Inventory",
-    "description": "Load opening stock into SKU.io as an initial (first-ever) count for one or more warehouses, dated to the account's inventory start date. Use this when going live on SKU.io, onboarding a new warehouse or 3PL, or importing an opening count sheet: it settles the inventory start date (taking it from an explicit date in the source data, or asking the user outright — the value configured in settings is often a stale placeholder and is treated as a default to confirm, never as authority), turns the count sheet into one initial stock take per warehouse, and drives each through draft → open → closed so the opening quantities and their cost layers land. An initial count can only happen once per warehouse and cannot be re-dated afterwards, so the date and the unit costs must be right before you finalize. For routine cycle counts, recounts, or one-off corrections use adjust-inventory instead.",
-    "version": "1.0.0"
+    "description": "Load opening stock into SKU.io as an initial (first-ever) count for one or more warehouses, dated to the account's inventory start date. Use this when going live, onboarding a new warehouse or 3PL, or importing an opening count sheet: it settles the start date (from the source data or by asking — the configured setting is often stale, so confirm it), turns the sheet into one initial stock take per warehouse, and drives each draft → open → closed so the quantities and their cost layers land. It also attaches the source documents to the take, files the rows it could not resolve cleanly — unmapped SKUs, lines with no cost basis, damaged stock nobody split out, sheets declared incomplete — as an HTML anomaly report, and works those anomalies once answers come back: creating missing products, updating lines, posting a revised report. An initial count happens once per warehouse and cannot be re-dated, so date and unit costs must be right before finalizing. For cycle counts or corrections use adjust-inventory.",
+    "version": "1.2.0"
   },
   "servers": [
     {
@@ -271,7 +271,7 @@
                   },
                   "date_count": {
                     "type": "string",
-                    "description": "Count date (Y-m-d, account timezone). Defaults to today. For an initial count this is the inventory start date, and it cannot be changed once the take is finalized.",
+                    "description": "Count date (Y-m-d, account timezone). Defaults to today. **Ignored when is_initial_count is true** — the server pins an initial count to the configured inventory start date and silently discards whatever you send, so the created take can come back on a different day than you asked for. Read date_count off the response and check it. It cannot be changed once the take is finalized.",
                     "example": "2026-01-01"
                   },
                   "status": {
@@ -289,11 +289,11 @@
                   },
                   "notes": {
                     "type": "string",
-                    "description": "Free-text note. Record the source of the count sheet here for audit."
+                    "description": "Free-text note. Record the source of the count sheet here for audit. Capped at 255 characters by the column and NOT validated — a longer note returns a raw 500 (\"Data too long for column 'notes'\"), not a 422. Keep it short: source file, who supplied it, what you excluded."
                   },
                   "items": {
                     "type": "array",
-                    "description": "Optional line items, addable later. Each item: { product_id (required, must exist), qty_counted (numeric, >= 0), unit_cost (optional numeric, >= 0 — an explicit 0 is kept and does not fall back to the product's cost), variance_reason (optional), lots (optional array for lot-tracked products) }.",
+                    "description": "Optional line items, addable later. Each item: { product_id (required, must exist), qty_counted (numeric, >= 0), unit_cost (optional numeric, >= 0 — an explicit 0 is kept and does not fall back to the product's cost), variance_reason (optional ENUM — one of receiving_error, picking_error, damage, mislabel, shrinkage, unknown; free text is rejected 422), lots (optional array for lot-tracked products) }.",
                     "items": {
                       "type": "string"
                     }
@@ -392,15 +392,15 @@
                 "properties": {
                   "date_count": {
                     "type": "string",
-                    "description": "Re-date the count. Initial counts cannot be re-dated, so fix the date before finalizing."
+                    "description": "Re-date the count. Discarded outright on an initial count — its date is owned by the inventory start date setting, so fix that setting rather than the take."
                   },
                   "notes": {
                     "type": "string",
-                    "description": "Free-text note."
+                    "description": "Free-text note. Max 255 characters (unvalidated — longer returns a 500)."
                   },
                   "items": {
                     "type": "array",
-                    "description": "Line items. Each: { product_id (required), qty_counted (numeric, >= 0), unit_cost (optional numeric, >= 0), to_delete (boolean, removes the line), lots (optional array of { batch_number, expiry_date, manufacture_date, quantity, lot_notes } — required per lot for lot-tracked products receiving newly found stock) }.",
+                    "description": "Line items. Each: { product_id (required), qty_counted (numeric, >= 0), unit_cost (optional numeric, >= 0), variance_reason (optional ENUM: receiving_error, picking_error, damage, mislabel, shrinkage, unknown), to_delete (boolean, removes the line), lots (optional array of { batch_number, expiry_date, manufacture_date, quantity, lot_notes } — required per lot for lot-tracked products receiving newly found stock) }.",
                     "items": {
                       "type": "string"
                     }
@@ -544,6 +544,189 @@
             "schema": {
               "type": "integer",
               "description": "The stock take id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/stock-takes/{stockTake}/documents": {
+      "get": {
+        "operationId": "list_stock_take_documents",
+        "summary": "List the source / backup documents attached to a stock take — count sheets, the 3PL's spreadsheet, anomaly reports — newest first, each with its description, file_url, and uploaded_by.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "stockTake",
+            "in": "path",
+            "required": true,
+            "description": "The stock take id.",
+            "schema": {
+              "type": "integer",
+              "description": "The stock take id."
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "upload_stock_take_document",
+        "summary": "Attach a source / backup document to a stock take. Multipart form-data, not JSON. Accepts pdf, jpg, jpeg, png, gif, webp, heic, doc, docx, xls, xlsx, csv, txt, html, htm, eml, msg, zip up to 20 MB. Always send a description saying what the file is, who supplied it, when, and what it does and doesn't cover. Not gated on status — a draft, open, or closed take can all receive attachments. Needs the inventory.count permission.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "stockTake",
+            "in": "path",
+            "required": true,
+            "description": "The stock take id.",
+            "schema": {
+              "type": "integer",
+              "description": "The stock take id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "file",
+                    "description": "The document itself, sent as a multipart form-data field (curl -F).",
+                    "example": "@/tmp/handwritten-count-sheet.jpg"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "What this file is, up to 2000 characters. Far roomier than the take's 255-char notes, and the thing that tells the next reader what they are looking at.",
+                    "example": "Photo of the handwritten count sheet from the Varennes floor, supplied by the warehouse manager 2026-07-30. Pages 1-2 of 2; page 2 covers the returns bay."
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock-takes/{stockTake}/documents/{document}": {
+      "patch": {
+        "operationId": "update_stock_take_document",
+        "summary": "Re-describe an attached document. Send description null to clear it. Used to mark a superseded anomaly report rather than deleting it. Needs the inventory.count permission.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "stockTake",
+            "in": "path",
+            "required": true,
+            "description": "The stock take id.",
+            "schema": {
+              "type": "integer",
+              "description": "The stock take id."
+            }
+          },
+          {
+            "name": "document",
+            "in": "path",
+            "required": true,
+            "description": "The document id. Must belong to this stock take, or the call 404s.",
+            "schema": {
+              "type": "integer",
+              "description": "The document id. Must belong to this stock take, or the call 404s."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string",
+                    "description": "The new description, up to 2000 characters, or null to clear it.",
+                    "example": "Anomaly report v1 (SUPERSEDED by v2, 2026-08-04) — original 6 open items as filed 2026-07-31."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete_stock_take_document",
+        "summary": "Remove an attachment — deletes the document, its link, and the stored file. Do not use this to replace a superseded anomaly report; post a new version and re-describe the old one. Needs the inventory.count permission.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "stockTake",
+            "in": "path",
+            "required": true,
+            "description": "The stock take id.",
+            "schema": {
+              "type": "integer",
+              "description": "The stock take id."
+            }
+          },
+          {
+            "name": "document",
+            "in": "path",
+            "required": true,
+            "description": "The document id. Must belong to this stock take, or the call 404s.",
+            "schema": {
+              "type": "integer",
+              "description": "The document id. Must belong to this stock take, or the call 404s."
+            }
+          }
+        ]
+      }
+    },
+    "/api/stock-takes/{stockTake}/documents/{document}/file": {
+      "get": {
+        "operationId": "stream_stock_take_document",
+        "summary": "Stream an attachment's contents inline — the same URL the UI previews. Executable types (text/html, application/xhtml+xml, image/svg+xml) are served under a CSP sandbox with default-src 'none', so an uploaded HTML report must be fully self-contained: no JavaScript, no CDN fonts, no remote images.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "stockTake",
+            "in": "path",
+            "required": true,
+            "description": "The stock take id.",
+            "schema": {
+              "type": "integer",
+              "description": "The stock take id."
+            }
+          },
+          {
+            "name": "document",
+            "in": "path",
+            "required": true,
+            "description": "The document id. Must belong to this stock take, or the call 404s.",
+            "schema": {
+              "type": "integer",
+              "description": "The document id. Must belong to this stock take, or the call 404s."
             }
           }
         ]
