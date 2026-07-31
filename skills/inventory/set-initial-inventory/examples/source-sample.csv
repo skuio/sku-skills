@@ -1,0 +1,11 @@
+Opening stock count,,,,
+Stock on hand as at,2025-12-31,,,
+,,,,
+SKU,Description,Warehouse,Qty Counted,Unit Cost
+PROD-001,Blue Widget 12oz,Main Warehouse,240,12.50
+PROD-002,Red Widget 12oz,Main Warehouse,18,4.75
+PROD-003,Green Widget 12oz,Main Warehouse,0,
+123456789,Widget Refill Pack (barcode only),Main Warehouse,360,0.2344
+PROD-010,Blue Widget 12oz,Overflow Store,45,12.50
+PROD-011,Discontinued Widget,Overflow Store,12,
+,,,TOTAL,675

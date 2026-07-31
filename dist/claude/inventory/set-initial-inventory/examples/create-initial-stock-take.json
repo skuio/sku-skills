@@ -1,0 +1,46 @@
+{
+  "warehouse_id": 2,
+  "is_initial_count": true,
+  "mode": "full_count",
+  "date_count": "2026-01-01",
+  "status": "draft",
+  "condition": null,
+  "is_blind": false,
+  "notes": "Opening stock for Main Warehouse — imported from opening-count-2026-01.xlsx, counted 31 Dec 2025",
+  "items": [
+    {
+      "product_id": 55,
+      "qty_counted": 240,
+      "unit_cost": 12.5
+    },
+    {
+      "product_id": 56,
+      "qty_counted": 18,
+      "unit_cost": 4.75
+    },
+    {
+      "product_id": 57,
+      "qty_counted": 0
+    },
+    {
+      "product_id": 58,
+      "qty_counted": 360,
+      "unit_cost": 0.2344,
+      "lots": [
+        {
+          "batch_number": "LOT-2025-0042",
+          "manufacture_date": "2025-11-04",
+          "expiry_date": "2026-11-04",
+          "quantity": 200,
+          "lot_notes": "Opening lot — first pallet"
+        },
+        {
+          "batch_number": "LOT-2025-0051",
+          "manufacture_date": "2025-12-02",
+          "expiry_date": "2026-12-02",
+          "quantity": 160
+        }
+      ]
+    }
+  ]
+}

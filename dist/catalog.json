@@ -1,6 +1,6 @@
 {
   "generatedFrom": "skills/",
-  "count": 10,
+  "count": 11,
   "skills": [
     {
       "name": "adjust-inventory",
@@ -26,6 +26,40 @@
         "claude": "dist/claude/inventory/adjust-inventory/SKILL.md",
         "openai": "dist/openai/inventory/adjust-inventory/",
         "gemini": "dist/gemini/inventory/adjust-inventory/"
+      }
+    },
+    {
+      "name": "set-initial-inventory",
+      "domain": "inventory",
+      "title": "Set Initial Inventory",
+      "version": "1.0.0",
+      "description": "Load opening stock into SKU.io as an initial (first-ever) count for one or more warehouses, dated to the account's inventory start date. Use this when going live on SKU.io, onboarding a new warehouse or 3PL, or importing an opening count sheet: it settles the inventory start date (read it from settings, infer it from the source data, or ask — and set it when the account has none), turns the count sheet into one initial stock take per warehouse, and drives each through draft → open → closed so the opening quantities and their cost layers land. An initial count can only happen once per warehouse and cannot be re-dated afterwards, so the date and the unit costs must be right before you finalize. For routine cycle counts, recounts, or one-off corrections use adjust-inventory instead.",
+      "tagline": "Load opening stock per warehouse as an initial count on the inventory start date",
+      "scopes": [
+        "inventory:read",
+        "inventory:write",
+        "warehouses:read",
+        "settings:write"
+      ],
+      "operations": 15,
+      "tags": [
+        "inventory",
+        "stock-take",
+        "initial-count",
+        "opening-stock",
+        "onboarding",
+        "go-live",
+        "warehouses"
+      ],
+      "pages": [
+        "/inventory/stock-takes",
+        "/crm/warehouses/*/initial-inventory",
+        "/settings/inventory/inventory-start-date"
+      ],
+      "outputs": {
+        "claude": "dist/claude/inventory/set-initial-inventory/SKILL.md",
+        "openai": "dist/openai/inventory/set-initial-inventory/",
+        "gemini": "dist/gemini/inventory/set-initial-inventory/"
       }
     },
     {

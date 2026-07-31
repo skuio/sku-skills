@@ -1,0 +1,345 @@
+name: set-initial-inventory
+title: Set Initial Inventory
+domain: inventory
+version: 1.0.0
+description: >-
+  Load opening stock into SKU.io as an initial (first-ever) count for one or more warehouses, dated
+  to the account's inventory start date. Use this when going live on SKU.io, onboarding a new
+  warehouse or 3PL, or importing an opening count sheet: it settles the inventory start date (read it
+  from settings, infer it from the source data, or ask — and set it when the account has none), turns
+  the count sheet into one initial
+  stock take per warehouse, and drives each through draft → open → closed so the opening quantities
+  and their cost layers land. An initial count can only happen once per warehouse and cannot be
+  re-dated afterwards, so the date and the unit costs must be right before you finalize. For routine
+  cycle counts, recounts, or one-off corrections use adjust-inventory instead.
+tagline: Load opening stock per warehouse as an initial count on the inventory start date
+tags: [inventory, stock-take, initial-count, opening-stock, onboarding, go-live, warehouses]
+maintainers: [kmizzi]
+pages:
+  - /inventory/stock-takes
+  - /crm/warehouses/*/initial-inventory
+  - /settings/inventory/inventory-start-date
+auth:
+  scopes: [inventory:read, inventory:write, warehouses:read, settings:write]
+api:
+  base_url: https://{tenant}.sku.io
+  operations:
+    - id: get-inventory-start-date
+      method: GET
+      path: /api/stock-takes/inventory-start-date
+      summary: >-
+        Read the account's configured inventory start date from application settings. This is the
+        date initial counts are validated against and dated to. Returns
+        { "inventory_start_date": "YYYY-MM-DD" } — null/absent means it has not been configured yet.
+    - id: set-inventory-start-date
+      method: PUT
+      path: /api/v2/settings/inventory
+      summary: >-
+        Set the account's inventory start date. Only use this when it has not been configured yet and
+        the user has confirmed the exact day — changing an existing one moves the line in the sand for
+        order import, integration sync windows, and the effective accounting start date. Send nothing
+        but inventory_start_date; the endpoint writes every property the body carries.
+      parameters:
+        - name: inventory_start_date
+          in: body
+          type: string
+          required: true
+          description: >-
+            The date inventory tracking begins (Y-m-d, interpreted in the account's timezone). Send
+            null to clear it.
+          example: "2026-01-01"
+    - id: list-warehouses
+      method: GET
+      path: /api/v2/warehouses
+      summary: >-
+        List warehouses to resolve names to ids. A stock take's warehouse must be a standard
+        (non-virtual) warehouse; check type/subtype and archived_at before using an id.
+    - id: check-initial-uniqueness
+      method: POST
+      path: /api/stock-takes/check-initial-uniqueness
+      summary: >-
+        Check whether an initial stock take already exists for a warehouse + condition. Returns
+        { exists, stock_take_id }. Call before creating — only one initial count is allowed per pair.
+      parameters:
+        - name: warehouse_id
+          in: body
+          type: integer
+          required: true
+          description: The warehouse to check.
+          example: 2
+        - name: condition
+          in: body
+          type: string
+          required: false
+          description: >-
+            Optional condition label the initial count applies to (e.g. "new", "used"). null covers
+            the warehouse's default stock. Uniqueness is per warehouse + condition.
+    - id: list-stock-takes
+      method: GET
+      path: /api/stock-takes/list
+      summary: >-
+        List stock takes with filters — use filter[is_initial_count]=1 to see which warehouses have
+        already been counted before starting a multi-warehouse run.
+      parameters:
+        - name: filter[is_initial_count]
+          in: query
+          type: integer
+          required: false
+          description: 1 to return only initial counts, 0 for only non-initial counts.
+          example: 1
+        - name: filter[warehouse]
+          in: query
+          type: integer
+          required: false
+          description: Filter by warehouse id.
+        - name: filter[status]
+          in: query
+          type: string
+          required: false
+          description: 'One of: draft, open, closed.'
+          example: draft
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Items per page (default 10).
+    - id: resolve-skus
+      method: POST
+      path: /api/stock-takes/resolve-skus
+      summary: >-
+        Bulk-resolve a list of SKUs or barcodes to products in one call (max 5000). Returns found,
+        not_found, and skipped (wrong product type) — the way to turn a count sheet into product ids.
+      parameters:
+        - name: skus
+          in: body
+          type: array
+          required: true
+          description: >-
+            Array of SKU or barcode strings, matched case-insensitively against both columns and
+            deduplicated. Max 5000 per request.
+          example: ["PROD-001", "PROD-002", "123456789"]
+    - id: get-product-cost-options
+      method: GET
+      path: /api/stock-takes/product-cost-options
+      summary: >-
+        Get cost options for a product at a warehouse — best_available_cogs (from FIFO history) and
+        the product's default unit_cost, to 4 decimal places. Use to sanity-check a line's unit cost.
+      parameters:
+        - name: product_id
+          in: query
+          type: integer
+          required: true
+          description: Product id.
+          example: 55
+        - name: warehouse_id
+          in: query
+          type: integer
+          required: true
+          description: Warehouse id.
+          example: 2
+    - id: create-stock-take
+      method: POST
+      path: /api/stock-takes
+      summary: >-
+        Create a stock take. For opening stock set is_initial_count true, mode full_count, and
+        date_count to the inventory start date. Created as draft by default.
+      parameters:
+        - name: warehouse_id
+          in: body
+          type: integer
+          required: true
+          description: The warehouse being counted. Must be a standard (non-virtual) warehouse.
+          example: 2
+        - name: is_initial_count
+          in: body
+          type: boolean
+          required: false
+          description: >-
+            Marks this as the first-ever count for the warehouse. Set true for opening stock. Only
+            one initial count is allowed per warehouse + condition.
+          example: true
+        - name: mode
+          in: body
+          type: string
+          required: false
+          description: '"full_count" (default) or "adjustment". An initial count is a full_count.'
+          example: full_count
+        - name: date_count
+          in: body
+          type: string
+          required: false
+          description: >-
+            Count date (Y-m-d, account timezone). Defaults to today. For an initial count this is
+            the inventory start date, and it cannot be changed once the take is finalized.
+          example: "2026-01-01"
+        - name: status
+          in: body
+          type: string
+          required: false
+          description: Defaults to "draft". Leave as draft and transition with initiate.
+          example: draft
+        - name: condition
+          in: body
+          type: string
+          required: false
+          description: Optional condition label (e.g. "new", "used"). Part of the initial-count uniqueness key.
+        - name: is_blind
+          in: body
+          type: boolean
+          required: false
+          description: >-
+            Blind count — hides system on-hand for uncounted items. Default false. Pointless for a
+            first count of an empty warehouse; useful when counting a warehouse that already holds stock.
+        - name: notes
+          in: body
+          type: string
+          required: false
+          description: Free-text note. Record the source of the count sheet here for audit.
+        - name: items
+          in: body
+          type: array
+          required: false
+          description: >-
+            Optional line items, addable later. Each item: { product_id (required, must exist),
+            qty_counted (numeric, >= 0), unit_cost (optional numeric, >= 0 — an explicit 0 is kept
+            and does not fall back to the product's cost), variance_reason (optional), lots
+            (optional array for lot-tracked products) }.
+    - id: bulk-insert-stock-take
+      method: POST
+      path: /api/stock-takes/bulk-insert
+      summary: >-
+        Create a stock take and bulk-insert product ids as lines in one call. Returns stock_take_id.
+        Quantities are not part of this call — set them afterwards with update-stock-take.
+      parameters:
+        - name: ids
+          in: body
+          type: array
+          required: true
+          description: Array of product ids to add as lines (min 1 — a body without ids is rejected with 422).
+          example: [55, 56, 57]
+        - name: warehouse_id
+          in: body
+          type: integer
+          required: true
+          description: The warehouse being counted.
+          example: 2
+        - name: is_initial_count
+          in: body
+          type: boolean
+          required: false
+          description: Flags the take as the warehouse's initial count and forces mode full_count.
+          example: true
+        - name: mode
+          in: body
+          type: string
+          required: false
+          description: '"full_count" (default) or "adjustment".'
+          example: full_count
+    - id: update-stock-take
+      method: PUT
+      path: /api/stock-takes/{stock_take}
+      summary: >-
+        Update a stock take and its lines — add, update, or remove items and set counted quantities
+        and unit costs before initiating.
+      parameters:
+        - name: stock_take
+          in: path
+          type: integer
+          required: true
+          description: The stock take id.
+        - name: date_count
+          in: body
+          type: string
+          required: false
+          description: >-
+            Re-date the count. Initial counts cannot be re-dated, so fix the date before finalizing.
+        - name: notes
+          in: body
+          type: string
+          required: false
+          description: Free-text note.
+        - name: items
+          in: body
+          type: array
+          required: false
+          description: >-
+            Line items. Each: { product_id (required), qty_counted (numeric, >= 0), unit_cost
+            (optional numeric, >= 0), to_delete (boolean, removes the line), lots (optional array of
+            { batch_number, expiry_date, manufacture_date, quantity, lot_notes } — required per lot
+            for lot-tracked products receiving newly found stock) }.
+    - id: initiate-count
+      method: POST
+      path: /api/stock-takes/{stockTake}/initiate
+      summary: >-
+        Transition a stock take from draft to open, taking the inventory snapshot for all its items.
+        Required before finalize for a full_count.
+      parameters:
+        - name: stockTake
+          in: path
+          type: integer
+          required: true
+          description: The stock take id.
+        - name: date_count
+          in: body
+          type: string
+          required: false
+          description: >-
+            Retroactive count date (Y-m-d, account timezone, must be today or earlier). The resulting
+            inventory movements, FIFO layers, and accounting journal are dated to it. Omit to date
+            the count as of now. Returns 422 if in the future, 400 if it falls in a locked
+            accounting period.
+          example: "2026-01-01"
+        - name: exclude_product_ids
+          in: body
+          type: array
+          required: false
+          description: Optional product ids to drop from the take before initiating.
+    - id: finalize-stock-take
+      method: POST
+      path: /api/stock-takes/{stockTake}/finalize
+      summary: >-
+        Finalize an open stock take — creates the inventory adjustments for every variance and closes
+        it. This is the write that makes the opening stock real. Returns 400 on protected-inventory
+        conflicts, insufficient stock, or if the take is not open.
+      parameters:
+        - name: stockTake
+          in: path
+          type: integer
+          required: true
+          description: The stock take id.
+    - id: get-stock-take
+      method: GET
+      path: /api/stock-takes/{stock_take}
+      summary: >-
+        Fetch a stock take with its items, warehouse, and (once closed) value_change and
+        variance_direction. Use to review before finalizing and to verify afterwards.
+      parameters:
+        - name: stock_take
+          in: path
+          type: integer
+          required: true
+          description: The stock take id.
+    - id: reconciliation-preview
+      method: GET
+      path: /api/stock-takes/{stockTake}/reconciliation-preview
+      summary: >-
+        Preview what finalizing will do, including items with conflicts and open fulfillments. Worth
+        checking when counting a warehouse that already holds stock or has orders in flight.
+      parameters:
+        - name: stockTake
+          in: path
+          type: integer
+          required: true
+          description: The stock take id.
+    - id: reverse-analysis
+      method: GET
+      path: /api/stock-takes/{stockTake}/reverse-analysis
+      summary: >-
+        Check whether a closed stock take can still be reversed — returns can_reverse and which items
+        have consumed FIFO layers. Run this before proposing a reversal.
+      parameters:
+        - name: stockTake
+          in: path
+          type: integer
+          required: true
+          description: The stock take id.

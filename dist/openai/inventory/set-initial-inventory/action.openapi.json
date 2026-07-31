@@ -1,0 +1,562 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SKU.io — Set Initial Inventory",
+    "description": "Load opening stock into SKU.io as an initial (first-ever) count for one or more warehouses, dated to the account's inventory start date. Use this when going live on SKU.io, onboarding a new warehouse or 3PL, or importing an opening count sheet: it settles the inventory start date (read it from settings, infer it from the source data, or ask — and set it when the account has none), turns the count sheet into one initial stock take per warehouse, and drives each through draft → open → closed so the opening quantities and their cost layers land. An initial count can only happen once per warehouse and cannot be re-dated afterwards, so the date and the unit costs must be right before you finalize. For routine cycle counts, recounts, or one-off corrections use adjust-inventory instead.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{tenant}.sku.io",
+      "variables": {
+        "tenant": {
+          "default": "app",
+          "description": "Your SKU.io account subdomain."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/stock-takes/inventory-start-date": {
+      "get": {
+        "operationId": "get_inventory_start_date",
+        "summary": "Read the account's configured inventory start date from application settings. This is the date initial counts are validated against and dated to. Returns { \"inventory_start_date\": \"YYYY-MM-DD\" } — null/absent means it has not been configured yet.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v2/settings/inventory": {
+      "put": {
+        "operationId": "set_inventory_start_date",
+        "summary": "Set the account's inventory start date. Only use this when it has not been configured yet and the user has confirmed the exact day — changing an existing one moves the line in the sand for order import, integration sync windows, and the effective accounting start date. Send nothing but inventory_start_date; the endpoint writes every property the body carries.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "inventory_start_date": {
+                    "type": "string",
+                    "description": "The date inventory tracking begins (Y-m-d, interpreted in the account's timezone). Send null to clear it.",
+                    "example": "2026-01-01"
+                  }
+                },
+                "required": [
+                  "inventory_start_date"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/warehouses": {
+      "get": {
+        "operationId": "list_warehouses",
+        "summary": "List warehouses to resolve names to ids. A stock take's warehouse must be a standard (non-virtual) warehouse; check type/subtype and archived_at before using an id.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/stock-takes/check-initial-uniqueness": {
+      "post": {
+        "operationId": "check_initial_uniqueness",
+        "summary": "Check whether an initial stock take already exists for a warehouse + condition. Returns { exists, stock_take_id }. Call before creating — only one initial count is allowed per pair.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "warehouse_id": {
+                    "type": "integer",
+                    "description": "The warehouse to check.",
+                    "example": 2
+                  },
+                  "condition": {
+                    "type": "string",
+                    "description": "Optional condition label the initial count applies to (e.g. \"new\", \"used\"). null covers the warehouse's default stock. Uniqueness is per warehouse + condition."
+                  }
+                },
+                "required": [
+                  "warehouse_id"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock-takes/list": {
+      "get": {
+        "operationId": "list_stock_takes",
+        "summary": "List stock takes with filters — use filter[is_initial_count]=1 to see which warehouses have already been counted before starting a multi-warehouse run.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter[is_initial_count]",
+            "in": "query",
+            "required": false,
+            "description": "1 to return only initial counts, 0 for only non-initial counts.",
+            "schema": {
+              "type": "integer",
+              "description": "1 to return only initial counts, 0 for only non-initial counts.",
+              "example": 1
+            }
+          },
+          {
+            "name": "filter[warehouse]",
+            "in": "query",
+            "required": false,
+            "description": "Filter by warehouse id.",
+            "schema": {
+              "type": "integer",
+              "description": "Filter by warehouse id."
+            }
+          },
+          {
+            "name": "filter[status]",
+            "in": "query",
+            "required": false,
+            "description": "One of: draft, open, closed.",
+            "schema": {
+              "type": "string",
+              "description": "One of: draft, open, closed.",
+              "example": "draft"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Items per page (default 10).",
+            "schema": {
+              "type": "integer",
+              "description": "Items per page (default 10)."
+            }
+          }
+        ]
+      }
+    },
+    "/api/stock-takes/resolve-skus": {
+      "post": {
+        "operationId": "resolve_skus",
+        "summary": "Bulk-resolve a list of SKUs or barcodes to products in one call (max 5000). Returns found, not_found, and skipped (wrong product type) — the way to turn a count sheet into product ids.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "skus": {
+                    "type": "array",
+                    "description": "Array of SKU or barcode strings, matched case-insensitively against both columns and deduplicated. Max 5000 per request.",
+                    "example": [
+                      "PROD-001",
+                      "PROD-002",
+                      "123456789"
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "skus"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock-takes/product-cost-options": {
+      "get": {
+        "operationId": "get_product_cost_options",
+        "summary": "Get cost options for a product at a warehouse — best_available_cogs (from FIFO history) and the product's default unit_cost, to 4 decimal places. Use to sanity-check a line's unit cost.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "description": "Product id.",
+            "schema": {
+              "type": "integer",
+              "description": "Product id.",
+              "example": 55
+            }
+          },
+          {
+            "name": "warehouse_id",
+            "in": "query",
+            "required": true,
+            "description": "Warehouse id.",
+            "schema": {
+              "type": "integer",
+              "description": "Warehouse id.",
+              "example": 2
+            }
+          }
+        ]
+      }
+    },
+    "/api/stock-takes": {
+      "post": {
+        "operationId": "create_stock_take",
+        "summary": "Create a stock take. For opening stock set is_initial_count true, mode full_count, and date_count to the inventory start date. Created as draft by default.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "warehouse_id": {
+                    "type": "integer",
+                    "description": "The warehouse being counted. Must be a standard (non-virtual) warehouse.",
+                    "example": 2
+                  },
+                  "is_initial_count": {
+                    "type": "boolean",
+                    "description": "Marks this as the first-ever count for the warehouse. Set true for opening stock. Only one initial count is allowed per warehouse + condition.",
+                    "example": true
+                  },
+                  "mode": {
+                    "type": "string",
+                    "description": "\"full_count\" (default) or \"adjustment\". An initial count is a full_count.",
+                    "example": "full_count"
+                  },
+                  "date_count": {
+                    "type": "string",
+                    "description": "Count date (Y-m-d, account timezone). Defaults to today. For an initial count this is the inventory start date, and it cannot be changed once the take is finalized.",
+                    "example": "2026-01-01"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "Defaults to \"draft\". Leave as draft and transition with initiate.",
+                    "example": "draft"
+                  },
+                  "condition": {
+                    "type": "string",
+                    "description": "Optional condition label (e.g. \"new\", \"used\"). Part of the initial-count uniqueness key."
+                  },
+                  "is_blind": {
+                    "type": "boolean",
+                    "description": "Blind count — hides system on-hand for uncounted items. Default false. Pointless for a first count of an empty warehouse; useful when counting a warehouse that already holds stock."
+                  },
+                  "notes": {
+                    "type": "string",
+                    "description": "Free-text note. Record the source of the count sheet here for audit."
+                  },
+                  "items": {
+                    "type": "array",
+                    "description": "Optional line items, addable later. Each item: { product_id (required, must exist), qty_counted (numeric, >= 0), unit_cost (optional numeric, >= 0 — an explicit 0 is kept and does not fall back to the product's cost), variance_reason (optional), lots (optional array for lot-tracked products) }.",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "warehouse_id"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock-takes/bulk-insert": {
+      "post": {
+        "operationId": "bulk_insert_stock_take",
+        "summary": "Create a stock take and bulk-insert product ids as lines in one call. Returns stock_take_id. Quantities are not part of this call — set them afterwards with update-stock-take.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "description": "Array of product ids to add as lines (min 1 — a body without ids is rejected with 422).",
+                    "example": [
+                      55,
+                      56,
+                      57
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "warehouse_id": {
+                    "type": "integer",
+                    "description": "The warehouse being counted.",
+                    "example": 2
+                  },
+                  "is_initial_count": {
+                    "type": "boolean",
+                    "description": "Flags the take as the warehouse's initial count and forces mode full_count.",
+                    "example": true
+                  },
+                  "mode": {
+                    "type": "string",
+                    "description": "\"full_count\" (default) or \"adjustment\".",
+                    "example": "full_count"
+                  }
+                },
+                "required": [
+                  "ids",
+                  "warehouse_id"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock-takes/{stock_take}": {
+      "put": {
+        "operationId": "update_stock_take",
+        "summary": "Update a stock take and its lines — add, update, or remove items and set counted quantities and unit costs before initiating.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "stock_take",
+            "in": "path",
+            "required": true,
+            "description": "The stock take id.",
+            "schema": {
+              "type": "integer",
+              "description": "The stock take id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date_count": {
+                    "type": "string",
+                    "description": "Re-date the count. Initial counts cannot be re-dated, so fix the date before finalizing."
+                  },
+                  "notes": {
+                    "type": "string",
+                    "description": "Free-text note."
+                  },
+                  "items": {
+                    "type": "array",
+                    "description": "Line items. Each: { product_id (required), qty_counted (numeric, >= 0), unit_cost (optional numeric, >= 0), to_delete (boolean, removes the line), lots (optional array of { batch_number, expiry_date, manufacture_date, quantity, lot_notes } — required per lot for lot-tracked products receiving newly found stock) }.",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "get_stock_take",
+        "summary": "Fetch a stock take with its items, warehouse, and (once closed) value_change and variance_direction. Use to review before finalizing and to verify afterwards.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "stock_take",
+            "in": "path",
+            "required": true,
+            "description": "The stock take id.",
+            "schema": {
+              "type": "integer",
+              "description": "The stock take id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/stock-takes/{stockTake}/initiate": {
+      "post": {
+        "operationId": "initiate_count",
+        "summary": "Transition a stock take from draft to open, taking the inventory snapshot for all its items. Required before finalize for a full_count.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "stockTake",
+            "in": "path",
+            "required": true,
+            "description": "The stock take id.",
+            "schema": {
+              "type": "integer",
+              "description": "The stock take id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date_count": {
+                    "type": "string",
+                    "description": "Retroactive count date (Y-m-d, account timezone, must be today or earlier). The resulting inventory movements, FIFO layers, and accounting journal are dated to it. Omit to date the count as of now. Returns 422 if in the future, 400 if it falls in a locked accounting period.",
+                    "example": "2026-01-01"
+                  },
+                  "exclude_product_ids": {
+                    "type": "array",
+                    "description": "Optional product ids to drop from the take before initiating.",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock-takes/{stockTake}/finalize": {
+      "post": {
+        "operationId": "finalize_stock_take",
+        "summary": "Finalize an open stock take — creates the inventory adjustments for every variance and closes it. This is the write that makes the opening stock real. Returns 400 on protected-inventory conflicts, insufficient stock, or if the take is not open.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "stockTake",
+            "in": "path",
+            "required": true,
+            "description": "The stock take id.",
+            "schema": {
+              "type": "integer",
+              "description": "The stock take id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/stock-takes/{stockTake}/reconciliation-preview": {
+      "get": {
+        "operationId": "reconciliation_preview",
+        "summary": "Preview what finalizing will do, including items with conflicts and open fulfillments. Worth checking when counting a warehouse that already holds stock or has orders in flight.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "stockTake",
+            "in": "path",
+            "required": true,
+            "description": "The stock take id.",
+            "schema": {
+              "type": "integer",
+              "description": "The stock take id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/stock-takes/{stockTake}/reverse-analysis": {
+      "get": {
+        "operationId": "reverse_analysis",
+        "summary": "Check whether a closed stock take can still be reversed — returns can_reverse and which items have consumed FIFO layers. Run this before proposing a reversal.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "stockTake",
+            "in": "path",
+            "required": true,
+            "description": "The stock take id.",
+            "schema": {
+              "type": "integer",
+              "description": "The stock take id."
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "SKU.io Personal Access Token."
+      }
+    }
+  }
+}

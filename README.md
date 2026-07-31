@@ -49,6 +49,7 @@ One source of truth, three idiomatic outputs. Fix the knowledge in one place; ev
 | Domain | Skill | What it does |
 | --- | --- | --- |
 | `inventory` | **adjust-inventory** | Increase / decrease / set on-hand stock at a warehouse |
+| `inventory` | **set-initial-inventory** | Load opening stock per warehouse as an initial count on the inventory start date |
 | `orders` | **create-sales-order** | Create a sales order with line items |
 | `platform` | **connect-to-sku** | Authenticate, verify the token, and check scopes before anything else |
 | `platform` | **create-saved-view** | Create and favorite a saved view — columns, filters, sort — on any data table |
