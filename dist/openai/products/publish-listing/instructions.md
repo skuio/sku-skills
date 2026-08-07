@@ -179,7 +179,9 @@ object. A mapping has `source_type` ∈ `product_field` | `product_attribute` | 
 
 - `product_field` — a product column. The valid values are exactly what
   `GET /api/v2/listing-drafts/mappable-product-fields` returns; the resolver reads no others, so
-  a guessed column name resolves to blank rather than erroring.
+  a guessed column name resolves to blank rather than erroring. **The list is short and does not
+  include the product description** — so a channel's required description field can never be a
+  `product_field` mapping. It has to be `static` or `expression`, and the copy has to be written.
 - `product_attribute` — an attribute id.
 - `static` — a literal string, used verbatim.
 - `expression` — a mustache template over `{{product.*}}` and `{{attribute.*}}`.
@@ -315,7 +317,24 @@ moved as a unit.
 **eBay.** Implements the pre-publish dry-run via `VerifyAddItem`, so shipping policies, business
 policies and category rules surface in `channel_errors` at Step 7 rather than as a publish
 failure. Take a clean eBay validate as a strong signal; take a clean validate elsewhere as a
-weaker one.
+weaker one. Three things it will otherwise cost you a round trip to learn:
+
+- **It stops at the first error.** One entry in `channel_errors` is one *rejection*, not one
+  defect. Fix it, validate again, expect the next. Do not read a single error as "one thing
+  left to do".
+- **MPN will not accept a UPC.** `MPN has an invalid value of "<digits>"` means the field is
+  mapped to `barcode`. Map it from the manufacturer's own part number — often `sku` — or send
+  the literal `Does Not Apply`.
+- **eBay Motors is a separate marketplace tree, and older tenants cannot hold it at all.**
+  Vehicle Parts & Accessories live under marketplace `EBAY_MOTORS_US` / category tree `100`,
+  absent from `EBAY_US` / tree `0`. Before the per-marketplace taxonomy cache a channel could
+  hold exactly one tree, so a tenant shows the full general eBay US tree (~17k categories,
+  ~29 roots) with **no `eBay Motors` root**, and `sync-taxonomy` will not add one — on such a
+  tenant no automotive or powersports part has a correct category, and that is a product
+  upgrade, not something to work around. Where the tree *is* supported, it still only appears
+  **after a `sync-taxonomy` run**, under an `eBay Motors` root. Check for the root before
+  promising a category: a search returning motorcycle *memorabilia* under Collectibles and
+  nothing under Parts & Accessories is the tell.
 
 **TikTok Shop.** Also implements the dry-run.
 
@@ -346,6 +365,14 @@ that differ.
 - **Don't invent ids or field names.** Category ids come from the channel's taxonomy, product
   ids from find-product, `product_field` sources from `mappable-product-fields`, and field names
   from the draft's own `fields[]`. A guessed `product_field` fails silently as a blank value.
+- **Read what a template actually resolved to, never just that it resolved.** A mapping pointed
+  at the wrong column returns the wrong *value*, not an error, and local validation passes it —
+  a Description mapped to `price` is a non-empty string and therefore "valid". Before validating
+  an inherited draft, read `fields[]` and check each value is the kind of thing its label
+  describes. Two fields resolving to the same value is the usual tell.
+- **Inheriting a draft at `ready` does not mean it was ever verified.** On a channel with a
+  dry-run, `ready` may predate the draft's last edit or the channel's last schema change.
+  Validate before you trust it — and expect the state to regress if it was never real.
 - **Don't work around a validation error by dropping the field.** A required field with no
   real value means the product data is incomplete — say so and ask, rather than filling a
   plausible-looking placeholder into a public listing.
