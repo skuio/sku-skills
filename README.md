@@ -56,6 +56,7 @@ One source of truth, three idiomatic outputs. Fix the knowledge in one place; ev
 | `platform` | **sync-sops** | Reconcile your internal SOPs against what changed in SKU.io — automatically |
 | `products` | **build-product-catalog** | Import products from a spreadsheet, price list, web page, or pasted text |
 | `products` | **find-product** | Resolve a product by SKU, barcode, or fuzzy search |
+| `products` | **publish-listing** | Draft, validate, and publish a listing to any sales channel |
 | `purchase-orders` | **create-purchase-order** | Create a replenishment PO for a supplier from a description or document |
 | `settings` | **edit-packing-slip-template** | Edit packing-slip templates without breaking the footer banner |
 | `settings` | **edit-pdf-template** | Edit, preview, and visually QA any PDF document template — safely |

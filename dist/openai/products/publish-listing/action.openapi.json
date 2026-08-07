@@ -1,0 +1,745 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SKU.io — Publish or Update a Channel Listing",
+    "description": "List a product on a sales channel — Amazon, eBay, Walmart, Shopify, BigCommerce, WooCommerce, TikTok Shop, Temu, Faire — or revise a listing that is already live. Drives SKU.io's listing-draft workflow end to end: read per-channel publish readiness, pick the channel category (on Amazon, the product type), map the channel's required fields from product data, validate against the channel's own schema, then publish and follow the attempt log. Use this whenever someone wants a product listed, re-listed, scheduled, or its listing content updated on a marketplace or storefront.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{tenant}.sku.io",
+      "variables": {
+        "tenant": {
+          "default": "app",
+          "description": "Your SKU.io account subdomain."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v2/listing-publishing/channels": {
+      "get": {
+        "operationId": "list_publish_channels",
+        "summary": "List the sales channels that can be published to. Only channels whose integration implements a listing-schema provider appear here — use this, not a generic channel list.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v2/products/{product}/publish-readiness": {
+      "get": {
+        "operationId": "get_publish_readiness",
+        "summary": "Per-channel readiness snapshot for one product — bucket, any live listing, any open draft, the count of available templates, and the required fields still missing.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "product",
+            "in": "path",
+            "required": true,
+            "description": "The SKU.io product id.",
+            "schema": {
+              "type": "integer",
+              "description": "The SKU.io product id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/sales-channels/{salesChannel}/categories/suggest": {
+      "get": {
+        "operationId": "suggest_categories",
+        "summary": "Ranked category suggestions for a product on this channel, with confidence and source.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "salesChannel",
+            "in": "path",
+            "required": true,
+            "description": "The sales channel id.",
+            "schema": {
+              "type": "integer",
+              "description": "The sales channel id."
+            }
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "description": "The product to suggest categories for.",
+            "schema": {
+              "type": "integer",
+              "description": "The product to suggest categories for.",
+              "example": 7200
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "How many suggestions to return (1-20, default 5).",
+            "schema": {
+              "type": "integer",
+              "description": "How many suggestions to return (1-20, default 5).",
+              "example": 5
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/sales-channels/{salesChannel}/categories": {
+      "get": {
+        "operationId": "search_categories",
+        "summary": "Paginated search over the channel's cached category taxonomy. On Amazon each row is a product type and `external_id` is the Amazon product type name.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "salesChannel",
+            "in": "path",
+            "required": true,
+            "description": "The sales channel id.",
+            "schema": {
+              "type": "integer",
+              "description": "The sales channel id."
+            }
+          },
+          {
+            "name": "filter[search]",
+            "in": "query",
+            "required": false,
+            "description": "Text search over name and path. Terms of 3+ characters use a FULLTEXT prefix match (matches from the start of the name); shorter terms fall back to a substring LIKE.",
+            "schema": {
+              "type": "string",
+              "description": "Text search over name and path. Terms of 3+ characters use a FULLTEXT prefix match (matches from the start of the name); shorter terms fall back to a substring LIKE.",
+              "example": "ABRASIVE"
+            }
+          },
+          {
+            "name": "filter[leaf_only]",
+            "in": "query",
+            "required": false,
+            "description": "Restrict to leaf categories — the only ones a product can be listed against.",
+            "schema": {
+              "type": "boolean",
+              "description": "Restrict to leaf categories — the only ones a product can be listed against.",
+              "example": true
+            }
+          },
+          {
+            "name": "filter[parent_external_id]",
+            "in": "query",
+            "required": false,
+            "description": "Children of one node, for drilling down a tree channel.",
+            "schema": {
+              "type": "string",
+              "description": "Children of one node, for drilling down a tree channel."
+            }
+          },
+          {
+            "name": "filter[roots]",
+            "in": "query",
+            "required": false,
+            "description": "Top-level nodes only (null parent).",
+            "schema": {
+              "type": "boolean",
+              "description": "Top-level nodes only (null parent)."
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Page size.",
+            "schema": {
+              "type": "integer",
+              "description": "Page size.",
+              "example": 25
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/sales-channels/{salesChannel}/categories/{category}/fields": {
+      "get": {
+        "operationId": "get_category_fields",
+        "summary": "The channel's field schema for one category — type, usage tier, allowed values, length limits, guidance, and object sub-schemas. Lazily re-syncs from the channel when stale.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "salesChannel",
+            "in": "path",
+            "required": true,
+            "description": "The sales channel id.",
+            "schema": {
+              "type": "integer",
+              "description": "The sales channel id."
+            }
+          },
+          {
+            "name": "category",
+            "in": "path",
+            "required": true,
+            "description": "The SKU.io sales-channel-category id (not the channel's own external id).",
+            "schema": {
+              "type": "integer",
+              "description": "The SKU.io sales-channel-category id (not the channel's own external id)."
+            }
+          },
+          {
+            "name": "include_core",
+            "in": "query",
+            "required": false,
+            "description": "Prepend the channel's core listing fields (Title, Description, Price, Quantity) alongside the category aspects. Off by default.",
+            "schema": {
+              "type": "boolean",
+              "description": "Prepend the channel's core listing fields (Title, Description, Price, Quantity) alongside the category aspects. Off by default.",
+              "example": true
+            }
+          },
+          {
+            "name": "force",
+            "in": "query",
+            "required": false,
+            "description": "Bypass the 7-day staleness check and re-pull the fields from the channel.",
+            "schema": {
+              "type": "boolean",
+              "description": "Bypass the 7-day staleness check and re-pull the fields from the channel."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/sales-channels/{salesChannel}/sync-taxonomy": {
+      "post": {
+        "operationId": "sync_channel_taxonomy",
+        "summary": "Re-pull the channel's whole category taxonomy as a tracked background job. Run this when the category you expect is missing from search.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "salesChannel",
+            "in": "path",
+            "required": true,
+            "description": "The sales channel id.",
+            "schema": {
+              "type": "integer",
+              "description": "The sales channel id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/sales-channels/{salesChannel}/product-templates": {
+      "get": {
+        "operationId": "list_channel_templates",
+        "summary": "Reusable product templates for this channel — a saved set of field mappings and defaults that seeds a draft so most fields arrive already filled.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "salesChannel",
+            "in": "path",
+            "required": true,
+            "description": "The sales channel id.",
+            "schema": {
+              "type": "integer",
+              "description": "The sales channel id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/listing-drafts": {
+      "post": {
+        "operationId": "create_listing_draft",
+        "summary": "Open a listing draft. `purpose=create` starts a new listing for a product on a channel; `purpose=update` seeds a draft from an existing live listing so publishing revises it.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "purpose": {
+                    "type": "string",
+                    "description": "\"create\" for a new listing, \"update\" to revise a live one.",
+                    "example": "create"
+                  },
+                  "product_id": {
+                    "type": "integer",
+                    "description": "Required when purpose is \"create\" — the product being listed.",
+                    "example": 7200
+                  },
+                  "sales_channel_id": {
+                    "type": "integer",
+                    "description": "Required when purpose is \"create\" — the channel being listed on.",
+                    "example": 16
+                  },
+                  "product_listing_id": {
+                    "type": "integer",
+                    "description": "Required when purpose is \"update\" — the live listing to revise."
+                  },
+                  "sales_channel_category_id": {
+                    "type": "integer",
+                    "description": "The category (Amazon product type) to list into. Optional at create time, but the draft cannot validate or publish until it is set."
+                  },
+                  "sales_channel_product_template_id": {
+                    "type": "integer",
+                    "description": "A channel product template to seed the field mappings from."
+                  },
+                  "sales_channel_listing_profile_id": {
+                    "type": "integer",
+                    "description": "A listing profile (channel policies/defaults) to attach."
+                  }
+                },
+                "required": [
+                  "purpose"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "list_listing_drafts",
+        "summary": "Paginated list of listing drafts. Use it to find an open draft for a product/channel pair before creating a second one.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter[product_id]",
+            "in": "query",
+            "required": false,
+            "description": "Drafts for one product.",
+            "schema": {
+              "type": "integer",
+              "description": "Drafts for one product.",
+              "example": 7200
+            }
+          },
+          {
+            "name": "filter[sales_channel_id]",
+            "in": "query",
+            "required": false,
+            "description": "Drafts for one sales channel.",
+            "schema": {
+              "type": "integer",
+              "description": "Drafts for one sales channel.",
+              "example": 16
+            }
+          },
+          {
+            "name": "filter[state]",
+            "in": "query",
+            "required": false,
+            "description": "One of draft, validating, ready, scheduled, publishing, published, error.",
+            "schema": {
+              "type": "string",
+              "description": "One of draft, validating, ready, scheduled, publishing, published, error.",
+              "example": "ready"
+            }
+          },
+          {
+            "name": "filter[purpose]",
+            "in": "query",
+            "required": false,
+            "description": "\"create\" or \"update\".",
+            "schema": {
+              "type": "string",
+              "description": "\"create\" or \"update\"."
+            }
+          },
+          {
+            "name": "filter[needs_attention]",
+            "in": "query",
+            "required": false,
+            "description": "Only drafts that are blocked — errored, or missing required fields.",
+            "schema": {
+              "type": "boolean",
+              "description": "Only drafts that are blocked — errored, or missing required fields."
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Page size.",
+            "schema": {
+              "type": "integer",
+              "description": "Page size.",
+              "example": 25
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/listing-drafts/{draft}": {
+      "get": {
+        "operationId": "get_listing_draft",
+        "summary": "The draft with its full `fields[]` array — one row per channel field with the resolved value, where it came from, and its errors. Re-resolves mappings on read.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "draft",
+            "in": "path",
+            "required": true,
+            "description": "The listing draft id.",
+            "schema": {
+              "type": "integer",
+              "description": "The listing draft id."
+            }
+          }
+        ]
+      },
+      "put": {
+        "operationId": "update_listing_draft",
+        "summary": "Set field overrides, images, or swap the category/template/profile. Overrides are merged by field name, so send only what you are changing.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "draft",
+            "in": "path",
+            "required": true,
+            "description": "The listing draft id.",
+            "schema": {
+              "type": "integer",
+              "description": "The listing draft id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "field_overrides": {
+                    "type": "object",
+                    "description": "Map of channel field name to either a literal value (scalar, or an array for a multiselect) or a mapping object {source_type, source_value}. source_type is one of product_field, product_attribute, static, expression; source_value must be scalar."
+                  },
+                  "image_urls": {
+                    "type": "array",
+                    "description": "Ordered list of image URLs for the listing. First is the main image.",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "sales_channel_category_id": {
+                    "type": "integer",
+                    "description": "Change the category — re-resolves every field against the new schema."
+                  },
+                  "sales_channel_product_template_id": {
+                    "type": "integer",
+                    "description": "Change the seeding template."
+                  },
+                  "sales_channel_listing_profile_id": {
+                    "type": "integer",
+                    "description": "Change the listing profile."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/listing-drafts/mappable-product-fields": {
+      "get": {
+        "operationId": "list_mappable_product_fields",
+        "summary": "The whitelist of product columns usable as a `product_field` mapping source. Only these values are read by the resolver — never invent one.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v2/listing-drafts/{draft}/validate": {
+      "post": {
+        "operationId": "validate_listing_draft",
+        "summary": "Run local validation plus the channel's own pre-publish dry-run. Returns the refreshed draft; state becomes \"ready\" when clean, and errors land in validation_errors/channel_errors.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "draft",
+            "in": "path",
+            "required": true,
+            "description": "The listing draft id.",
+            "schema": {
+              "type": "integer",
+              "description": "The listing draft id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/listing-drafts/{draft}/variation-themes": {
+      "get": {
+        "operationId": "get_variation_themes",
+        "summary": "The draft's variation theme, axes, and per-child grid for a variation family.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "draft",
+            "in": "path",
+            "required": true,
+            "description": "The listing draft id.",
+            "schema": {
+              "type": "integer",
+              "description": "The listing draft id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/listing-drafts/{draft}/variations/validate": {
+      "post": {
+        "operationId": "validate_variations",
+        "summary": "Check the variation matrix for completeness, duplicates, axis consistency, and channel caps without persisting. Returns {valid, errors}.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "draft",
+            "in": "path",
+            "required": true,
+            "description": "The listing draft id.",
+            "schema": {
+              "type": "integer",
+              "description": "The listing draft id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/listing-drafts/{draft}/publish": {
+      "post": {
+        "operationId": "publish_listing_draft",
+        "summary": "Publish the draft to the channel, or schedule it. Asynchronous — returns 202 with a tracked job id; the draft moves through publishing to published or error.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "draft",
+            "in": "path",
+            "required": true,
+            "description": "The listing draft id.",
+            "schema": {
+              "type": "integer",
+              "description": "The listing draft id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scheduled_at": {
+                    "type": "string",
+                    "description": "ISO-8601 datetime in the future. Omit to publish now; supply it to schedule and move the draft to the \"scheduled\" state.",
+                    "example": "2026-09-01T09:00:00Z"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/listing-drafts/{draft}/unschedule": {
+      "post": {
+        "operationId": "unschedule_listing_draft",
+        "summary": "Cancel a scheduled publish and return the draft to \"ready\". Returns 422 if the draft is not currently scheduled.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "draft",
+            "in": "path",
+            "required": true,
+            "description": "The listing draft id.",
+            "schema": {
+              "type": "integer",
+              "description": "The listing draft id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/listing-drafts/{draft}/attempts": {
+      "get": {
+        "operationId": "get_publish_attempts",
+        "summary": "The publish-attempt timeline — one row per attempt, so transient retries and the final fatal error are both visible rather than only the last message.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "draft",
+            "in": "path",
+            "required": true,
+            "description": "The listing draft id.",
+            "schema": {
+              "type": "integer",
+              "description": "The listing draft id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/product-listings/{productListing}": {
+      "get": {
+        "operationId": "get_product_listing",
+        "summary": "A live listing in full — channel, listing_sku, listing_url (the public URL on the channel), title, price, effective price/stock mastery, inventory rules, and the per-location quantity caches.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "productListing",
+            "in": "path",
+            "required": true,
+            "description": "The product listing id.",
+            "schema": {
+              "type": "integer",
+              "description": "The product listing id."
+            }
+          }
+        ]
+      },
+      "put": {
+        "operationId": "update_listing_price_and_stock_settings",
+        "summary": "Change a live listing's pricing and inventory *settings* (price mastery, pricing tier, inventory rules, fulfilment latency) without republishing its content.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "productListing",
+            "in": "path",
+            "required": true,
+            "description": "The product listing id.",
+            "schema": {
+              "type": "integer",
+              "description": "The product listing id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "master_of_price": {
+                    "type": "string",
+                    "description": "Who owns the price on this channel — one of \"sku.io\", \"sales_channel\", \"neither\". Null inherits the channel default.",
+                    "example": "sku.io"
+                  },
+                  "product_pricing_tier_id": {
+                    "type": "integer",
+                    "description": "Pricing tier to price this listing from. Required when master_of_price is \"sku.io\". Null inherits."
+                  },
+                  "master_of_stock": {
+                    "type": "string",
+                    "description": "Who owns the stock level — one of \"sku.io\", \"sales_channel\", \"neither\". Null inherits.",
+                    "example": "sku.io"
+                  },
+                  "fulfillment_latency": {
+                    "type": "number",
+                    "description": "Handling time in days pushed to the channel."
+                  },
+                  "inventory_rules": {
+                    "type": "object",
+                    "description": "Per-listing inventory rule overrides (masterOfStock, selectedWarehouses, inventoryModificationRules, fbmBackup…). Sent whole — the API does not merge sub-keys."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "SKU.io Personal Access Token."
+      }
+    }
+  }
+}
