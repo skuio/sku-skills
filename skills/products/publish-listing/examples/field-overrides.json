@@ -1,0 +1,28 @@
+{
+  "field_overrides": {
+    "item_name": {
+      "source_type": "expression",
+      "source_value": "{{product.name}} — {{attribute.color}}"
+    },
+    "brand": {
+      "source_type": "product_field",
+      "source_value": "brand"
+    },
+    "bullet_point": {
+      "source_type": "product_attribute",
+      "source_value": 412
+    },
+    "country_of_origin": {
+      "source_type": "static",
+      "source_value": "CN"
+    },
+    "manufacturer": "Acme Manufacturing Co.",
+    "item_type_keyword": ["abrasive-discs", "sanding"],
+    "number_of_items": 5
+  },
+  "image_urls": [
+    "https://cdn.example.com/products/7200/main.jpg",
+    "https://cdn.example.com/products/7200/alt-1.jpg",
+    "https://cdn.example.com/products/7200/alt-2.jpg"
+  ]
+}

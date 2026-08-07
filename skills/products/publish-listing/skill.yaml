@@ -1,0 +1,461 @@
+name: publish-listing
+title: Publish or Update a Channel Listing
+domain: products
+version: 1.0.0
+description: >-
+  List a product on a sales channel — Amazon, eBay, Walmart, Shopify, BigCommerce, WooCommerce,
+  TikTok Shop, Temu, Faire — or revise a listing that is already live. Drives SKU.io's listing-draft
+  workflow end to end: read per-channel publish readiness, pick the channel category (on Amazon,
+  the product type), map the channel's required fields from product data, validate against the
+  channel's own schema, then publish and follow the attempt log. Use this whenever someone wants a
+  product listed, re-listed, scheduled, or its listing content updated on a marketplace or storefront.
+tagline: Draft, validate, and publish a listing to any sales channel
+tags: [products, listings, publish, listing-draft, marketplace, amazon, ebay, walmart, channel]
+maintainers: [kmizzi]
+composes: [find-product]
+pages:
+  - /listings
+  - /products
+auth:
+  scopes: [products:read, products:write]
+api:
+  base_url: https://{tenant}.sku.io
+  operations:
+    - id: list-publish-channels
+      method: GET
+      path: /api/v2/listing-publishing/channels
+      summary: >-
+        List the sales channels that can be published to. Only channels whose integration
+        implements a listing-schema provider appear here — use this, not a generic channel list.
+
+    - id: get-publish-readiness
+      method: GET
+      path: /api/v2/products/{product}/publish-readiness
+      summary: >-
+        Per-channel readiness snapshot for one product — bucket, any live listing, any open draft,
+        the count of available templates, and the required fields still missing.
+      parameters:
+        - name: product
+          in: path
+          type: integer
+          required: true
+          description: The SKU.io product id.
+
+    - id: suggest-categories
+      method: GET
+      path: /api/v2/sales-channels/{salesChannel}/categories/suggest
+      summary: Ranked category suggestions for a product on this channel, with confidence and source.
+      parameters:
+        - name: salesChannel
+          in: path
+          type: integer
+          required: true
+          description: The sales channel id.
+        - name: product_id
+          in: query
+          type: integer
+          required: true
+          description: The product to suggest categories for.
+          example: 7200
+        - name: limit
+          in: query
+          type: integer
+          required: false
+          description: How many suggestions to return (1-20, default 5).
+          example: 5
+
+    - id: search-categories
+      method: GET
+      path: /api/v2/sales-channels/{salesChannel}/categories
+      summary: >-
+        Paginated search over the channel's cached category taxonomy. On Amazon each row is a
+        product type and `external_id` is the Amazon product type name.
+      parameters:
+        - name: salesChannel
+          in: path
+          type: integer
+          required: true
+          description: The sales channel id.
+        - name: filter[search]
+          in: query
+          type: string
+          required: false
+          description: >-
+            Text search over name and path. Terms of 3+ characters use a FULLTEXT prefix match
+            (matches from the start of the name); shorter terms fall back to a substring LIKE.
+          example: ABRASIVE
+        - name: filter[leaf_only]
+          in: query
+          type: boolean
+          required: false
+          description: Restrict to leaf categories — the only ones a product can be listed against.
+          example: true
+        - name: filter[parent_external_id]
+          in: query
+          type: string
+          required: false
+          description: Children of one node, for drilling down a tree channel.
+        - name: filter[roots]
+          in: query
+          type: boolean
+          required: false
+          description: Top-level nodes only (null parent).
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Page size.
+          example: 25
+
+    - id: get-category-fields
+      method: GET
+      path: /api/v2/sales-channels/{salesChannel}/categories/{category}/fields
+      summary: >-
+        The channel's field schema for one category — type, usage tier, allowed values, length
+        limits, guidance, and object sub-schemas. Lazily re-syncs from the channel when stale.
+      parameters:
+        - name: salesChannel
+          in: path
+          type: integer
+          required: true
+          description: The sales channel id.
+        - name: category
+          in: path
+          type: integer
+          required: true
+          description: The SKU.io sales-channel-category id (not the channel's own external id).
+        - name: include_core
+          in: query
+          type: boolean
+          required: false
+          description: >-
+            Prepend the channel's core listing fields (Title, Description, Price, Quantity)
+            alongside the category aspects. Off by default.
+          example: true
+        - name: force
+          in: query
+          type: boolean
+          required: false
+          description: Bypass the 7-day staleness check and re-pull the fields from the channel.
+
+    - id: sync-channel-taxonomy
+      method: POST
+      path: /api/v2/sales-channels/{salesChannel}/sync-taxonomy
+      summary: >-
+        Re-pull the channel's whole category taxonomy as a tracked background job. Run this when
+        the category you expect is missing from search.
+      parameters:
+        - name: salesChannel
+          in: path
+          type: integer
+          required: true
+          description: The sales channel id.
+
+    - id: list-channel-templates
+      method: GET
+      path: /api/v2/sales-channels/{salesChannel}/product-templates
+      summary: >-
+        Reusable product templates for this channel — a saved set of field mappings and defaults
+        that seeds a draft so most fields arrive already filled.
+      parameters:
+        - name: salesChannel
+          in: path
+          type: integer
+          required: true
+          description: The sales channel id.
+
+    - id: create-listing-draft
+      method: POST
+      path: /api/v2/listing-drafts
+      summary: >-
+        Open a listing draft. `purpose=create` starts a new listing for a product on a channel;
+        `purpose=update` seeds a draft from an existing live listing so publishing revises it.
+      parameters:
+        - name: purpose
+          in: body
+          type: string
+          required: true
+          description: '"create" for a new listing, "update" to revise a live one.'
+          example: create
+        - name: product_id
+          in: body
+          type: integer
+          required: false
+          description: Required when purpose is "create" — the product being listed.
+          example: 7200
+        - name: sales_channel_id
+          in: body
+          type: integer
+          required: false
+          description: Required when purpose is "create" — the channel being listed on.
+          example: 16
+        - name: product_listing_id
+          in: body
+          type: integer
+          required: false
+          description: Required when purpose is "update" — the live listing to revise.
+        - name: sales_channel_category_id
+          in: body
+          type: integer
+          required: false
+          description: >-
+            The category (Amazon product type) to list into. Optional at create time, but the
+            draft cannot validate or publish until it is set.
+        - name: sales_channel_product_template_id
+          in: body
+          type: integer
+          required: false
+          description: A channel product template to seed the field mappings from.
+        - name: sales_channel_listing_profile_id
+          in: body
+          type: integer
+          required: false
+          description: A listing profile (channel policies/defaults) to attach.
+
+    - id: list-listing-drafts
+      method: GET
+      path: /api/v2/listing-drafts
+      summary: >-
+        Paginated list of listing drafts. Use it to find an open draft for a product/channel pair
+        before creating a second one.
+      parameters:
+        - name: filter[product_id]
+          in: query
+          type: integer
+          required: false
+          description: Drafts for one product.
+          example: 7200
+        - name: filter[sales_channel_id]
+          in: query
+          type: integer
+          required: false
+          description: Drafts for one sales channel.
+          example: 16
+        - name: filter[state]
+          in: query
+          type: string
+          required: false
+          description: 'One of draft, validating, ready, scheduled, publishing, published, error.'
+          example: ready
+        - name: filter[purpose]
+          in: query
+          type: string
+          required: false
+          description: '"create" or "update".'
+        - name: filter[needs_attention]
+          in: query
+          type: boolean
+          required: false
+          description: Only drafts that are blocked — errored, or missing required fields.
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Page size.
+          example: 25
+
+    - id: get-listing-draft
+      method: GET
+      path: /api/v2/listing-drafts/{draft}
+      summary: >-
+        The draft with its full `fields[]` array — one row per channel field with the resolved
+        value, where it came from, and its errors. Re-resolves mappings on read.
+      parameters:
+        - name: draft
+          in: path
+          type: integer
+          required: true
+          description: The listing draft id.
+
+    - id: list-mappable-product-fields
+      method: GET
+      path: /api/v2/listing-drafts/mappable-product-fields
+      summary: >-
+        The whitelist of product columns usable as a `product_field` mapping source. Only these
+        values are read by the resolver — never invent one.
+
+    - id: update-listing-draft
+      method: PUT
+      path: /api/v2/listing-drafts/{draft}
+      summary: >-
+        Set field overrides, images, or swap the category/template/profile. Overrides are merged
+        by field name, so send only what you are changing.
+      parameters:
+        - name: draft
+          in: path
+          type: integer
+          required: true
+          description: The listing draft id.
+        - name: field_overrides
+          in: body
+          type: object
+          required: false
+          description: >-
+            Map of channel field name to either a literal value (scalar, or an array for a
+            multiselect) or a mapping object {source_type, source_value}. source_type is one of
+            product_field, product_attribute, static, expression; source_value must be scalar.
+        - name: image_urls
+          in: body
+          type: array
+          required: false
+          description: Ordered list of image URLs for the listing. First is the main image.
+        - name: sales_channel_category_id
+          in: body
+          type: integer
+          required: false
+          description: Change the category — re-resolves every field against the new schema.
+        - name: sales_channel_product_template_id
+          in: body
+          type: integer
+          required: false
+          description: Change the seeding template.
+        - name: sales_channel_listing_profile_id
+          in: body
+          type: integer
+          required: false
+          description: Change the listing profile.
+
+    - id: validate-listing-draft
+      method: POST
+      path: /api/v2/listing-drafts/{draft}/validate
+      summary: >-
+        Run local validation plus the channel's own pre-publish dry-run. Returns the refreshed
+        draft; state becomes "ready" when clean, and errors land in validation_errors/channel_errors.
+      parameters:
+        - name: draft
+          in: path
+          type: integer
+          required: true
+          description: The listing draft id.
+
+    - id: get-variation-themes
+      method: GET
+      path: /api/v2/listing-drafts/{draft}/variation-themes
+      summary: The draft's variation theme, axes, and per-child grid for a variation family.
+      parameters:
+        - name: draft
+          in: path
+          type: integer
+          required: true
+          description: The listing draft id.
+
+    - id: validate-variations
+      method: POST
+      path: /api/v2/listing-drafts/{draft}/variations/validate
+      summary: >-
+        Check the variation matrix for completeness, duplicates, axis consistency, and channel
+        caps without persisting. Returns {valid, errors}.
+      parameters:
+        - name: draft
+          in: path
+          type: integer
+          required: true
+          description: The listing draft id.
+
+    - id: publish-listing-draft
+      method: POST
+      path: /api/v2/listing-drafts/{draft}/publish
+      summary: >-
+        Publish the draft to the channel, or schedule it. Asynchronous — returns 202 with a
+        tracked job id; the draft moves through publishing to published or error.
+      parameters:
+        - name: draft
+          in: path
+          type: integer
+          required: true
+          description: The listing draft id.
+        - name: scheduled_at
+          in: body
+          type: string
+          required: false
+          description: >-
+            ISO-8601 datetime in the future. Omit to publish now; supply it to schedule and move
+            the draft to the "scheduled" state.
+          example: "2026-09-01T09:00:00Z"
+
+    - id: unschedule-listing-draft
+      method: POST
+      path: /api/v2/listing-drafts/{draft}/unschedule
+      summary: >-
+        Cancel a scheduled publish and return the draft to "ready". Returns 422 if the draft is
+        not currently scheduled.
+      parameters:
+        - name: draft
+          in: path
+          type: integer
+          required: true
+          description: The listing draft id.
+
+    - id: get-publish-attempts
+      method: GET
+      path: /api/v2/listing-drafts/{draft}/attempts
+      summary: >-
+        The publish-attempt timeline — one row per attempt, so transient retries and the final
+        fatal error are both visible rather than only the last message.
+      parameters:
+        - name: draft
+          in: path
+          type: integer
+          required: true
+          description: The listing draft id.
+
+    - id: get-product-listing
+      method: GET
+      path: /api/v2/product-listings/{productListing}
+      summary: >-
+        A live listing in full — channel, listing_sku, listing_url (the public URL on the
+        channel), title, price, effective price/stock mastery, inventory rules, and the
+        per-location quantity caches.
+      parameters:
+        - name: productListing
+          in: path
+          type: integer
+          required: true
+          description: The product listing id.
+
+    - id: update-listing-price-and-stock-settings
+      method: PUT
+      path: /api/v2/product-listings/{productListing}
+      summary: >-
+        Change a live listing's pricing and inventory *settings* (price mastery, pricing tier,
+        inventory rules, fulfilment latency) without republishing its content.
+      parameters:
+        - name: productListing
+          in: path
+          type: integer
+          required: true
+          description: The product listing id.
+        - name: master_of_price
+          in: body
+          type: string
+          required: false
+          description: >-
+            Who owns the price on this channel — one of "sku.io", "sales_channel", "neither".
+            Null inherits the channel default.
+          example: sku.io
+        - name: product_pricing_tier_id
+          in: body
+          type: integer
+          required: false
+          description: >-
+            Pricing tier to price this listing from. Required when master_of_price is "sku.io".
+            Null inherits.
+        - name: master_of_stock
+          in: body
+          type: string
+          required: false
+          description: >-
+            Who owns the stock level — one of "sku.io", "sales_channel", "neither". Null inherits.
+          example: sku.io
+        - name: fulfillment_latency
+          in: body
+          type: number
+          required: false
+          description: Handling time in days pushed to the channel.
+        - name: inventory_rules
+          in: body
+          type: object
+          required: false
+          description: >-
+            Per-listing inventory rule overrides (masterOfStock, selectedWarehouses,
+            inventoryModificationRules, fbmBackup…). Sent whole — the API does not merge sub-keys.

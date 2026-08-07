@@ -1,6 +1,6 @@
 {
   "generatedFrom": "skills/",
-  "count": 11,
+  "count": 12,
   "skills": [
     {
       "name": "adjust-inventory",
@@ -243,6 +243,42 @@
         "claude": "dist/claude/products/find-product/SKILL.md",
         "openai": "dist/openai/products/find-product/",
         "gemini": "dist/gemini/products/find-product/"
+      }
+    },
+    {
+      "name": "publish-listing",
+      "domain": "products",
+      "title": "Publish or Update a Channel Listing",
+      "version": "1.0.0",
+      "description": "List a product on a sales channel — Amazon, eBay, Walmart, Shopify, BigCommerce, WooCommerce, TikTok Shop, Temu, Faire — or revise a listing that is already live. Drives SKU.io's listing-draft workflow end to end: read per-channel publish readiness, pick the channel category (on Amazon, the product type), map the channel's required fields from product data, validate against the channel's own schema, then publish and follow the attempt log. Use this whenever someone wants a product listed, re-listed, scheduled, or its listing content updated on a marketplace or storefront.",
+      "tagline": "Draft, validate, and publish a listing to any sales channel",
+      "scopes": [
+        "products:read",
+        "products:write"
+      ],
+      "operations": 20,
+      "tags": [
+        "products",
+        "listings",
+        "publish",
+        "listing-draft",
+        "marketplace",
+        "amazon",
+        "ebay",
+        "walmart",
+        "channel"
+      ],
+      "composes": [
+        "find-product"
+      ],
+      "pages": [
+        "/listings",
+        "/products"
+      ],
+      "outputs": {
+        "claude": "dist/claude/products/publish-listing/SKILL.md",
+        "openai": "dist/openai/products/publish-listing/",
+        "gemini": "dist/gemini/products/publish-listing/"
       }
     },
     {
