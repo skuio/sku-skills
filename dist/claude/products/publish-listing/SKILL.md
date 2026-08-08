@@ -205,6 +205,37 @@ combinations, axis consistency and the channel's caps, returning `{valid, errors
 persisting. Clear this before the main validation — a variation matrix rejected at publish time
 is far harder to read than the same problem reported here.
 
+**The theme is derived from the parent product, not from the draft.** A matrix parent declares
+which attributes are its axes; the draft picks that up at creation and fills `variation_theme`
+plus a per-child grid. Two ways that silently produces a family with no theme at all:
+
+- **The parent's axis list is empty.** Then nothing derives, `variation_theme` comes back `null`,
+  and the draft looks like an ordinary single-product draft — no error anywhere. Check
+  `variation-themes` returns a theme and the child count you expect *before* filling any fields.
+- **A child is missing one axis value.** An empty axis value is dropped rather than reported, so
+  that child ends up with fewer axis values than the theme has axes. `variations/validate` is
+  what catches it; the grid alone looks plausible.
+
+Read the child count off `variation-themes` and reconcile it against the parent's real children.
+A family that publishes with 30 of 32 children is a worse outcome than one that refuses to
+publish, and only the count tells you which you have.
+
+### Axis values are the channel's vocabulary, not yours
+
+The axis *attribute* and the axis *value* are both channel-specific, and neither is the internal
+name. On Amazon this is sharpest — see the Amazon channel note below — but the rule is general:
+whatever the product attribute is called internally, the channel names its own axis field, and the
+permitted values come from the category schema, not from the product data. Where the two disagree,
+the channel wins and the publish fails on the mismatch.
+
+Some axis fields need a qualifier that **no axis value can imply** — Amazon's size axis is the
+common case, where the schema demands a `size_class` but has nothing linking it to the size.
+That qualifier is invariant across the family, so declare it once on the draft rather than per
+child: put it in `field_overrides` under the channel's attribute name (Step 5), shaped the way
+the field's `object_schema` says. The per-child axis value keeps precedence over anything an
+override names, so an override can add a missing qualifier but can never flatten the family into
+one variant.
+
 ## Step 7 — validate against the channel
 
 ```bash
@@ -318,6 +349,40 @@ A variation family publishes as a parent plus one call per child, so a partial f
 some children live and others not. Read `attempts` per draft rather than assuming the family
 moved as a unit.
 
+*Amazon variation families* are where the schema stops being a formality. Four things, each of
+which fails in a way that does not name itself:
+
+- **There is no universal `size` attribute.** Every product type names its own size axis:
+  `SWIMWEAR` calls it `shapewear_size`, `SHIRT` calls it `shirt_size`. Look the axis field up in
+  the draft's `fields[]` for that product type — do not derive it from the axis name. `SHIRT` also
+  carries a decoy `compliance_chest_size`, so "ends in `_size`" is not the test either; the real
+  axis is the one whose `object_schema` models a size designation.
+- **Axis attributes are objects, not scalars.** `shapewear_size` takes
+  `{size, size_class, size_system}` with `additionalProperties: false` — a `{value: "XL"}` is
+  rejected outright rather than mislabeled. The value itself is coded (`x_l`, not `XL`), from an
+  enum several hundred long. `color` is the same shape in milder form: it requires a
+  `language_tag`. Read `object_schema` on the field row and build what it asks for.
+- **`size_class` cannot be derived and never will be.** Its enum (`age`, `alpha`, `alpha_jaspo`,
+  `cup_band`, `numeric`, `numeric_go`, `numeric_height`) has no schema-level link to the size
+  value — whether `S`/`M`/`L` means alpha sizing or age sizing is merchant knowledge. Declare it
+  once in `field_overrides`, keyed by the axis attribute name:
+
+  ```json
+  { "field_overrides": { "shapewear_size": [{ "size_class": "alpha" }] } }
+  ```
+
+  Rather than guess, an unfillable axis qualifier is reported as an
+  `unresolvable_variation_axis` error **before the first call to Amazon**, naming the field and
+  its permitted values. That pre-flight matters: guessing would publish a whole family under the
+  wrong sizing system, and failing mid-family would leave a parent live with no children.
+- **`variation_theme` is a separate vocabulary from the attribute names, and tokens get
+  deprecated.** The axes `shapewear_size` + `color` publish under the token `SIZE/COLOR` —
+  slash-joined, and the enum is per product type. On `SWIMWEAR`, `COLOR/SIZE` and
+  `SIZE_NAME/COLOR_NAME` are both deprecated while `SIZE/COLOR` is not, so **the axis order is
+  forced by which token survives**, and the order is set by the parent product's axis list. Declare
+  the axes in the order the live token expects; a family built the other way round publishes under
+  a deprecated token or fails to resolve one at all.
+
 **eBay.** Implements the pre-publish dry-run via `VerifyAddItem`, so shipping policies, business
 policies and category rules surface in `channel_errors` at Step 7 rather than as a publish
 failure. Take a clean eBay validate as a strong signal; take a clean validate elsewhere as a
@@ -381,6 +446,11 @@ that differ.
   real value means the product data is incomplete — say so and ask, rather than filling a
   plausible-looking placeholder into a public listing.
 - **Report `quantity_to_push` before publishing.** Zero is a valid number and a bad surprise.
+- **Never let a variation family publish on a count you did not check.** The theme derives from
+  the parent product, and both "no axes declared" and "one child missing an axis value" produce a
+  draft that reads as healthy. Confirm the theme is non-null and the child count matches the
+  parent's real children before Step 7, and report that count at the human gate — a family is one
+  detail page, so a wrong count is a wrong page, not a missing row.
 
 ## API operations
 
