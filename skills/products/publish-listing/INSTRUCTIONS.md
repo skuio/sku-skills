@@ -135,8 +135,10 @@ Respect the schema when you write: a `select`/`multiselect` with `allowed_values
 title that exceeds it is rejected at validation, not silently trimmed. `object` and `object_list`
 types take a JSON object (or array of objects) shaped by `object_schema`, not a string.
 
-Write with `PUT /api/v2/listing-drafts/{draft}`. Overrides merge by field name — send only what
-you are changing:
+Write with `PUT /api/v2/listing-drafts/{draft}`. **`field_overrides` is replaced wholesale, not
+merged** — whatever you send becomes the complete set, and every override you omit is deleted.
+So read the draft's current `field_overrides` first and send them back alongside your change.
+The response is a `200` either way; nothing warns you that you just dropped six fields:
 
 ```bash
 curl -sS -X PUT "https://$SKU_TENANT.sku.io/api/v2/listing-drafts/318" \
@@ -213,6 +215,14 @@ the field's `object_schema` says. The per-child axis value keeps precedence over
 override names, so an override can add a missing qualifier but can never flatten the family into
 one variant.
 
+**That override is a template, and it is meant to be incomplete.** It carries the qualifier the
+children inherit — Amazon's `size_class`/`size_system` — and deliberately not the size itself,
+because the parent has no single size. So do not "complete" it to clear a validation error: the
+parent never sends an axis, only the children do. If validation asks a parent to name a size or
+a color, the draft is right and the validator is wrong — fix it there, and leave the override
+alone. Deleting the override to silence the error is worse still: it breaks every child in the
+family to satisfy a parent that was never going to send the field.
+
 ## Step 7 — validate against the channel
 
 ```bash
@@ -223,6 +233,13 @@ curl -sS -X POST "https://$SKU_TENANT.sku.io/api/v2/listing-drafts/318/validate"
 The refreshed draft comes back. Read `state`, `validation_errors` (ours) and `channel_errors`
 (the channel's). Each error carries a `field`, so map it back to the `fields[]` row, fix that
 field, and validate again. **Do not publish a draft that is not `ready`.**
+
+**Expect the error count to stall at one, repeatedly.** JSON-Schema validation stops at the first
+failing keyword of a schema level, and these schemas hang most of their requirements off a root
+conditional — so one bad attribute masks every rule behind it. Clearing an error *reveals* the
+next rather than reducing the count, and a draft can take several rounds of "one error left" to
+go clean. That is the validator working, not a fix that failed to apply. Re-validate after every
+change; never infer from a fix that the draft is now clean.
 
 Two passes run, in order. Local validation checks the draft against the cached channel schema —
 required fields, allowed values, lengths, types. Then, *only if that left the draft `ready`* and
@@ -408,6 +425,9 @@ that differ.
 - **Publishing is not idempotent.** A `202` means the job was queued. If a call times out
   ambiguously, poll the draft state and the attempts log before re-posting — re-publishing a
   draft mid-flight can create a duplicate listing on the channel.
+- **Read `field_overrides` before writing them.** The `PUT` replaces the whole map, so a partial
+  write silently deletes every override it omits — including ones a merchant set by hand in the
+  UI. Fetch the draft, merge your change into what's there, send the union.
 - **Don't invent ids or field names.** Category ids come from the channel's taxonomy, product
   ids from find-product, `product_field` sources from `mappable-product-fields`, and field names
   from the draft's own `fields[]`. A guessed `product_field` fails silently as a blank value.

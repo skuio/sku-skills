@@ -291,7 +291,8 @@ api:
           type: object
           required: false
           description: >-
-            Map of channel field name to either a literal value (scalar, or an array for a
+            REPLACES the draft's entire override map — omitted keys are deleted, so send the union of
+            existing overrides and your change. Map of channel field name to either a literal value (scalar, or an array for a
             multiselect) or a mapping object {source_type, source_value}. source_type is one of
             product_field, product_attribute, static, expression; source_value must be scalar.
             A field whose schema is object or object_list takes an object (or array of objects)
