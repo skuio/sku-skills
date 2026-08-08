@@ -302,7 +302,7 @@
           },
           "field_overrides": {
             "type": "object",
-            "description": "Map of channel field name to either a literal value (scalar, or an array for a multiselect) or a mapping object {source_type, source_value}. source_type is one of product_field, product_attribute, static, expression; source_value must be scalar."
+            "description": "REPLACES the draft's entire override map — omitted keys are deleted, so send the union of existing overrides and your change. Map of channel field name to either a literal value (scalar, or an array for a multiselect) or a mapping object {source_type, source_value}. source_type is one of product_field, product_attribute, static, expression; source_value must be scalar. A field whose schema is object or object_list takes an object (or array of objects) shaped by that field's object_schema — this is also how a variation family declares the axis qualifiers the schema cannot imply, such as an Amazon size axis needing a size_class. Such an override supplies only the sub-fields that are invariant across the family; the per-child axis value keeps precedence."
           },
           "image_urls": {
             "type": "array",
