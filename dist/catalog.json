@@ -319,7 +319,7 @@
       "name": "record-purchase-invoice",
       "domain": "purchase-orders",
       "title": "Record a Purchase Invoice",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "description": "Record a supplier's invoice (a bill / accounts-payable invoice) against a purchase order in SKU.io, from the invoice document itself — a PDF or email from the supplier — or from a plain description. Handles multi-invoice PDFs (a scanned batch of several invoices in one file) by recording each invoice separately and attaching only its own pages. Resolves the PO, maps the invoice's line items to PO lines and its freight/fee charges to the PO's financial lines, checks for duplicates by supplier invoice number, creates the purchase invoice, attaches the source document, and verifies the result with a three-way match. Ends by printing a direct link to every invoice recorded. Can also record a payment against the invoice once one has actually been made.",
       "tagline": "Record a supplier invoice against a PO from the invoice document",
       "scopes": [

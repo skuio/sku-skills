@@ -86,6 +86,15 @@ unit cost). Match each invoice line to a PO line by SKU / supplier item code / d
   double-discounts. And **record the document, don't "fix" it**: if the invoice's gross price
   differs from the PO price, keep the invoice price and flag the variance to the user (Step 6
   surfaces it formally). Silently syncing prices hides supplier overcharges.
+
+  **Mid-PO reprices: split the PO line when the price changes, not later.** Each invoice line's
+  discount anchors to its PO line's single price, so a line billed at two prices across tranches
+  can never total cleanly. When the supplier reprices while quantity is still unshipped, have the
+  unshipped remainder moved to its own PO line at the new price *at acceptance time* — once
+  inbound shipments exist, SKU.io locks the PO's product lines and the structure is frozen. If
+  you inherit an already-frozen mixed-price line, the fallback (with the user's explicit OK) is
+  an adapter unit_price chosen so the recorded total equals the paper — note the true price in
+  your report, since the stored one is then an arithmetic artifact.
 - **Freight / fees** on the invoice → `financial_lines`. Each entry needs the **id of an existing
   financial line on the PO** — get them from `GET /api/purchase-orders/{po}` (`financial_lines` in
   the response) — plus `quantity`, `amount`, **and `link_type: "App\\Models\\PurchaseOrder"`**

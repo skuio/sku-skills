@@ -1,7 +1,7 @@
 name: record-purchase-invoice
 title: Record a Purchase Invoice
 domain: purchase-orders
-version: 1.2.0
+version: 1.2.1
 description: >-
   Record a supplier's invoice (a bill / accounts-payable invoice) against a purchase order in
   SKU.io, from the invoice document itself — a PDF or email from the supplier — or from a plain
