@@ -48,7 +48,7 @@ the user named. Writing to the wrong account is the one mistake here the API can
    {
      "columns": { "visible": ["image", "sku", "name", "brand_name", "created_at"] },
      "search": "The Whale Lounge",
-     "filters": { "type": "standard" },
+     "filters": { "filter[ids]": "45,704,284", "filter[type]": "standard" },
      "filterGroups": "<base64 advanced-filter tree, optional>",
      "sortBy": "-created_at",
      "pagination": { "per_page": 50 }
@@ -56,9 +56,20 @@ the user named. Writing to the wrong account is the one mistake here the API can
    ```
 
    Every key is optional — include only what the view needs. `columns.visible` is an ordered list
-   of column keys; `search` is free-text; `filters` are simple `key: value` quick-filters;
-   `filterGroups` is the base64 advanced-filter tree (only if you need grouped AND/OR conditions);
-   `sortBy` uses `-` for descending. **The column keys and filter keys must be valid for that
+   of column keys; `search` is free-text; `filters` are quick-filters; `filterGroups` is the
+   base64 advanced-filter tree (only if you need grouped AND/OR conditions); `sortBy` uses `-`
+   for descending.
+
+   > **`filters` keys are the FULL query-param names the table sends to its list endpoint** —
+   > `filter[ids]`, `filter[search]`, `filter[type]`, … — not bare field names. A bare key
+   > (`"default_supplier_id": "1"`) saves fine but is **silently ignored** when the view loads,
+   > so the view shows the whole table and looks broken. Verify a filter works by calling the
+   > table's own list endpoint (e.g. `GET /api/v2/products?filter[ids]=…`) with the exact keys
+   > before saving them into the view. To pin a view to an exact set of rows (an import you just
+   > created, a reprice you just applied), `filter[ids]` with the comma-separated ids is the
+   > most reliable choice — no dependence on brand/supplier quick-filter support.
+
+   **The column keys and filter keys must be valid for that
    table** — reuse the keys the page already exposes; don't invent them. **Always include `id`** as
    the first visible column — it's the stable row key. Dynamic columns exist alongside the fixed
    ones: a custom **attribute** is the column `attribute_<attributeId>` (shown as `Attr: <name>` in

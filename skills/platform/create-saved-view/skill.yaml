@@ -53,9 +53,12 @@ api:
           description: >-
             JSON string of the view state. Shape:
             { "columns": { "visible": ["sku","name",...] }, "search": "text",
-            "filters": { "type": "standard" }, "filterGroups": "<base64 advanced-filter tree>",
+            "filters": { "filter[ids]": "45,704" }, "filterGroups": "<base64 advanced-filter tree>",
             "sortBy": "-created_at", "pagination": { "per_page": 50 } }. All keys optional; include
-            only what the view needs. Column keys and filter keys must be valid for that table.
+            only what the view needs. Filter keys are the FULL query-param names the table sends
+            (filter[ids], filter[search], filter[type], ...) — a bare field name saves fine but is
+            silently ignored on load. filter[ids] pins the view to an exact row set. Column keys
+            must be valid for that table.
         - name: is_user_favorite
           in: body
           type: boolean

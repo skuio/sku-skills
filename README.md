@@ -57,6 +57,7 @@ One source of truth, three idiomatic outputs. Fix the knowledge in one place; ev
 | `products` | **build-product-catalog** | Import products from a spreadsheet, price list, web page, or pasted text |
 | `products` | **find-product** | Resolve a product by SKU, barcode, or fuzzy search |
 | `products` | **publish-listing** | Draft, validate, and publish a listing to any sales channel |
+| `products` | **update-catalog-pricing** | Apply a supplier's new price file to the existing catalog |
 | `purchase-orders` | **create-purchase-order** | Create a replenishment PO for a supplier from a description or document |
 | `settings` | **edit-packing-slip-template** | Edit packing-slip templates without breaking the footer banner |
 | `settings` | **edit-pdf-template** | Edit, preview, and visually QA any PDF document template — safely |
