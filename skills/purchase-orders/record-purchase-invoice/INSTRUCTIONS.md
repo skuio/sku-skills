@@ -37,10 +37,14 @@ invoice number, no total), stop and ask rather than inventing one.
 
 ## Step 2 — Resolve the purchase order
 
-`GET /api/purchase-orders?search=<po number from the invoice>` — or search by supplier name and
-narrow with `filter[invoice_status]=uninvoiced` / `partial` if the invoice doesn't cite a PO.
-Disambiguate to a single PO; if several are plausible, show candidates (PO number, date, supplier,
-total, invoice status) and ask.
+`GET /api/purchase-orders/list?filter[search]=<po number from the invoice>` — or search by
+supplier name and narrow with `filter[invoice_status]=uninvoiced` / `partial` if the invoice
+doesn't cite a PO. Two route gotchas: the list lives at `/list` (a bare `GET
+/api/purchase-orders` 405s), and the search param is `filter[search]` — a bare `search=` is
+silently ignored and returns the unfiltered list, so verify the result actually matches before
+using it. The PO id is not the PO number: `PO-0633` is not id 633. Disambiguate to a single PO;
+if several are plausible, show candidates (PO number, date, supplier, total, invoice status) and
+ask.
 
 - **No PO exists?** Stop and say so. Offer to create one first with the **create-purchase-order**
   skill, then come back — an invoice cannot be recorded without its PO.
@@ -61,15 +65,24 @@ re-recording a bill double-counts payables.
 unit cost). Match each invoice line to a PO line by SKU / supplier item code / description.
 
 - **`quantity_invoiced`** — what this invoice bills, which must not exceed the line's uninvoiced
-  remainder (the API rejects lines already fully invoiced). Partial invoicing is normal: a
-  split shipment bills some lines now, the rest later.
-- **`unit_price`** — what the invoice actually charges. **Record the document, don't "fix" it**:
-  if the invoice price differs from the PO price, keep the invoice price and flag the variance to
-  the user (Step 6 surfaces it formally). Silently syncing prices hides supplier overcharges.
+  remainder (the API rejects lines already fully invoiced; the response's `uninvoiced_quantity`
+  and `fully_invoiced` fields tell you where you stand). Partial invoicing is normal: a split
+  shipment bills some lines now, the rest later.
+- **`unit_price`** — the **gross** unit price: the PO line's `discount_rate` is applied
+  automatically, prorated to the invoiced quantity. An invoice line reading "90.25 each less 15%"
+  is passed as `unit_price: 90.25`; SKU.io computes the net. Passing the net price
+  double-discounts. And **record the document, don't "fix" it**: if the invoice's gross price
+  differs from the PO price, keep the invoice price and flag the variance to the user (Step 6
+  surfaces it formally). Silently syncing prices hides supplier overcharges.
 - **Freight / fees** on the invoice → `financial_lines`. Each entry needs the **id of an existing
   financial line on the PO** — get them from `GET /api/purchase-orders/{po}` (`financial_lines` in
-  the response), and pass `{ id, quantity, amount }`. If the invoice carries a charge with no
-  matching PO financial line, hold it and tell the user; inventing ids 422s.
+  the response) — plus `quantity`, `amount`, **and `link_type: "App\\Models\\PurchaseOrder"`**
+  (its omission 422s with "Financial line must be linked to a purchase order"). If the invoice
+  carries a charge with no matching PO financial line, ask the user; with their go-ahead, add one
+  to the PO first via `PUT /api/purchase-orders/{po}` — resolve `financial_line_type_id` from
+  `GET /api/v2/financial-line-types` (a cost-classification "Shipping" type for freight;
+  `allocate_to_products` + `cost_based` rolls it into landed cost at receiving). **The PUT's
+  `financial_lines` is a sync**: include every existing line (by id) or it is deleted.
 - **A line that matches nothing on the PO** — hold it, record the rest, and list what you held.
 
 ## Step 5 — Reconcile, confirm, create
@@ -89,16 +102,19 @@ curl -sS -X POST "https://$SKU_TENANT.sku.io/api/purchase-invoices" \
     "supplier_invoice_number": "INV-2026-0730",
     "purchase_invoice_date": "2026-07-30",
     "due_date": "2026-08-29",
-    "status": "open",
+    "status": "unpaid",
     "purchase_invoice_lines": [
       { "purchase_order_line_id": 201, "quantity_invoiced": 100, "unit_price": 15.00 },
       { "purchase_order_line_id": 202, "quantity_invoiced": 40,  "unit_price": 22.50 }
     ],
     "financial_lines": [
-      { "id": 55, "quantity": 1, "amount": 120.00 }
+      { "id": 55, "quantity": 1, "amount": 120.00, "link_type": "App\\Models\\PurchaseOrder" }
     ]
   }'
 ```
+
+`purchase_invoice_date` is required; `status` must be one of `unpaid` / `paid` /
+`partially_paid` (anything else 422s) — a freshly recorded, not-yet-paid invoice is `unpaid`.
 
 See [`examples/request.json`](./examples/request.json) for the same body as a file.
 

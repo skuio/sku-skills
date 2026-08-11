@@ -1,7 +1,7 @@
 name: record-purchase-invoice
 title: Record a Purchase Invoice
 domain: purchase-orders
-version: 1.0.0
+version: 1.1.0
 description: >-
   Record a supplier's invoice (a bill / accounts-payable invoice) against a purchase order in
   SKU.io, from the invoice document itself — a PDF or email from the supplier — or from a plain
@@ -23,19 +23,21 @@ api:
   operations:
     - id: find-purchase-order
       method: GET
-      path: /api/purchase-orders
+      path: /api/purchase-orders/list
       summary: >-
-        Find the purchase order the invoice bills. Full-text search covers PO number, supplier
-        name, item SKU, invoice number, and tracking number; filter[invoice_status] narrows to
-        uninvoiced/partial/invoiced POs.
+        Find the purchase order the invoice bills. (The path is /list — a bare GET
+        /api/purchase-orders is not a route and 405s.) Full-text search covers PO number,
+        supplier name, item SKU, invoice number, and tracking number; filter[invoice_status]
+        narrows to uninvoiced/partial/invoiced POs.
       parameters:
-        - name: search
+        - name: filter[search]
           in: query
           type: string
           required: false
           description: >-
-            Search by the PO number printed on the invoice, or by supplier name. Narrow to a
-            single PO before invoicing against it.
+            Search by the PO number printed on the invoice, or by supplier name. The param is
+            filter[search] — a bare search= param is silently ignored and returns the unfiltered
+            list. Narrow to a single PO before invoicing against it.
           example: PO-0664
         - name: filter[invoice_status]
           in: query
@@ -72,6 +74,31 @@ api:
           type: integer
           required: true
           description: Purchase order id (from find-purchase-order).
+    - id: add-po-financial-line
+      method: PUT
+      path: /api/purchase-orders/{purchase_order}
+      summary: >-
+        Add a financial line (freight, duties, fees) to the PO so it can be invoiced — needed when
+        the invoice bills a charge the PO has no financial line for yet. CAUTION: financial_lines
+        is a SYNC — any existing PO financial line omitted from the payload is REMOVED, so include
+        every existing line (by id) plus the new one (no id). Confirm with the user before editing
+        a PO.
+      parameters:
+        - name: purchase_order
+          in: path
+          type: integer
+          required: true
+          description: Purchase order id.
+        - name: financial_lines
+          in: body
+          type: array
+          required: true
+          description: >-
+            The COMPLETE set of the PO's financial lines. Existing lines: { id, ... }. New line:
+            { financial_line_type_id (resolve via GET /api/v2/financial-line-types — e.g. the
+            cost-classification "Shipping" type for freight), description, quantity, amount,
+            allocate_to_products, proration_strategy }. allocate_to_products + "cost_based"
+            prorates the charge into product landed cost at receiving.
     - id: get-po-lines-for-invoice
       method: GET
       path: /api/purchase-orders/{purchase_order}/lines-for-invoice
@@ -136,8 +163,8 @@ api:
         - name: purchase_invoice_date
           in: body
           type: string
-          required: false
-          description: The invoice date printed on the document (ISO-8601). Always pass it.
+          required: true
+          description: The invoice date printed on the document (ISO-8601). Required — a 422 without it.
           example: "2026-07-30"
         - name: due_date
           in: body
@@ -155,9 +182,10 @@ api:
           type: string
           required: false
           description: >-
-            Invoice status on creation — use "open". Payment states (partial, paid) are reached by
-            recording payments, not by setting them here.
-          example: open
+            Invoice status on creation — the allowed values are "unpaid", "paid", and
+            "partially_paid"; use "unpaid" (the docs' "open" is rejected with a 422). Payment
+            states are reached by recording payments, not by setting them here.
+          example: unpaid
         - name: currency_id
           in: body
           type: integer
@@ -181,17 +209,19 @@ api:
           required: false
           description: >-
             Product lines. Each: { purchase_order_line_id (from get-po-lines-for-invoice),
-            quantity_invoiced (must not exceed the line's uninvoiced remainder), unit_price (what
-            the invoice actually charges, not the PO price) }. Required unless financial_lines is
-            provided.
+            quantity_invoiced (must not exceed the line's uninvoiced remainder), unit_price }.
+            unit_price is the GROSS price — the PO line's discount_rate is applied automatically,
+            prorated to the invoiced quantity — so an invoice showing "90.25 less 15%" is passed
+            as 90.25, not the net. Required unless financial_lines is provided.
         - name: financial_lines
           in: body
           type: array
           required: false
           description: >-
             Non-product charges being invoiced (freight, duties, fees). Each requires: id (an
-            EXISTING financial line id from get-purchase-order — a 422 is returned if missing),
-            quantity, amount; link_type optional. Required unless purchase_invoice_lines is
+            EXISTING financial line id from get-purchase-order — a 422 if missing), quantity,
+            amount, AND link_type: "App\\Models\\PurchaseOrder" (a 422 "Financial line must be
+            linked to a purchase order" without it). Required unless purchase_invoice_lines is
             provided.
     - id: attach-document
       method: POST

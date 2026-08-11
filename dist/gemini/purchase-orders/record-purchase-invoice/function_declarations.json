@@ -2,13 +2,13 @@
   "functionDeclarations": [
     {
       "name": "find_purchase_order",
-      "description": "Find the purchase order the invoice bills. Full-text search covers PO number, supplier name, item SKU, invoice number, and tracking number; filter[invoice_status] narrows to uninvoiced/partial/invoiced POs. (GET /api/purchase-orders)",
+      "description": "Find the purchase order the invoice bills. (The path is /list — a bare GET /api/purchase-orders is not a route and 405s.) Full-text search covers PO number, supplier name, item SKU, invoice number, and tracking number; filter[invoice_status] narrows to uninvoiced/partial/invoiced POs. (GET /api/purchase-orders/list)",
       "parameters": {
         "type": "OBJECT",
         "properties": {
-          "search": {
+          "filter[search]": {
             "type": "STRING",
-            "description": "Search by the PO number printed on the invoice, or by supplier name. Narrow to a single PO before invoicing against it."
+            "description": "Search by the PO number printed on the invoice, or by supplier name. The param is filter[search] — a bare search= param is silently ignored and returns the unfiltered list. Narrow to a single PO before invoicing against it."
           },
           "filter[invoice_status]": {
             "type": "STRING",
@@ -42,6 +42,30 @@
         },
         "required": [
           "purchase_order"
+        ]
+      }
+    },
+    {
+      "name": "add_po_financial_line",
+      "description": "Add a financial line (freight, duties, fees) to the PO so it can be invoiced — needed when the invoice bills a charge the PO has no financial line for yet. CAUTION: financial_lines is a SYNC — any existing PO financial line omitted from the payload is REMOVED, so include every existing line (by id) plus the new one (no id). Confirm with the user before editing a PO. (PUT /api/purchase-orders/{purchase_order})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "purchase_order": {
+            "type": "INTEGER",
+            "description": "Purchase order id."
+          },
+          "financial_lines": {
+            "type": "ARRAY",
+            "description": "The COMPLETE set of the PO's financial lines. Existing lines: { id, ... }. New line: { financial_line_type_id (resolve via GET /api/v2/financial-line-types — e.g. the cost-classification \"Shipping\" type for freight), description, quantity, amount, allocate_to_products, proration_strategy }. allocate_to_products + \"cost_based\" prorates the charge into product landed cost at receiving.",
+            "items": {
+              "type": "STRING"
+            }
+          }
+        },
+        "required": [
+          "purchase_order",
+          "financial_lines"
         ]
       }
     },
@@ -102,7 +126,7 @@
           },
           "purchase_invoice_date": {
             "type": "STRING",
-            "description": "The invoice date printed on the document (ISO-8601). Always pass it."
+            "description": "The invoice date printed on the document (ISO-8601). Required — a 422 without it."
           },
           "due_date": {
             "type": "STRING",
@@ -114,7 +138,7 @@
           },
           "status": {
             "type": "STRING",
-            "description": "Invoice status on creation — use \"open\". Payment states (partial, paid) are reached by recording payments, not by setting them here."
+            "description": "Invoice status on creation — the allowed values are \"unpaid\", \"paid\", and \"partially_paid\"; use \"unpaid\" (the docs' \"open\" is rejected with a 422). Payment states are reached by recording payments, not by setting them here."
           },
           "currency_id": {
             "type": "INTEGER",
@@ -133,14 +157,14 @@
           },
           "purchase_invoice_lines": {
             "type": "ARRAY",
-            "description": "Product lines. Each: { purchase_order_line_id (from get-po-lines-for-invoice), quantity_invoiced (must not exceed the line's uninvoiced remainder), unit_price (what the invoice actually charges, not the PO price) }. Required unless financial_lines is provided.",
+            "description": "Product lines. Each: { purchase_order_line_id (from get-po-lines-for-invoice), quantity_invoiced (must not exceed the line's uninvoiced remainder), unit_price }. unit_price is the GROSS price — the PO line's discount_rate is applied automatically, prorated to the invoiced quantity — so an invoice showing \"90.25 less 15%\" is passed as 90.25, not the net. Required unless financial_lines is provided.",
             "items": {
               "type": "STRING"
             }
           },
           "financial_lines": {
             "type": "ARRAY",
-            "description": "Non-product charges being invoiced (freight, duties, fees). Each requires: id (an EXISTING financial line id from get-purchase-order — a 422 is returned if missing), quantity, amount; link_type optional. Required unless purchase_invoice_lines is provided.",
+            "description": "Non-product charges being invoiced (freight, duties, fees). Each requires: id (an EXISTING financial line id from get-purchase-order — a 422 if missing), quantity, amount, AND link_type: \"App\\\\Models\\\\PurchaseOrder\" (a 422 \"Financial line must be linked to a purchase order\" without it). Required unless purchase_invoice_lines is provided.",
             "items": {
               "type": "STRING"
             }
@@ -148,7 +172,8 @@
         },
         "required": [
           "purchase_order_id",
-          "supplier_invoice_number"
+          "supplier_invoice_number",
+          "purchase_invoice_date"
         ]
       }
     },

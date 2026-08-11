@@ -3,13 +3,13 @@
   "supplier_invoice_number": "INV-2026-0730",
   "purchase_invoice_date": "2026-07-30",
   "due_date": "2026-08-29",
-  "status": "open",
+  "status": "unpaid",
   "tags": ["july"],
   "purchase_invoice_lines": [
     { "purchase_order_line_id": 201, "quantity_invoiced": 100, "unit_price": 15.0 },
     { "purchase_order_line_id": 202, "quantity_invoiced": 40, "unit_price": 22.5 }
   ],
   "financial_lines": [
-    { "id": 55, "quantity": 1, "amount": 120.0 }
+    { "id": 55, "quantity": 1, "amount": 120.0, "link_type": "App\\Models\\PurchaseOrder" }
   ]
 }
