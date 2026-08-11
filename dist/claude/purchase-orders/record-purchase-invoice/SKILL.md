@@ -1,6 +1,6 @@
 ---
 name: record-purchase-invoice
-description: "Record a supplier's invoice (a bill / accounts-payable invoice) against a purchase order in SKU.io, from the invoice document itself — a PDF or email from the supplier — or from a plain description. Resolves the PO, maps the invoice's line items to PO lines and its freight/fee charges to the PO's financial lines, checks for duplicates by supplier invoice number, creates the purchase invoice, attaches the source document, and verifies the result with a three-way match. Can also record a payment against the invoice once one has actually been made."
+description: "Record a supplier's invoice (a bill / accounts-payable invoice) against a purchase order in SKU.io, from the invoice document itself — a PDF or email from the supplier — or from a plain description. Handles multi-invoice PDFs (a scanned batch of several invoices in one file) by recording each invoice separately and attaching only its own pages. Resolves the PO, maps the invoice's line items to PO lines and its freight/fee charges to the PO's financial lines, checks for duplicates by supplier invoice number, creates the purchase invoice, attaches the source document, and verifies the result with a three-way match. Ends by printing a direct link to every invoice recorded. Can also record a payment against the invoice once one has actually been made."
 license: MIT
 ---
 
@@ -46,7 +46,19 @@ attached invoices becomes **three** purchase invoices — never merge them, even
 ## Step 1 — Extract the facts from the source document
 
 The input is usually the invoice itself (a PDF or email attachment). Extract with your own tools —
-the SKU.io API isn't involved yet. Land these fields:
+the SKU.io API isn't involved yet.
+
+**A single PDF may contain several invoices** — suppliers scan a stack of paper into one file
+(a scanner-named file like `20260722153117301.pdf` is a strong hint). Read every page first and
+map out the invoice boundaries before extracting anything: a new invoice number in the header
+starts a new invoice, and a page-number field ("PAGE 2") marks a continuation of the previous
+one — totals usually print only on an invoice's last page. Then treat each invoice as its own
+record end-to-end (own dedupe check, own creation, own attachment), and **split the PDF** so each
+record gets only its own pages attached (any PDF page tool works, e.g. pypdf) — attaching the
+whole batch to every invoice buries the audit trail. Some of the batch may already be recorded:
+dedupe each invoice number individually and skip hits, never the whole file.
+
+Land these fields per invoice:
 
 - **supplier** and **supplier invoice number** (exactly as printed — it's the dedupe key);
 - **invoice date** and **due date** (or payment terms, e.g. "Net 30", to compute it);
@@ -151,6 +163,12 @@ Handle the response:
   https://{tenant}.sku.io/v2/orders/purchase-invoices/{id}
   ```
 
+  **Known rounding-style delta:** the line discount is prorated off the **PO line's** price, not
+  the invoice's `unit_price` (subtotal = qty × unit_price − qty × po_price × discount_rate). When
+  the invoice's gross price differs from the PO's, `calculated_total` departs from the document
+  by qty × (po_price − invoice_price) × rate. Keep the true unit price and report the delta —
+  don't fudge `unit_price` to force the total.
+
 - **`422`** → the `errors` map names the fields. Common causes: neither `purchase_invoice_lines`
   nor `financial_lines` provided; a line that doesn't belong to the PO or is already fully
   invoiced; a `financial_lines` entry missing `id`/`quantity`/`amount`. Fix the named fields —
@@ -171,7 +189,10 @@ curl -sS -X POST "https://$SKU_TENANT.sku.io/api/purchase-invoices/$INVOICE_ID/a
 
 Side effects to be aware of (not errors): if Invoice OCR auto-scan is enabled the PDF is queued
 for OCR (`ocr_status: "processing"`), and if the invoice is synced to QuickBooks Online / Xero the
-file is forwarded there.
+file is forwarded there. A completed OCR extraction can also be **auto-applied later**: changing
+related PO state (e.g. syncing its financial lines) has been observed to apply a sibling
+invoice's stored OCR result — adding its freight line and recomputing its match — so after a
+batch, re-check the totals of the PO's other invoices and report anything that moved.
 
 Then run `GET /api/purchase-invoices/{id}/three-way-match` and read the per-line results —
 `qty_match_status` (`match` / `over_invoiced` / `under_invoiced`, evaluated across **all** invoices
@@ -193,6 +214,18 @@ the user says the invoice was paid (or asks you to log a payment), and confirm t
    refunds.
 
 The invoice's `status` moves to `partial` / `paid` through payments, never by editing the status.
+
+## Finish: print the links
+
+Always end by printing a per-invoice list of direct links in the terminal — one line per invoice
+recorded: supplier invoice number, recorded total, URL
+(`https://{tenant}.sku.io/v2/orders/purchase-invoices/{id}`) — plus a line for any invoice
+skipped as a duplicate (with the existing record's link) or held back, and the PO's own link.
+A recorded invoice the user can't click through to might as well not exist.
+
+**Batch tip:** when several invoices need freight lines on the same PO, add them all in **one**
+`PUT` (the financial_lines sync replaces the whole set — one call avoids racing yourself), with
+one line per invoice labeled by invoice number, then map the returned ids by description.
 
 ## Guardrails
 
