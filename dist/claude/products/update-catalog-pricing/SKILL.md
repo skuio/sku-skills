@@ -86,6 +86,13 @@ Rules:
   classic case: a manufacturer supersedes `GSS342` with `GSS342G3`) — is a *candidate successor*,
   not a match. Put it in the review list with both part numbers and the price; let the user
   decide whether the catalog product should now track the successor item.
+- **When the user approves a successor, write it into `supplier_sku` in the same PUT** that
+  applies the price (`suppliers[].supplier_sku` alongside `pricing[]`). The product's own SKU
+  stays put (listings and history keep their identity); the supplier link carries the
+  supplier's current part number — which is exactly the key Step 2 matches on, so the next
+  price file matches automatically instead of re-flagging the same drift. Backfill
+  `supplier_sku` with the file's item number on any matched link that has none, for the same
+  reason.
 - One product per row and one row per product. If two rows hit the same product (item number and
   customer item number both present and different), prefer the customer item number and note it.
 - Products **linked to this supplier** that match *no* row in the new file are themselves a
@@ -174,9 +181,23 @@ Hard rules for the write:
 - **Never delete or unlink** — no `operation: "delete"` in a pricing run, ever.
 - **Blank beats wrong.** A discontinued row's empty price is information; writing 0 would poison
   POs and margin math.
-- **Bundles/kits don't roll up automatically.** A bundle's supplier tier stores its own number;
-  updating component prices does not recompute it. After a component reprice, list the affected
-  bundles/kits and their stored prices so the user can decide whether to restate them.
+- **Bundles/kits don't roll up automatically — restate them only with approval, and by this
+  procedure.** A combo's supplier tier stores its own number; updating component prices does not
+  recompute it. When the user wants combos restated: new value = Σ(component price × quantity)
+  from the product's `components[]`, where each component contributes **its own supplier's**
+  current price (house combos often mix the repriced supplier's parts with cheap hardware from a
+  different supplier — use each component's `default_supplier_price`, falling back to its
+  `unit_cost` only when it has no supplier tier, and flag that row). Write the sum to the combo's
+  supplier tier and — if the account's convention is unit_cost = wholesale, which you can read
+  off the existing rows — to `unit_cost` in the same PUT.
+- **A product that itself matched a price-file row is NEVER a roll-up candidate.** Suppliers
+  sell some assemblies as catalog items (they're `kit`/`bundle` typed in SKU.io *and* have their
+  own file row); the supplier's own price for the assembly wins over any sum of parts. Partition
+  first — file-priced products take the file price, only the leftovers roll up — or the roll-up
+  pass will silently overwrite correct file prices with component-sum estimates.
+- **Blemished offshoots don't roll up either.** With approval, scale the blemished product's
+  tier by its historical discount ratio against the original product's old price, and say so in
+  the report.
 - **Idempotent by design** — re-running the same file yields "unchanged" rows, not double
   changes. Safe to resume after a partial failure.
 
