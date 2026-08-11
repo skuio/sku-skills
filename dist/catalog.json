@@ -1,6 +1,6 @@
 {
   "generatedFrom": "skills/",
-  "count": 12,
+  "count": 13,
   "skills": [
     {
       "name": "adjust-inventory",
@@ -313,6 +313,41 @@
         "claude": "dist/claude/purchase-orders/create-purchase-order/SKILL.md",
         "openai": "dist/openai/purchase-orders/create-purchase-order/",
         "gemini": "dist/gemini/purchase-orders/create-purchase-order/"
+      }
+    },
+    {
+      "name": "record-purchase-invoice",
+      "domain": "purchase-orders",
+      "title": "Record a Purchase Invoice",
+      "version": "1.0.0",
+      "description": "Record a supplier's invoice (a bill / accounts-payable invoice) against a purchase order in SKU.io, from the invoice document itself — a PDF or email from the supplier — or from a plain description. Resolves the PO, maps the invoice's line items to PO lines and its freight/fee charges to the PO's financial lines, checks for duplicates by supplier invoice number, creates the purchase invoice, attaches the source document, and verifies the result with a three-way match. Can also record a payment against the invoice once one has actually been made.",
+      "tagline": "Record a supplier invoice against a PO from the invoice document",
+      "scopes": [
+        "purchase-orders:read",
+        "purchase-orders:write",
+        "settings:read"
+      ],
+      "operations": 9,
+      "tags": [
+        "purchase-invoices",
+        "accounts-payable",
+        "supplier-invoice",
+        "bill",
+        "invoice",
+        "purchasing",
+        "record"
+      ],
+      "composes": [
+        "create-purchase-order"
+      ],
+      "pages": [
+        "/orders/purchase-invoices",
+        "/orders/purchase-orders"
+      ],
+      "outputs": {
+        "claude": "dist/claude/purchase-orders/record-purchase-invoice/SKILL.md",
+        "openai": "dist/openai/purchase-orders/record-purchase-invoice/",
+        "gemini": "dist/gemini/purchase-orders/record-purchase-invoice/"
       }
     },
     {

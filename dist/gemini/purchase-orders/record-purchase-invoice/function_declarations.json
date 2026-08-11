@@ -1,0 +1,243 @@
+{
+  "functionDeclarations": [
+    {
+      "name": "find_purchase_order",
+      "description": "Find the purchase order the invoice bills. Full-text search covers PO number, supplier name, item SKU, invoice number, and tracking number; filter[invoice_status] narrows to uninvoiced/partial/invoiced POs. (GET /api/purchase-orders)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "search": {
+            "type": "STRING",
+            "description": "Search by the PO number printed on the invoice, or by supplier name. Narrow to a single PO before invoicing against it."
+          },
+          "filter[invoice_status]": {
+            "type": "STRING",
+            "description": "Filter by invoice status: uninvoiced, partial, invoiced."
+          },
+          "filter[order_status]": {
+            "type": "STRING",
+            "description": "Filter by order status: draft, open, closed. Invoices are recorded against non-draft POs."
+          },
+          "page": {
+            "type": "INTEGER",
+            "description": "Page number."
+          },
+          "limit": {
+            "type": "INTEGER",
+            "description": "Items per page (default 15)."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_purchase_order",
+      "description": "Get the full PO with all relations — lines, existing invoices, and financial_lines (each with its id). Needed when the invoice bills freight/fees: invoice financial_lines must reference an existing PO financial line id. (GET /api/purchase-orders/{purchase_order})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "purchase_order": {
+            "type": "INTEGER",
+            "description": "Purchase order id (from find-purchase-order)."
+          }
+        },
+        "required": [
+          "purchase_order"
+        ]
+      }
+    },
+    {
+      "name": "get_po_lines_for_invoice",
+      "description": "Get the PO's lines optimized for invoice creation — each line's id (the purchase_order_line_id an invoice line references), product_id, description, quantity, received_quantity, amount (PO unit cost), and discount_rate. (GET /api/purchase-orders/{purchase_order}/lines-for-invoice)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "purchase_order": {
+            "type": "INTEGER",
+            "description": "Purchase order id."
+          }
+        },
+        "required": [
+          "purchase_order"
+        ]
+      }
+    },
+    {
+      "name": "check_existing_invoices",
+      "description": "List purchase invoices — use before creating to catch a duplicate (same supplier invoice number) and to see what is already invoiced on the PO. filter[...] fields support operators like .is and .contains. (GET /api/purchase-invoices)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "filter[supplier_invoice_number]": {
+            "type": "STRING",
+            "description": "Filter by the supplier's invoice number (text match) — the duplicate check."
+          },
+          "filter[purchase_order_id]": {
+            "type": "STRING",
+            "description": "Filter to invoices already recorded against a PO (exact match)."
+          },
+          "filter[supplier_id]": {
+            "type": "STRING",
+            "description": "Filter by supplier id (numeric)."
+          },
+          "filter[search]": {
+            "type": "STRING",
+            "description": "Search across supplier_invoice_number, id, supplier name, purchase_order_number."
+          }
+        }
+      }
+    },
+    {
+      "name": "create_purchase_invoice",
+      "description": "Create the purchase invoice linked to a purchase order. Either purchase_invoice_lines or financial_lines must be provided; invoice lines must belong to the PO and must not be fully invoiced. (POST /api/purchase-invoices)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "purchase_order_id": {
+            "type": "INTEGER",
+            "description": "The purchase order this invoice bills (from find-purchase-order)."
+          },
+          "supplier_invoice_number": {
+            "type": "STRING",
+            "description": "The supplier's own invoice number, exactly as printed on the document."
+          },
+          "purchase_invoice_date": {
+            "type": "STRING",
+            "description": "The invoice date printed on the document (ISO-8601). Always pass it."
+          },
+          "due_date": {
+            "type": "STRING",
+            "description": "Payment due date — from the document, or invoice date + the terms' net days."
+          },
+          "other_date": {
+            "type": "STRING",
+            "description": "Optional additional date field (nullable)."
+          },
+          "status": {
+            "type": "STRING",
+            "description": "Invoice status on creation — use \"open\". Payment states (partial, paid) are reached by recording payments, not by setting them here."
+          },
+          "currency_id": {
+            "type": "INTEGER",
+            "description": "Currency id — omit to use the PO's currency. Only set when the invoice is genuinely in a different currency, and resolve the id first (don't guess)."
+          },
+          "currency_rate": {
+            "type": "NUMBER",
+            "description": "Conversion rate to the account base currency, when overriding currency."
+          },
+          "tags": {
+            "type": "ARRAY",
+            "description": "Array of string tags for filtering/reporting.",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "purchase_invoice_lines": {
+            "type": "ARRAY",
+            "description": "Product lines. Each: { purchase_order_line_id (from get-po-lines-for-invoice), quantity_invoiced (must not exceed the line's uninvoiced remainder), unit_price (what the invoice actually charges, not the PO price) }. Required unless financial_lines is provided.",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "financial_lines": {
+            "type": "ARRAY",
+            "description": "Non-product charges being invoiced (freight, duties, fees). Each requires: id (an EXISTING financial line id from get-purchase-order — a 422 is returned if missing), quantity, amount; link_type optional. Required unless purchase_invoice_lines is provided.",
+            "items": {
+              "type": "STRING"
+            }
+          }
+        },
+        "required": [
+          "purchase_order_id",
+          "supplier_invoice_number"
+        ]
+      }
+    },
+    {
+      "name": "attach_document",
+      "description": "Upload the source invoice document to the recorded invoice as multipart/form-data. PDF, DOC/DOCX, PNG, JPG up to 20 MB. If the account has Invoice OCR auto-scan enabled a PDF is queued for OCR; if the invoice is synced to QuickBooks/Xero the file is forwarded there. (POST /api/purchase-invoices/{purchaseInvoice}/attachments)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "purchaseInvoice": {
+            "type": "INTEGER",
+            "description": "Purchase invoice id (from create-purchase-invoice)."
+          },
+          "file": {
+            "type": "STRING",
+            "description": "The file to attach (multipart form field)."
+          },
+          "category": {
+            "type": "STRING",
+            "description": "Document category: invoice, payment_proof, or other (default). Use \"invoice\" for the source document."
+          }
+        },
+        "required": [
+          "purchaseInvoice",
+          "file"
+        ]
+      }
+    },
+    {
+      "name": "three_way_match",
+      "description": "Verify the recorded invoice: per-PO-line comparison of ordered vs received vs invoiced quantities (qty_match_status: match, over_invoiced, under_invoiced — evaluated across all invoices and credits on the PO) and unit-price variance vs the PO. (GET /api/purchase-invoices/{purchaseInvoice}/three-way-match)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "purchaseInvoice": {
+            "type": "INTEGER",
+            "description": "Purchase invoice id."
+          }
+        },
+        "required": [
+          "purchaseInvoice"
+        ]
+      }
+    },
+    {
+      "name": "list_payment_types",
+      "description": "List the account's payment types (id, name — e.g. Bank Transfer, Credit Card) to resolve payment_type_id before recording a payment. Scope settings:read. (GET /api/v2/payment-types)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "record_payment",
+      "description": "Record a payment that has already been made against the invoice. Amount must not exceed the remaining balance; negative amounts record refunds. Only records the fact — it moves no money. (POST /api/purchase-invoices/{purchaseInvoiceId}/payments)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "purchaseInvoiceId": {
+            "type": "INTEGER",
+            "description": "Purchase invoice id."
+          },
+          "payment_type_id": {
+            "type": "INTEGER",
+            "description": "Payment type id (from list-payment-types). Don't invent it."
+          },
+          "amount": {
+            "type": "NUMBER",
+            "description": "Amount paid, in the invoice currency. Must not exceed the remaining balance."
+          },
+          "payment_date": {
+            "type": "STRING",
+            "description": "Date the payment was made (ISO-8601). Defaults to today if omitted."
+          },
+          "external_reference": {
+            "type": "STRING",
+            "description": "Bank/wire/transaction reference for the payment."
+          },
+          "currency_id": {
+            "type": "INTEGER",
+            "description": "Currency id — omit to use the invoice's currency."
+          }
+        },
+        "required": [
+          "purchaseInvoiceId",
+          "payment_type_id",
+          "amount"
+        ]
+      }
+    }
+  ]
+}
