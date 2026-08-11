@@ -48,28 +48,43 @@ the user named. Writing to the wrong account is the one mistake here the API can
    {
      "columns": { "visible": ["image", "sku", "name", "brand_name", "created_at"] },
      "search": "The Whale Lounge",
-     "filters": { "filter[ids]": "45,704,284", "filter[type]": "standard" },
-     "filterGroups": "<base64 advanced-filter tree, optional>",
+     "filterGroups": "<base64 advanced-filter tree — the reliable filter channel>",
      "sortBy": "-created_at",
      "pagination": { "per_page": 50 }
    }
    ```
 
    Every key is optional — include only what the view needs. `columns.visible` is an ordered list
-   of column keys; `search` is free-text; `filters` are quick-filters; `filterGroups` is the
-   base64 advanced-filter tree (only if you need grouped AND/OR conditions); `sortBy` uses `-`
-   for descending.
+   of column keys; `search` is free-text; `sortBy` uses `-` for descending.
 
-   > **`filters` keys are the FULL query-param names the table sends to its list endpoint** —
-   > `filter[ids]`, `filter[search]`, `filter[type]`, … — not bare field names. A bare key
-   > (`"default_supplier_id": "1"`) saves fine but is **silently ignored** when the view loads,
-   > so the view shows the whole table and looks broken. Verify a filter works by calling the
-   > table's own list endpoint (e.g. `GET /api/v2/products?filter[ids]=…`) with the exact keys
-   > before saving them into the view. To pin a view to an exact set of rows (an import you just
-   > created, a reprice you just applied), `filter[ids]` with the comma-separated ids is the
-   > most reliable choice — no dependence on brand/supplier quick-filter support.
+   > **Filtering a saved view: use `filterGroups`, and expect `filters` to be mostly dead.**
+   > The frontend does NOT pass `filters` keys through to the API. A key survives only if that
+   > page registers it — on Products that is just `search`, `type`, `archived` — or if it names
+   > an **advanced-filter column**, in which case it's migrated into the tree (a comma list
+   > becomes `is_one_of`). Everything else — `ids`, `id`, `brand_id`, `default_supplier_id`,
+   > `stock_status` — is **silently dropped**: the view saves fine, loads looking unfiltered,
+   > and the quick-filter dropdowns (Brand / Default Supplier / Stock) are never saved-view
+   > driven at all. The API honoring `filter[ids]=…` on a direct call proves nothing about the
+   > view — the datatable rebuilds its own params and never forwards unknown keys.
+   >
+   > **To pin a view to an exact row set** (an import you just created, a reprice you just
+   > applied), build a `filterGroups` tree on a *registered* column — `sku` with `is_one_of`
+   > and a comma-joined value is the workhorse; numeric `id` is NOT a registered tree column
+   > (hard 400):
+   >
+   > ```
+   > tree = { "conjunction": "and", "children": [ { "type": "condition", "condition":
+   >          { "column": "sku", "operator": "is_one_of", "value": "SKU-1,SKU-2,SKU-3" } } ] }
+   > filterGroups = base64(JSON.stringify(tree))
+   > ```
+   >
+   > Verify before saving: `GET <the table's list endpoint>?filter_groups=<base64>` must return
+   > exactly the rows you expect (an unregistered column.operator is a 400). Operators: text
+   > columns take is / is_not / is_one_of / contains / starts_with …; numeric take is /
+   > greater_than / between / is_one_of …; multi-values are ONE comma-joined string, not an
+   > array; groups nest max one level.
 
-   **The column keys and filter keys must be valid for that
+   **The column keys must be valid for that
    table** — reuse the keys the page already exposes; don't invent them. **Always include `id`** as
    the first visible column — it's the stable row key. Dynamic columns exist alongside the fixed
    ones: a custom **attribute** is the column `attribute_<attributeId>` (shown as `Attr: <name>` in

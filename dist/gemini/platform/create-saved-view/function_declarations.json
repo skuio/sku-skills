@@ -32,7 +32,7 @@
           },
           "query_data": {
             "type": "STRING",
-            "description": "JSON string of the view state. Shape: { \"columns\": { \"visible\": [\"sku\",\"name\",...] }, \"search\": \"text\", \"filters\": { \"filter[ids]\": \"45,704\" }, \"filterGroups\": \"<base64 advanced-filter tree>\", \"sortBy\": \"-created_at\", \"pagination\": { \"per_page\": 50 } }. All keys optional; include only what the view needs. Filter keys are the FULL query-param names the table sends (filter[ids], filter[search], filter[type], ...) — a bare field name saves fine but is silently ignored on load. filter[ids] pins the view to an exact row set. Column keys must be valid for that table."
+            "description": "JSON string of the view state. Shape: { \"columns\": { \"visible\": [\"sku\",\"name\",...] }, \"search\": \"text\", \"filterGroups\": \"<base64 advanced-filter tree>\", \"sortBy\": \"-created_at\", \"pagination\": { \"per_page\": 50 } }. All keys optional. Filter with filterGroups = base64(JSON of { conjunction: \"and\", children: [{ type: \"condition\", condition: { column, operator, value } }] }) on a column that page registers for advanced filters — e.g. sku + is_one_of + \"A,B,C\" (comma-joined string) pins an exact row set; numeric id is NOT registered (400). A \"filters\" map also exists but the frontend drops all keys the page doesn't register (on Products only search/type/ archived, plus advanced-filter columns) — ids/brand_id/default_supplier_id/ stock_status are silently ignored. Verify with GET <list endpoint>?filter_groups= <base64> before saving. Column keys must be valid for that table."
           },
           "is_user_favorite": {
             "type": "BOOLEAN",

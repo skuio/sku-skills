@@ -154,11 +154,15 @@ Hard rules for the write:
 - Report: **updated** (with old → new), **skipped** (unchanged), **flagged** (discontinued rows,
   successor candidates, unmatched, supplier-linked-but-absent), **failed** (row + reason).
 - Optional but recommended: leave a favorited saved view (the `create-saved-view` skill) on the
-  Products table pinned to **exactly the products you updated** — use
-  `"filters": { "filter[ids]": "<comma-separated product ids>" }` (filter keys are the full
-  `filter[...]` param names; a bare key like `default_supplier_id` saves but is silently ignored
-  and the view shows the whole table). Show `default_supplier_price`, and give the user the
-  direct `https://{tenant}.sku.io/v2/products?view=<hash>` link.
+  Products table pinned to **exactly the products you updated**. The only filter channel the
+  Products page reliably loads from a saved view is `filterGroups` — a base64 advanced-filter
+  tree. Pin by SKU (numeric `id` is not a registered tree column):
+  `base64({"conjunction":"and","children":[{"type":"condition","condition":{"column":"sku",
+  "operator":"is_one_of","value":"<comma-joined SKUs>"}}]})`. Do NOT use `filters` keys like
+  `ids` or `default_supplier_id` — they save fine and are silently dropped on load. Verify with
+  `GET /api/v2/products?filter_groups=<base64>` (expect exactly your rows), show
+  `default_supplier_price`, and give the user the direct
+  `https://{tenant}.sku.io/v2/products?view=<hash>` link.
 
 ## Guardrails
 
