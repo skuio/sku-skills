@@ -40,9 +40,18 @@ A price file touches one or both of two very different things:
   MSRP column).
 
 A supplier cost file alone must not silently change sell prices — repricing what customers pay is
-a separate business decision. Note that neither of these rewrites `unit_cost`/`average_cost` on
-existing stock: actual costs flow from purchase receipts (FIFO layers). The supplier tier is the
+a separate business decision. Note that neither of these rewrites `average_cost` or the FIFO
+layers on existing stock: actual costs flow from purchase receipts. The supplier tier is the
 *forward-looking* cost used for new POs and margin planning.
+
+`unit_cost` (the product's "default cost") is a separate, directly-writable field on
+`PUT /api/products/{id}` (accepted on update even where docs omit it). Some accounts keep
+`unit_cost` = current wholesale — read the existing rows to see if they track the supplier tier,
+and ask the user whether to align `unit_cost` alongside the tier. When yes, set it in the same
+PUT for every product you reprice (standards and combos alike). Watch for cross-contaminated
+values while aligning: a genuine part whose `unit_cost` was copied from a cheap generic
+equivalent will show a huge jump — verify against the file row and report it rather than
+assuming the file is wrong.
 
 ## Step 1 — Extract the price rows
 
