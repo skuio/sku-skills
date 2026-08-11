@@ -59,6 +59,7 @@ One source of truth, three idiomatic outputs. Fix the knowledge in one place; ev
 | `products` | **publish-listing** | Draft, validate, and publish a listing to any sales channel |
 | `products` | **update-catalog-pricing** | Apply a supplier's new price file to the existing catalog |
 | `purchase-orders` | **create-purchase-order** | Create a replenishment PO for a supplier from a description or document |
+| `purchase-orders` | **record-purchase-invoice** | Record a supplier invoice against a PO from the invoice document |
 | `settings` | **edit-packing-slip-template** | Edit packing-slip templates without breaking the footer banner |
 | `settings` | **edit-pdf-template** | Edit, preview, and visually QA any PDF document template — safely |
 <!-- END:skills-table -->

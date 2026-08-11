@@ -1,0 +1,311 @@
+name: record-purchase-invoice
+title: Record a Purchase Invoice
+domain: purchase-orders
+version: 1.2.1
+description: >-
+  Record a supplier's invoice (a bill / accounts-payable invoice) against a purchase order in
+  SKU.io, from the invoice document itself — a PDF or email from the supplier — or from a plain
+  description. Handles multi-invoice PDFs (a scanned batch of several invoices in one file) by
+  recording each invoice separately and attaching only its own pages. Resolves the PO, maps the
+  invoice's line items to PO lines and its freight/fee charges to the PO's financial lines,
+  checks for duplicates by supplier invoice number, creates the purchase invoice, attaches the
+  source document, and verifies the result with a three-way match. Ends by printing a direct
+  link to every invoice recorded. Can also record a payment against the invoice once one has
+  actually been made.
+tagline: Record a supplier invoice against a PO from the invoice document
+tags: [purchase-invoices, accounts-payable, supplier-invoice, bill, invoice, purchasing, record]
+maintainers: [kmizzi]
+composes: [create-purchase-order]
+pages:
+  - /orders/purchase-invoices
+  - /orders/purchase-orders
+auth:
+  scopes: [purchase-orders:read, purchase-orders:write, settings:read]
+api:
+  base_url: https://{tenant}.sku.io
+  operations:
+    - id: find-purchase-order
+      method: GET
+      path: /api/purchase-orders/list
+      summary: >-
+        Find the purchase order the invoice bills. (The path is /list — a bare GET
+        /api/purchase-orders is not a route and 405s.) Full-text search covers PO number,
+        supplier name, item SKU, invoice number, and tracking number; filter[invoice_status]
+        narrows to uninvoiced/partial/invoiced POs.
+      parameters:
+        - name: filter[search]
+          in: query
+          type: string
+          required: false
+          description: >-
+            Search by the PO number printed on the invoice, or by supplier name. The param is
+            filter[search] — a bare search= param is silently ignored and returns the unfiltered
+            list. Narrow to a single PO before invoicing against it.
+          example: PO-0664
+        - name: filter[invoice_status]
+          in: query
+          type: string
+          required: false
+          description: 'Filter by invoice status: uninvoiced, partial, invoiced.'
+          example: uninvoiced
+        - name: filter[order_status]
+          in: query
+          type: string
+          required: false
+          description: 'Filter by order status: draft, open, closed. Invoices are recorded against non-draft POs.'
+          example: open
+        - name: page
+          in: query
+          type: integer
+          required: false
+          description: Page number.
+        - name: limit
+          in: query
+          type: integer
+          required: false
+          description: Items per page (default 15).
+    - id: get-purchase-order
+      method: GET
+      path: /api/purchase-orders/{purchase_order}
+      summary: >-
+        Get the full PO with all relations — lines, existing invoices, and financial_lines (each
+        with its id). Needed when the invoice bills freight/fees: invoice financial_lines must
+        reference an existing PO financial line id.
+      parameters:
+        - name: purchase_order
+          in: path
+          type: integer
+          required: true
+          description: Purchase order id (from find-purchase-order).
+    - id: add-po-financial-line
+      method: PUT
+      path: /api/purchase-orders/{purchase_order}
+      summary: >-
+        Add a financial line (freight, duties, fees) to the PO so it can be invoiced — needed when
+        the invoice bills a charge the PO has no financial line for yet. CAUTION: financial_lines
+        is a SYNC — any existing PO financial line omitted from the payload is REMOVED, so include
+        every existing line (by id) plus the new one (no id). Confirm with the user before editing
+        a PO.
+      parameters:
+        - name: purchase_order
+          in: path
+          type: integer
+          required: true
+          description: Purchase order id.
+        - name: financial_lines
+          in: body
+          type: array
+          required: true
+          description: >-
+            The COMPLETE set of the PO's financial lines. Existing lines: { id, ... }. New line:
+            { financial_line_type_id (resolve via GET /api/v2/financial-line-types — e.g. the
+            cost-classification "Shipping" type for freight), description, quantity, amount,
+            allocate_to_products, proration_strategy }. allocate_to_products + "cost_based"
+            prorates the charge into product landed cost at receiving.
+    - id: get-po-lines-for-invoice
+      method: GET
+      path: /api/purchase-orders/{purchase_order}/lines-for-invoice
+      summary: >-
+        Get the PO's lines optimized for invoice creation — each line's id (the
+        purchase_order_line_id an invoice line references), product_id, description, quantity,
+        received_quantity, amount (PO unit cost), and discount_rate.
+      parameters:
+        - name: purchase_order
+          in: path
+          type: integer
+          required: true
+          description: Purchase order id.
+    - id: check-existing-invoices
+      method: GET
+      path: /api/purchase-invoices
+      summary: >-
+        List purchase invoices — use before creating to catch a duplicate (same supplier invoice
+        number) and to see what is already invoiced on the PO. filter[...] fields support
+        operators like .is and .contains.
+      parameters:
+        - name: filter[supplier_invoice_number]
+          in: query
+          type: string
+          required: false
+          description: Filter by the supplier's invoice number (text match) — the duplicate check.
+          example: INV-2024-001
+        - name: filter[purchase_order_id]
+          in: query
+          type: string
+          required: false
+          description: Filter to invoices already recorded against a PO (exact match).
+        - name: filter[supplier_id]
+          in: query
+          type: string
+          required: false
+          description: Filter by supplier id (numeric).
+        - name: filter[search]
+          in: query
+          type: string
+          required: false
+          description: Search across supplier_invoice_number, id, supplier name, purchase_order_number.
+    - id: create-purchase-invoice
+      method: POST
+      path: /api/purchase-invoices
+      summary: >-
+        Create the purchase invoice linked to a purchase order. Either purchase_invoice_lines or
+        financial_lines must be provided; invoice lines must belong to the PO and must not be
+        fully invoiced.
+      parameters:
+        - name: purchase_order_id
+          in: body
+          type: integer
+          required: true
+          description: The purchase order this invoice bills (from find-purchase-order).
+        - name: supplier_invoice_number
+          in: body
+          type: string
+          required: true
+          description: The supplier's own invoice number, exactly as printed on the document.
+          example: INV-2024-001
+        - name: purchase_invoice_date
+          in: body
+          type: string
+          required: true
+          description: The invoice date printed on the document (ISO-8601). Required — a 422 without it.
+          example: "2026-07-30"
+        - name: due_date
+          in: body
+          type: string
+          required: false
+          description: Payment due date — from the document, or invoice date + the terms' net days.
+          example: "2026-08-29"
+        - name: other_date
+          in: body
+          type: string
+          required: false
+          description: Optional additional date field (nullable).
+        - name: status
+          in: body
+          type: string
+          required: false
+          description: >-
+            Invoice status on creation — the allowed values are "unpaid", "paid", and
+            "partially_paid"; use "unpaid" (the docs' "open" is rejected with a 422). Payment
+            states are reached by recording payments, not by setting them here.
+          example: unpaid
+        - name: currency_id
+          in: body
+          type: integer
+          required: false
+          description: >-
+            Currency id — omit to use the PO's currency. Only set when the invoice is genuinely in
+            a different currency, and resolve the id first (don't guess).
+        - name: currency_rate
+          in: body
+          type: number
+          required: false
+          description: Conversion rate to the account base currency, when overriding currency.
+        - name: tags
+          in: body
+          type: array
+          required: false
+          description: Array of string tags for filtering/reporting.
+        - name: purchase_invoice_lines
+          in: body
+          type: array
+          required: false
+          description: >-
+            Product lines. Each: { purchase_order_line_id (from get-po-lines-for-invoice),
+            quantity_invoiced (must not exceed the line's uninvoiced remainder), unit_price }.
+            unit_price is the GROSS price — the PO line's discount_rate is applied automatically,
+            prorated to the invoiced quantity — so an invoice showing "90.25 less 15%" is passed
+            as 90.25, not the net. Required unless financial_lines is provided.
+        - name: financial_lines
+          in: body
+          type: array
+          required: false
+          description: >-
+            Non-product charges being invoiced (freight, duties, fees). Each requires: id (an
+            EXISTING financial line id from get-purchase-order — a 422 if missing), quantity,
+            amount, AND link_type: "App\\Models\\PurchaseOrder" (a 422 "Financial line must be
+            linked to a purchase order" without it). Required unless purchase_invoice_lines is
+            provided.
+    - id: attach-document
+      method: POST
+      path: /api/purchase-invoices/{purchaseInvoice}/attachments
+      summary: >-
+        Upload the source invoice document to the recorded invoice as multipart/form-data. PDF,
+        DOC/DOCX, PNG, JPG up to 20 MB. If the account has Invoice OCR auto-scan enabled a PDF is
+        queued for OCR; if the invoice is synced to QuickBooks/Xero the file is forwarded there.
+      parameters:
+        - name: purchaseInvoice
+          in: path
+          type: integer
+          required: true
+          description: Purchase invoice id (from create-purchase-invoice).
+        - name: file
+          in: body
+          type: string
+          required: true
+          description: The file to attach (multipart form field).
+        - name: category
+          in: body
+          type: string
+          required: false
+          description: 'Document category: invoice, payment_proof, or other (default). Use "invoice" for the source document.'
+          example: invoice
+    - id: three-way-match
+      method: GET
+      path: /api/purchase-invoices/{purchaseInvoice}/three-way-match
+      summary: >-
+        Verify the recorded invoice: per-PO-line comparison of ordered vs received vs invoiced
+        quantities (qty_match_status: match, over_invoiced, under_invoiced — evaluated across all
+        invoices and credits on the PO) and unit-price variance vs the PO.
+      parameters:
+        - name: purchaseInvoice
+          in: path
+          type: integer
+          required: true
+          description: Purchase invoice id.
+    - id: list-payment-types
+      method: GET
+      path: /api/v2/payment-types
+      summary: >-
+        List the account's payment types (id, name — e.g. Bank Transfer, Credit Card) to resolve
+        payment_type_id before recording a payment. Scope settings:read.
+    - id: record-payment
+      method: POST
+      path: /api/purchase-invoices/{purchaseInvoiceId}/payments
+      summary: >-
+        Record a payment that has already been made against the invoice. Amount must not exceed
+        the remaining balance; negative amounts record refunds. Only records the fact — it moves
+        no money.
+      parameters:
+        - name: purchaseInvoiceId
+          in: path
+          type: integer
+          required: true
+          description: Purchase invoice id.
+        - name: payment_type_id
+          in: body
+          type: integer
+          required: true
+          description: Payment type id (from list-payment-types). Don't invent it.
+        - name: amount
+          in: body
+          type: number
+          required: true
+          description: Amount paid, in the invoice currency. Must not exceed the remaining balance.
+        - name: payment_date
+          in: body
+          type: string
+          required: false
+          description: Date the payment was made (ISO-8601). Defaults to today if omitted.
+          example: "2026-08-11"
+        - name: external_reference
+          in: body
+          type: string
+          required: false
+          description: Bank/wire/transaction reference for the payment.
+          example: TXN-12345
+        - name: currency_id
+          in: body
+          type: integer
+          required: false
+          description: Currency id — omit to use the invoice's currency.
