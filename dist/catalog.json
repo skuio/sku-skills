@@ -282,42 +282,6 @@
       }
     },
     {
-      "name": "update-catalog-pricing",
-      "domain": "products",
-      "title": "Update Catalog Pricing from a Price File",
-      "version": "1.0.0",
-      "description": "Apply a new price file to products that already exist in SKU.io — a supplier's updated wholesale/cost list, a new MSRP sheet, or any repriced list. Match each row to an existing product (SKU, supplier SKU, MPN, or barcode), diff old vs new prices, get the user's confirmation, then update supplier pricing tiers (what you pay) and/or product pricing tiers (what you charge). Use this when a supplier sends \"new pricing effective <date>\" or the business reprices a range; it never creates products (that is build-product-catalog).",
-      "tagline": "Apply a supplier's new price file to the existing catalog",
-      "scopes": [
-        "products:read",
-        "products:write",
-        "suppliers:read"
-      ],
-      "operations": 5,
-      "tags": [
-        "products",
-        "pricing",
-        "price-file",
-        "supplier",
-        "wholesale",
-        "cost",
-        "repricing",
-        "update"
-      ],
-      "composes": [
-        "find-product",
-        "create-saved-view"
-      ],
-      "pages": [
-        "/products"
-      ],
-      "outputs": {
-        "claude": "dist/claude/products/update-catalog-pricing/SKILL.md",
-        "openai": "dist/openai/products/update-catalog-pricing/",
-        "gemini": "dist/gemini/products/update-catalog-pricing/"
-      }
-    },
-    {
       "name": "create-purchase-order",
       "domain": "purchase-orders",
       "title": "Create a Purchase Order",
