@@ -1,0 +1,14 @@
+{
+  "suppliers": [
+    {
+      "supplier_id": 1,
+      "operation": "updateOrCreate",
+      "pricing": [
+        {
+          "supplier_pricing_tier_name": "Wholesale",
+          "price": 81.82
+        }
+      ]
+    }
+  ]
+}
