@@ -1,0 +1,124 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "find_supplier",
+      "description": "Resolve the supplier named on the price file to its supplier id. (GET /api/v2/suppliers)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "string",
+            "description": "Free-text search over supplier name/company/email.",
+            "example": "VE Petersen"
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_products",
+      "description": "Bulk-fetch the current catalog for matching and diffing. Rows include sku, mpn, barcode, default_supplier_id, default_supplier_sku, default_supplier_price, unit_cost, and type. (GET /api/v2/products)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "per_page": {
+            "type": "integer",
+            "description": "Page size (default 10; use 500 for a bulk pull).",
+            "example": 500
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number; iterate until last_page.",
+            "example": 1
+          },
+          "filter[default_supplier_id]": {
+            "type": "string",
+            "description": "Limit to products whose default supplier matches (comma-separated ids).",
+            "example": "1"
+          },
+          "filter[search]": {
+            "type": "string",
+            "description": "Full-text search across id, SKU, name, barcode, MPN, brand."
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_product_by_sku",
+      "description": "Targeted existence check for a single row when a bulk pull is overkill. (GET /api/products/by-sku)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "sku": {
+            "type": "string",
+            "description": "The exact SKU to look up.",
+            "example": "GSL392"
+          }
+        },
+        "required": [
+          "sku"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_product_suppliers",
+      "description": "Read a product's supplier links, including each link's supplier pricing tiers — this is where the account's actual tier name (e.g. \"Wholesale\") and current price come from. (GET /api/products/{productId}/suppliers)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "integer",
+            "description": "The product id.",
+            "example": 45
+          }
+        },
+        "required": [
+          "productId"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "update_product_pricing",
+      "description": "Write the new prices. Cost side goes in suppliers[].pricing[] (tier name + price, with operation \"updateOrCreate\" on EVERY entry so omitted suppliers are not unlinked); sell side goes in pricing[] (product_pricing_tier_name + price). All fields optional. (PUT /api/products/{id})",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "The product id to update.",
+            "example": 45
+          },
+          "pricing": {
+            "type": "array",
+            "description": "Sell-price tiers, each { product_pricing_tier_name, price }. Only send when the task includes updating what you charge; a supplier cost file alone should not touch these.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "suppliers": {
+            "type": "array",
+            "description": "Supplier links, each { supplier_id, operation, pricing: [{ supplier_pricing_tier_name, price }] }. Set operation \"updateOrCreate\" on every entry — when any entry omits operation the array is treated as the complete list and absent suppliers are UNLINKED. Tier price is required, numeric, >= 0 and < 100000; price null returns 422.",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    }
+  }
+]
