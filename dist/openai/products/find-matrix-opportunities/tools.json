@@ -1,0 +1,247 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "list_integrations",
+      "description": "List the tenant's integrations and their connected instances. Use this first to discover whether an Amazon integration exists (and its instance id) before deciding whether the Amazon corroboration pass is available. (GET /api/integrations)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_products",
+      "description": "The paginated catalog scan. Each row already carries everything the clustering needs — product_attributes (name + value), total_quantity_sold, total_orders, parent_id, is_variation, type, barcode, image_url and brand_name — so one pass over this endpoint is enough. Do not use /api/products/search for scanning; it is capped at 50 rows and is not paginated. (GET /api/v2/products)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "per_page": {
+            "type": "integer",
+            "description": "Rows per page. 200 is accepted and is a good scan size.",
+            "example": 200
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number, 1-based.",
+            "example": 1
+          },
+          "sort": {
+            "type": "string",
+            "description": "Sort field; prefix with \"-\" for descending. Use -total_quantity_sold to look at what actually sells first. Other useful sorts, id, sku, name, type, created_at.",
+            "example": "-total_quantity_sold"
+          },
+          "filter[type]": {
+            "type": "string",
+            "description": "Exact product type. Filter to \"standard\" when hunting for ungrouped candidates, or \"matrix\" to review families that already exist.",
+            "example": "standard"
+          },
+          "filter[brand_name]": {
+            "type": "string",
+            "description": "Brand name. Also supports operator suffixes, e.g. filter[brand_name.is], filter[brand_name.contains], filter[brand_name.is_one_of].",
+            "example": "Charlie Banana"
+          },
+          "filter[search]": {
+            "type": "string",
+            "description": "Free-text search across sku, name, barcode and brand.",
+            "example": "swim diaper"
+          },
+          "filter[total_quantity_sold.greater_than]": {
+            "type": "number",
+            "description": "Restrict to products with real sales. Numeric filters accept the operator suffixes is, is_not, greater_than, less_than, greater_than_or_equal, less_than_or_equal, between, is_empty, is_not_empty.",
+            "example": 0
+          },
+          "filter[archived]": {
+            "type": "boolean",
+            "description": "Include archived products. Archived rows are excluded by default.",
+            "example": false
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_attributes",
+      "description": "Resolve an axis attribute name to its id — required because shared_children_attributes is written as a list of attribute ids. filter[name] is an exact match, filter[search] is fuzzy. (GET /api/v2/attributes)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "filter[name]": {
+            "type": "string",
+            "description": "Exact attribute name, e.g. Size or Color. Returns the single matching row.",
+            "example": "Size"
+          },
+          "filter[search]": {
+            "type": "string",
+            "description": "Fuzzy attribute-name search, useful when the tenant names its axes differently.",
+            "example": "colour"
+          },
+          "per_page": {
+            "type": "integer",
+            "description": "Rows per page.",
+            "example": 200
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_product_variations",
+      "description": "The children of an existing matrix parent, each with its resolved attribute name/value pairs. Use to review a family you just built, or to check what an existing family covers before proposing changes. (GET /api/v2/products/{product}/variations)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "type": "integer",
+            "description": "The matrix parent's product id."
+          }
+        },
+        "required": [
+          "product"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_amazon_products",
+      "description": "The seller's Amazon listings, paginated. Carries the corroboration signal — per-child color, size and style, the Amazon product_type, and catalog_data whose relationships[].relationships[] entries include type \"VARIATION\" with parentAsins and a variationTheme (e.g. COLOR_NAME/SIZE_NAME). Join back to the SKU.io catalog on sku_product.id — NOT on product_id, which holds the ASIN despite its name. (GET /api/amazon/{integrationInstance}/products)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "integrationInstance": {
+            "type": "integer",
+            "description": "The Amazon integration instance id, from list-integrations."
+          },
+          "per_page": {
+            "type": "integer",
+            "description": "Rows per page. 200 is accepted.",
+            "example": 200
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number, 1-based.",
+            "example": 1
+          },
+          "filter[search]": {
+            "type": "string",
+            "description": "Free-text search, useful to pull the Amazon row for one seller SKU.",
+            "example": "80713616"
+          }
+        },
+        "required": [
+          "integrationInstance"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_matrix_parent",
+      "description": "Create the matrix parent — the container the variants hang off. It holds no inventory and is excluded from the buyer portal catalog. Note that this endpoint ignores shared_children_attributes; declare the axes with attach-variations afterwards. (POST /api/products)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "sku": {
+            "type": "string",
+            "description": "Unique SKU for the parent. Rejected if it already exists.",
+            "example": "CB-SWIM-DIAPER-DRAWSTRING"
+          },
+          "type": {
+            "type": "string",
+            "description": "Must be \"matrix\" for a variant family container.",
+            "example": "matrix"
+          },
+          "name": {
+            "type": "string",
+            "description": "The family name, without any size or colour in it.",
+            "example": "Charlie Banana Reusable Swim Diaper - Drawstring"
+          },
+          "brand_name": {
+            "type": "string",
+            "description": "Brand name; SKU.io links or creates the brand by name. Match the children's brand.",
+            "example": "Charlie Banana"
+          }
+        },
+        "required": [
+          "sku",
+          "type"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "attach_variations",
+      "description": "Attach children to the matrix parent and declare which attributes are the variant axes. WARNING - variations is a full synchronise, not an append; any existing child whose id or sku is absent from the array is detached (its parent_id is set back to null). Always send the complete child list. Per-child attributes are merged, so unrelated attributes such as ASIN survive. (PUT /api/products/{product})",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "type": "integer",
+            "description": "The matrix parent's product id."
+          },
+          "variations": {
+            "type": "array",
+            "description": "The COMPLETE list of children. Each entry is { id } for an existing product (or { sku } to create a new one), plus attributes, an array of { id, value } (or { name, value } — an unknown attribute name is created automatically).",
+            "items": {
+              "type": "string"
+            }
+          },
+          "shared_children_attributes": {
+            "type": "array",
+            "description": "Array of attribute ids that are the family's variant axes, e.g. [5, 6] for Size and Color. Declare only the axes that actually vary across the children. Reads back as an array of { id, name } objects but must be written as bare ids.",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "product"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "set_option_swatch",
+      "description": "Set the shared swatch (hex and/or image) on one option value of an axis attribute, creating the option value if it does not exist yet. Additive and safe — prefer it over sending option_values through the attribute update endpoint, which is a full synchronise. This is the swatch every variant selecting that value reuses on channels that support swatches. (POST /api/attributes/{attributeId}/option-swatch)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "attributeId": {
+            "type": "integer",
+            "description": "The axis attribute id, e.g. the id of Color."
+          },
+          "value": {
+            "type": "string",
+            "description": "The option value the swatch belongs to, matching the children's attribute value exactly.",
+            "example": "Hello Sunshine"
+          },
+          "swatch_hex": {
+            "type": "string",
+            "description": "Hex colour for a solid-colour option, e.g. \"#F2C14E\"."
+          },
+          "swatch_image_url": {
+            "type": "string",
+            "description": "Image URL for a print or pattern option, where a flat colour cannot represent it."
+          }
+        },
+        "required": [
+          "attributeId",
+          "value"
+        ]
+      }
+    }
+  }
+]

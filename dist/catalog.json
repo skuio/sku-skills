@@ -1,6 +1,6 @@
 {
   "generatedFrom": "skills/",
-  "count": 14,
+  "count": 15,
   "skills": [
     {
       "name": "adjust-inventory",
@@ -216,6 +216,44 @@
         "claude": "dist/claude/products/build-product-catalog/SKILL.md",
         "openai": "dist/openai/products/build-product-catalog/",
         "gemini": "dist/gemini/products/build-product-catalog/"
+      }
+    },
+    {
+      "name": "find-matrix-opportunities",
+      "domain": "products",
+      "title": "Find Matrix (Variant) Product Opportunities",
+      "version": "1.0.0",
+      "description": "Scan a SKU.io catalog for groups of standalone products that are really one product in several sizes, colours, or styles, and should be a matrix (variant) family instead of separate flat SKUs. Clusters the catalog by name and SKU pattern, corroborates each candidate against the seller's Amazon listings when an Amazon integration exists — Amazon's own variation relationships and per-child colour/size values are the strongest available evidence — ranks the candidates by sales and data readiness, then optionally builds the matrix parents and attaches the children. Use this when someone asks which products should be grouped as variants, wants variation/swatch listings for a marketplace, or asks why their size/colour products are listed one by one.",
+      "tagline": "Spot size/colour families hiding in a flat catalog and group them into matrix products",
+      "scopes": [
+        "products:read",
+        "products:write",
+        "integrations:read"
+      ],
+      "operations": 8,
+      "tags": [
+        "products",
+        "matrix",
+        "variants",
+        "variations",
+        "catalog",
+        "amazon",
+        "listings",
+        "swatches",
+        "analysis"
+      ],
+      "composes": [
+        "find-product",
+        "build-product-catalog",
+        "publish-listing"
+      ],
+      "pages": [
+        "/products"
+      ],
+      "outputs": {
+        "claude": "dist/claude/products/find-matrix-opportunities/SKILL.md",
+        "openai": "dist/openai/products/find-matrix-opportunities/",
+        "gemini": "dist/gemini/products/find-matrix-opportunities/"
       }
     },
     {

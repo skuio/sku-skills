@@ -1,0 +1,269 @@
+name: find-matrix-opportunities
+title: Find Matrix (Variant) Product Opportunities
+domain: products
+version: 1.0.0
+description: >-
+  Scan a SKU.io catalog for groups of standalone products that are really one product in several
+  sizes, colours, or styles, and should be a matrix (variant) family instead of separate flat SKUs.
+  Clusters the catalog by name and SKU pattern, corroborates each candidate against the seller's
+  Amazon listings when an Amazon integration exists — Amazon's own variation relationships and
+  per-child colour/size values are the strongest available evidence — ranks the candidates by sales
+  and data readiness, then optionally builds the matrix parents and attaches the children. Use this
+  when someone asks which products should be grouped as variants, wants variation/swatch listings
+  for a marketplace, or asks why their size/colour products are listed one by one.
+tagline: Spot size/colour families hiding in a flat catalog and group them into matrix products
+tags: [products, matrix, variants, variations, catalog, amazon, listings, swatches, analysis]
+maintainers: [kmizzi]
+composes: [find-product, build-product-catalog, publish-listing]
+pages:
+  - /products
+auth:
+  scopes: [products:read, products:write, integrations:read]
+api:
+  base_url: https://{tenant}.sku.io
+  operations:
+    - id: list-integrations
+      method: GET
+      path: /api/integrations
+      summary: >-
+        List the tenant's integrations and their connected instances. Use this first to discover
+        whether an Amazon integration exists (and its instance id) before deciding whether the
+        Amazon corroboration pass is available.
+
+    - id: list-products
+      method: GET
+      path: /api/v2/products
+      summary: >-
+        The paginated catalog scan. Each row already carries everything the clustering needs —
+        product_attributes (name + value), total_quantity_sold, total_orders, parent_id,
+        is_variation, type, barcode, image_url and brand_name — so one pass over this endpoint
+        is enough. Do not use /api/products/search for scanning; it is capped at 50 rows and
+        is not paginated.
+      parameters:
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Rows per page. 200 is accepted and is a good scan size.
+          example: 200
+        - name: page
+          in: query
+          type: integer
+          required: false
+          description: Page number, 1-based.
+          example: 1
+        - name: sort
+          in: query
+          type: string
+          required: false
+          description: >-
+            Sort field; prefix with "-" for descending. Use -total_quantity_sold to look at what
+            actually sells first. Other useful sorts, id, sku, name, type, created_at.
+          example: "-total_quantity_sold"
+        - name: filter[type]
+          in: query
+          type: string
+          required: false
+          description: >-
+            Exact product type. Filter to "standard" when hunting for ungrouped candidates, or
+            "matrix" to review families that already exist.
+          example: standard
+        - name: filter[brand_name]
+          in: query
+          type: string
+          required: false
+          description: >-
+            Brand name. Also supports operator suffixes, e.g. filter[brand_name.is],
+            filter[brand_name.contains], filter[brand_name.is_one_of].
+          example: Charlie Banana
+        - name: filter[search]
+          in: query
+          type: string
+          required: false
+          description: Free-text search across sku, name, barcode and brand.
+          example: swim diaper
+        - name: filter[total_quantity_sold.greater_than]
+          in: query
+          type: number
+          required: false
+          description: >-
+            Restrict to products with real sales. Numeric filters accept the operator suffixes
+            is, is_not, greater_than, less_than, greater_than_or_equal, less_than_or_equal,
+            between, is_empty, is_not_empty.
+          example: 0
+        - name: filter[archived]
+          in: query
+          type: boolean
+          required: false
+          description: Include archived products. Archived rows are excluded by default.
+          example: false
+
+    - id: list-attributes
+      method: GET
+      path: /api/v2/attributes
+      summary: >-
+        Resolve an axis attribute name to its id — required because shared_children_attributes is
+        written as a list of attribute ids. filter[name] is an exact match, filter[search] is fuzzy.
+      parameters:
+        - name: filter[name]
+          in: query
+          type: string
+          required: false
+          description: Exact attribute name, e.g. Size or Color. Returns the single matching row.
+          example: Size
+        - name: filter[search]
+          in: query
+          type: string
+          required: false
+          description: Fuzzy attribute-name search, useful when the tenant names its axes differently.
+          example: colour
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Rows per page.
+          example: 200
+
+    - id: get-product-variations
+      method: GET
+      path: /api/v2/products/{product}/variations
+      summary: >-
+        The children of an existing matrix parent, each with its resolved attribute name/value
+        pairs. Use to review a family you just built, or to check what an existing family covers
+        before proposing changes.
+      parameters:
+        - name: product
+          in: path
+          type: integer
+          required: true
+          description: The matrix parent's product id.
+
+    - id: list-amazon-products
+      method: GET
+      path: /api/amazon/{integrationInstance}/products
+      summary: >-
+        The seller's Amazon listings, paginated. Carries the corroboration signal — per-child
+        color, size and style, the Amazon product_type, and catalog_data whose
+        relationships[].relationships[] entries include type "VARIATION" with parentAsins and a
+        variationTheme (e.g. COLOR_NAME/SIZE_NAME). Join back to the SKU.io catalog on
+        sku_product.id — NOT on product_id, which holds the ASIN despite its name.
+      parameters:
+        - name: integrationInstance
+          in: path
+          type: integer
+          required: true
+          description: The Amazon integration instance id, from list-integrations.
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Rows per page. 200 is accepted.
+          example: 200
+        - name: page
+          in: query
+          type: integer
+          required: false
+          description: Page number, 1-based.
+          example: 1
+        - name: filter[search]
+          in: query
+          type: string
+          required: false
+          description: Free-text search, useful to pull the Amazon row for one seller SKU.
+          example: "80713616"
+
+    - id: create-matrix-parent
+      method: POST
+      path: /api/products
+      summary: >-
+        Create the matrix parent — the container the variants hang off. It holds no inventory and
+        is excluded from the buyer portal catalog. Note that this endpoint ignores
+        shared_children_attributes; declare the axes with attach-variations afterwards.
+      parameters:
+        - name: sku
+          in: body
+          type: string
+          required: true
+          description: Unique SKU for the parent. Rejected if it already exists.
+          example: CB-SWIM-DIAPER-DRAWSTRING
+        - name: type
+          in: body
+          type: string
+          required: true
+          description: Must be "matrix" for a variant family container.
+          example: matrix
+        - name: name
+          in: body
+          type: string
+          required: false
+          description: The family name, without any size or colour in it.
+          example: Charlie Banana Reusable Swim Diaper - Drawstring
+        - name: brand_name
+          in: body
+          type: string
+          required: false
+          description: Brand name; SKU.io links or creates the brand by name. Match the children's brand.
+          example: Charlie Banana
+
+    - id: attach-variations
+      method: PUT
+      path: /api/products/{product}
+      summary: >-
+        Attach children to the matrix parent and declare which attributes are the variant axes.
+        WARNING - variations is a full synchronise, not an append; any existing child whose id or
+        sku is absent from the array is detached (its parent_id is set back to null). Always send
+        the complete child list. Per-child attributes are merged, so unrelated attributes such as
+        ASIN survive.
+      parameters:
+        - name: product
+          in: path
+          type: integer
+          required: true
+          description: The matrix parent's product id.
+        - name: variations
+          in: body
+          type: array
+          required: false
+          description: >-
+            The COMPLETE list of children. Each entry is { id } for an existing product (or { sku }
+            to create a new one), plus attributes, an array of { id, value } (or { name, value } —
+            an unknown attribute name is created automatically).
+        - name: shared_children_attributes
+          in: body
+          type: array
+          required: false
+          description: >-
+            Array of attribute ids that are the family's variant axes, e.g. [5, 6] for Size and
+            Color. Declare only the axes that actually vary across the children. Reads back as an
+            array of { id, name } objects but must be written as bare ids.
+
+    - id: set-option-swatch
+      method: POST
+      path: /api/attributes/{attributeId}/option-swatch
+      summary: >-
+        Set the shared swatch (hex and/or image) on one option value of an axis attribute, creating
+        the option value if it does not exist yet. Additive and safe — prefer it over sending
+        option_values through the attribute update endpoint, which is a full synchronise. This is
+        the swatch every variant selecting that value reuses on channels that support swatches.
+      parameters:
+        - name: attributeId
+          in: path
+          type: integer
+          required: true
+          description: The axis attribute id, e.g. the id of Color.
+        - name: value
+          in: body
+          type: string
+          required: true
+          description: The option value the swatch belongs to, matching the children's attribute value exactly.
+          example: Hello Sunshine
+        - name: swatch_hex
+          in: body
+          type: string
+          required: false
+          description: Hex colour for a solid-colour option, e.g. "#F2C14E".
+        - name: swatch_image_url
+          in: body
+          type: string
+          required: false
+          description: Image URL for a print or pattern option, where a flat colour cannot represent it.

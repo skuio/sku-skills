@@ -55,6 +55,7 @@ One source of truth, three idiomatic outputs. Fix the knowledge in one place; ev
 | `platform` | **create-saved-view** | Create and favorite a saved view — columns, filters, sort — on any data table |
 | `platform` | **sync-sops** | Reconcile your internal SOPs against what changed in SKU.io — automatically |
 | `products` | **build-product-catalog** | Import products from a spreadsheet, price list, web page, or pasted text |
+| `products` | **find-matrix-opportunities** | Spot size/colour families hiding in a flat catalog and group them into matrix products |
 | `products` | **find-product** | Resolve a product by SKU, barcode, or fuzzy search |
 | `products` | **publish-listing** | Draft, validate, and publish a listing to any sales channel |
 | `products` | **update-catalog-pricing** | Apply a supplier's new price file to the existing catalog |
