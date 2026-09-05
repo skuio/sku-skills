@@ -159,7 +159,7 @@
       "name": "sync-sops",
       "domain": "platform",
       "title": "Sync your SOPs with SKU.io changes",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "description": "Keep your internal Standard Operating Procedures (SOPs) in step with SKU.io. SKU.io ships often — menus move, workflows change, features are added — which quietly breaks the step-by-step procedures your team relies on. Give this skill your SOP content plus the date you last reviewed it: it reads SKU.io's public changelog and documentation, finds the changes that affect your procedures, and rewrites the exact stale steps — or drafts a brand-new SOP from the current docs, in your own format. Use it whenever internal docs/SOPs may be out of date, or on a schedule to catch drift.",
       "tagline": "Reconcile your internal SOPs against what changed in SKU.io — automatically",
       "scopes": [
@@ -260,7 +260,7 @@
       "name": "find-product",
       "domain": "products",
       "title": "Find a Product",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "Look up a product in the SKU.io catalog by SKU, barcode, or a free-text search over name and SKU. Use this whenever you need to resolve a product reference to its SKU.io product record and id — for example before adding it to a sales order, checking stock, or reporting on it.",
       "tagline": "Resolve a product by SKU, barcode, or fuzzy search",
       "scopes": [

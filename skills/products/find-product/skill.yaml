@@ -1,7 +1,7 @@
 name: find-product
 title: Find a Product
 domain: products
-version: 1.1.0
+version: 1.2.0
 description: >-
   Look up a product in the SKU.io catalog by SKU, barcode, or a free-text search over name and
   SKU. Use this whenever you need to resolve a product reference to its SKU.io product record and
@@ -19,12 +19,25 @@ api:
       path: /api/products/search
       summary: Fuzzy search products by name or SKU fragment.
       parameters:
-        - name: query
+        - name: q
           in: query
           type: string
-          required: true
-          description: Text to match against product name and SKU.
+          required: false
+          description: >-
+            Text to match against product name and SKU. The parameter is named `q` — `query` and
+            `search` are NOT read by the API and are silently ignored. Because `q` is optional,
+            sending the wrong name returns an unfiltered page of the most recent active products
+            with a 200, which reads like a successful search. Minimum 2 characters. Omit only when
+            you deliberately want that recent-products default.
           example: blue widget
+        - name: limit
+          in: query
+          type: integer
+          required: false
+          description: >-
+            Maximum rows to return, 1-50 (default 10). This endpoint is NOT a paginator — there is
+            no `page` / `per_page` and no pagination envelope. Raise `limit` instead of paging.
+          example: 25
     - id: get-product-by-sku
       method: GET
       path: /api/products/by-sku

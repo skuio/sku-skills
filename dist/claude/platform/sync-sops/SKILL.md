@@ -34,14 +34,14 @@ the user named. Writing to the wrong account is the one mistake here the API can
 
 ## Knowledge sources (all public, no auth)
 
-Fetch these from `https://docs.sku.io`:
+Fetch these from the public docs site at `https://www.sku.io/docs` (the older `docs.sku.io` host still 301-redirects here, but prefer the canonical URL so every fetch skips a redirect):
 
 | What | URL | Use |
 |---|---|---|
-| Doc map | `https://docs.sku.io/llms.txt` | Index of every doc page with a one-line description and its URL. Start here to find the right pages. |
-| Changelog (structured) | `https://docs.sku.io/changelog.json` | Machine-readable list of user-facing changes. The heart of Reconcile mode. |
-| Changelog (readable) | `https://docs.sku.io/changelog.md` | The same, as prose. |
-| Any doc page as clean markdown | append `.md` to its URL, e.g. `https://docs.sku.io/guides/orders/purchase-orders/import-columns-reference.md` | Read the authoritative steps/fields for a page. Always prefer the `.md` variant. |
+| Doc map | `https://www.sku.io/docs/llms.txt` | Index of every doc page with a one-line description and its URL. Start here to find the right pages. |
+| Changelog (structured) | `https://www.sku.io/docs/changelog.json` | Machine-readable list of user-facing changes. The heart of Reconcile mode. |
+| Changelog (readable) | `https://www.sku.io/docs/changelog.md` | The same, as prose. |
+| Any doc page as clean markdown | append `.md` to its URL, e.g. `https://www.sku.io/docs/guides/orders/purchase-orders/import-columns-reference.md` | Read the authoritative steps/fields for a page. Always prefer the `.md` variant. |
 
 ### The `changelog.json` shape
 
@@ -82,7 +82,7 @@ Fetch these from `https://docs.sku.io`:
 Inputs you need: the customer's **SOP content** (paste, upload, or export) and the **date each SOP was
 last reviewed** (or one date for the whole set). If a date is missing, ask — don't guess.
 
-1. **Pull the changes since then.** `GET https://docs.sku.io/changelog.json` and keep every entry with
+1. **Pull the changes since then.** `GET https://www.sku.io/docs/changelog.json` and keep every entry with
    `date >= last_reviewed_date`. Sort **`moved` and `removed` first** — they break procedures hardest.
 2. **Match changes to SOPs.** For each candidate entry, decide which SOP(s) it touches by matching the
    entry's `area` and the nouns/UI terms in its `title`/`summary`/`sop_impact` against the SOP's headings
@@ -107,11 +107,11 @@ last reviewed** (or one date for the whole set). If a date is missing, ask — d
 1. 🔶 MOVED (2026-07-06) — Fulfillments is now one sidebar item with tabs.
    • Step 4 was: "Click Fulfillments → Pending in the sidebar"
      now:        "Click Fulfillments in the sidebar, then open the Pending tab"
-   • proof: https://docs.sku.io/guides/orders  (changelog id: 2026-07-06-fulfillments-nav-consolidated)
+   • proof: https://www.sku.io/docs/guides/orders  (changelog id: 2026-07-06-fulfillments-nav-consolidated)
 
 2. 🟡 CHANGED (2026-07-13) — Products import now sets selling prices …
    • Step 7 (the Bulk-edit workaround) can be replaced with a `Price: Retail` column …
-   • proof: https://docs.sku.io/guides/products/import-products#set-selling-prices
+   • proof: https://www.sku.io/docs/guides/products/import-products#set-selling-prices
 
 ⚠️ Review: 1 entry (a Reports change) *might* touch the "Weekly stock report" SOP — please confirm.
 

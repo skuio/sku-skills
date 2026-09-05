@@ -7,15 +7,17 @@
       "parameters": {
         "type": "object",
         "properties": {
-          "query": {
+          "q": {
             "type": "string",
-            "description": "Text to match against product name and SKU.",
+            "description": "Text to match against product name and SKU. The parameter is named `q` — `query` and `search` are NOT read by the API and are silently ignored. Because `q` is optional, sending the wrong name returns an unfiltered page of the most recent active products with a 200, which reads like a successful search. Minimum 2 characters. Omit only when you deliberately want that recent-products default.",
             "example": "blue widget"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximum rows to return, 1-50 (default 10). This endpoint is NOT a paginator — there is no `page` / `per_page` and no pagination envelope. Raise `limit` instead of paging.",
+            "example": 25
           }
-        },
-        "required": [
-          "query"
-        ]
+        }
       }
     }
   },

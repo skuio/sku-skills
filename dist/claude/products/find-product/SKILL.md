@@ -30,11 +30,17 @@ the user named. Writing to the wrong account is the one mistake here the API can
 | --- | --- | --- |
 | An exact SKU | `GET /api/products/by-sku?sku=WIDGET-BLUE-01` | Direct, single result |
 | A scanned barcode (UPC/EAN/GTIN) | `GET /api/products/barcode-lookup?code=0123456789012` | Resolves the barcode to its product (param is `code`) |
-| A partial name or SKU | `GET /api/products/search?query=blue widget` | Fuzzy, may return several matches |
+| A partial name or SKU | `GET /api/products/search?q=blue+widget` | Fuzzy, may return several matches. The param is **`q`** — see the warning below |
 | A numeric product id | `GET /api/products/{id}` | Full record when you already have the id |
 
 Always prefer the **most specific** lookup you can. Use `search` only when you don't have an
 exact SKU or barcode — it can return multiple candidates that you must disambiguate.
+
+> **⚠ The search parameter is `q`, not `query`.** `query` and `search` are not read by the API and
+> are silently ignored. Because `q` is optional, passing the wrong name still returns `200` — with
+> an unfiltered page of the most recent active products, which looks exactly like a successful
+> search. If results seem unrelated to what you asked for, check the parameter name first.
+> Minimum 2 characters.
 
 ## Steps
 
@@ -55,8 +61,10 @@ exact SKU or barcode — it can return multiple candidates that you must disambi
 
 ## Notes
 
-- `search` is paginated — see [`shared/pagination.md`](shared/pagination.md). The best
-  matches are on the first page; you rarely need to page for a lookup.
+- **`search` is not paginated.** Unlike list endpoints it takes no `page` / `per_page` and returns
+  no pagination envelope — see [`shared/pagination.md`](shared/pagination.md) for the
+  endpoints that *are* paginated. Size the result with `limit` instead (1-50, default 10). The best
+  matches come first, so the default is usually enough for a lookup.
 - Product `id` is the stable key other skills expect (e.g. `product_id` on a sales-order line).
   Prefer passing `id` downstream over re-resolving by SKU each time.
 
