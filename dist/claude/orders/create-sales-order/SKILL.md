@@ -39,12 +39,19 @@ the user named. Writing to the wrong account is the one mistake here the API can
 
 - `order_status` — string (see above).
 - `order_date` — a date; if you omit it the client defaults to now.
+- **`currency_code` or `currency_id` — one of the two is required.** Send `"currency_code": "USD"`
+  unless the account trades in something else. Omit both and the call fails with a 422 naming
+  each field as required when the other is absent, which reads like two separate problems and is
+  one.
 - `sales_order_lines` — required unless the order is a draft. Each line needs:
   - `description` (required, max 255)
   - `quantity` (required, ≥ 0)
   - `amount` (required unit price)
   - `product_id` **or** `sku` to link a catalog product (optional but recommended)
-  - `warehouse_id` (optional; required if you set a `warehouse_routing_method` of `warehouse`)
+  - `warehouse_id` — optional, and worth setting anyway. Leave it out and the line is assigned a
+    default warehouse, which may hold no stock; the order is created either way, and the problem
+    only surfaces later when fulfilment is refused for "insufficient allocation" against a
+    warehouse you did not choose. Name the warehouse the stock is actually in.
 
 Useful optional header fields: `customer_id`, `store_id`, `sales_channel_id`,
 `customer_po_number`, `shipping_method_id`, `shipping_address_id`, `billing_address_id`,
@@ -61,9 +68,10 @@ curl -sS -X POST "https://$SKU_TENANT.sku.io/api/sales-orders" \
     "order_date": "2026-07-09",
     "customer_id": 4821,
     "customer_po_number": "PO-99123",
+    "currency_code": "USD",
     "sales_order_lines": [
-      { "product_id": 1567, "description": "Blue Widget", "quantity": 10, "amount": 12.50 },
-      { "sku": "GADGET-RED-02", "description": "Red Gadget", "quantity": 3, "amount": 29.00 }
+      { "product_id": 1567, "description": "Blue Widget", "quantity": 10, "amount": 12.50, "warehouse_id": 3 },
+      { "sku": "GADGET-RED-02", "description": "Red Gadget", "quantity": 3, "amount": 29.00, "warehouse_id": 3 }
     ]
   }'
 ```
@@ -84,6 +92,8 @@ See [`examples/request.json`](./examples/request.json) for the same body as a fi
 - **`422`** → validation failed. The `errors` map names the offending fields with dot-notation
   for lines, e.g. `sales_order_lines.0.quantity`. Fix those specific fields and resubmit — never
   blind-retry the same body. See [`shared/errors.md`](shared/errors.md).
+  - A 422 naming **both** `currency_id` and `currency_code`, each "required when the other is not
+    present", is **one** problem, not two: you sent neither. Add `"currency_code": "USD"`.
 - **`403`** → the token lacks `orders:write`. Mint a token with that scope.
 
 ## Guardrails
