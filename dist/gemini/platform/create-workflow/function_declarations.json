@@ -1,0 +1,298 @@
+{
+  "functionDeclarations": [
+    {
+      "name": "list_node_types",
+      "description": "The live catalog of every node type — its category, settings (key, type, required, default), outputs and outputSchema. Always read this first; it is the only reliable source for valid `nodes[*].type` values and their `data` keys. (GET /api/automation/workflow-nodes)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "lookup_sales_channels",
+      "description": "Sales channels as {id, name}. Feeds any node setting of type `multiselect` whose apiEndpoint is /automation/lookups/sales-channels — the values stored are the numeric ids, never the channel names. (GET /api/automation/lookups/sales-channels)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "lookup_warehouses",
+      "description": "Warehouses as {id, name}, for warehouse-valued node settings. (GET /api/automation/lookups/warehouses)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "lookup_tags",
+      "description": "Order tags, for the Apply Tags node's `tags` setting. (GET /api/automation/lookups/tags)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "list_workflows",
+      "description": "Paginated list of workflows with run stats. Use it to avoid creating a duplicate, and to find an existing workflow to update. (GET /api/automation/workflows)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "filter[status]": {
+            "type": "STRING",
+            "description": "draft | published | disabled."
+          },
+          "filter[trigger_type]": {
+            "type": "STRING",
+            "description": "event | schedule | manual | webhook | pre_dispatch."
+          },
+          "filter[search]": {
+            "type": "STRING",
+            "description": "Matches name or description."
+          }
+        }
+      }
+    },
+    {
+      "name": "validate_workflow",
+      "description": "Check a graph without saving. Verifies exactly one trigger node, that every edge references existing nodes, and that every non-trigger node has an incoming connection. Call this before create and before update — it is free and catches the structural mistakes. (POST /api/automation/workflows/validate)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "nodes": {
+            "type": "ARRAY",
+            "description": "The node list, same shape as on create.",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "edges": {
+            "type": "ARRAY",
+            "description": "The edge list, same shape as on create.",
+            "items": {
+              "type": "STRING"
+            }
+          }
+        },
+        "required": [
+          "nodes",
+          "edges"
+        ]
+      }
+    },
+    {
+      "name": "create_workflow",
+      "description": "Create a workflow in Draft status from a node/edge graph. The trigger type is derived from the trigger node — you do not set it. Drafts never fire. (POST /api/automation/workflows)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "name": {
+            "type": "STRING",
+            "description": "Display name, max 128 chars."
+          },
+          "description": {
+            "type": "STRING",
+            "description": "What it does and why it exists. Worth writing — it is what the next person reads before deciding whether to disable it."
+          },
+          "category": {
+            "type": "STRING",
+            "description": "Free-text grouping, max 50 chars (e.g. orders, imports, inventory)."
+          },
+          "nodes": {
+            "type": "ARRAY",
+            "description": "One object per node: `id` (string, max 64, unique in the graph), `type` (a `type` from the node catalog), `position` {x, y} (numeric — the canvas coordinates the builder will draw it at), `data` (object — the node's settings, keyed by the `settings[*].key` the catalog lists; required even when empty), optional `label`.",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "edges": {
+            "type": "ARRAY",
+            "description": "One object per connection: `id`, `source` (node id), `target` (node id); optional `sourceHandle` (required to leave a branching node — `true`/`false` on IF, `case0…`/`fallback` on Switch), `targetHandle`, `label`, `branchLabel`.",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "viewport": {
+            "type": "OBJECT",
+            "description": "Canvas position {x, y, zoom} the builder opens at. Defaults are fine."
+          },
+          "preview_mode": {
+            "type": "BOOLEAN",
+            "description": "When true, every run executes triggers, conditions and lookups for real but SKIPS every state-changing Action/Integration step (emails, Slack, webhooks, order and inventory writes), recording what each would have done. Default false."
+          }
+        },
+        "required": [
+          "name",
+          "nodes",
+          "edges"
+        ]
+      }
+    },
+    {
+      "name": "get_workflow",
+      "description": "One workflow with its full graph, derived triggerType/triggerConfig, and publish state. (GET /api/automation/workflows/{workflow})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "workflow": {
+            "type": "INTEGER",
+            "description": "The workflow id."
+          }
+        },
+        "required": [
+          "workflow"
+        ]
+      }
+    },
+    {
+      "name": "update_workflow",
+      "description": "Update name, description, category, graph, settings or preview_mode. All fields optional. Submitting `nodes` re-derives the trigger type and trigger config, so send the WHOLE graph — a partial node list silently drops the nodes you left out. (PUT /api/automation/workflows/{workflow})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "workflow": {
+            "type": "INTEGER",
+            "description": "The workflow id."
+          },
+          "nodes": {
+            "type": "ARRAY",
+            "description": "The complete node list. Omit the key entirely to leave the graph untouched.",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "edges": {
+            "type": "ARRAY",
+            "description": "The complete edge list.",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "preview_mode": {
+            "type": "BOOLEAN",
+            "description": "Toggle preview (dry-run) mode on an existing workflow."
+          }
+        },
+        "required": [
+          "workflow"
+        ]
+      }
+    },
+    {
+      "name": "publish_workflow",
+      "description": "Validate then publish, making the trigger live. On validation failure nothing changes and the errors come back as 422. On success the version increments and publishedAt is set. A workflow only ever fires once published. (POST /api/automation/workflows/{workflow}/publish)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "workflow": {
+            "type": "INTEGER",
+            "description": "The workflow id."
+          }
+        },
+        "required": [
+          "workflow"
+        ]
+      }
+    },
+    {
+      "name": "toggle_workflow",
+      "description": "Flip between published (live) and disabled (paused). Only those two states can be toggled — a draft must be published first. This is the off switch; prefer it to delete. (POST /api/automation/workflows/{workflow}/toggle)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "workflow": {
+            "type": "INTEGER",
+            "description": "The workflow id."
+          }
+        },
+        "required": [
+          "workflow"
+        ]
+      }
+    },
+    {
+      "name": "execute_workflow",
+      "description": "Run a published workflow by hand against a payload you supply, instead of waiting for a real trigger. Queued asynchronously — the response is the execution record at status `pending`; poll get-execution for the result. (POST /api/automation/workflows/{workflow}/execute)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "workflow": {
+            "type": "INTEGER",
+            "description": "The workflow id."
+          },
+          "trigger_payload": {
+            "type": "OBJECT",
+            "description": "The data the trigger node would have emitted, shaped like that trigger's `outputSchema`. Omit it and event triggers fall back to sample data built from the most recent matching record."
+          }
+        },
+        "required": [
+          "workflow"
+        ]
+      }
+    },
+    {
+      "name": "list_executions",
+      "description": "Run history for one workflow — status, duration, trigger reference, error. (GET /api/automation/workflows/{workflow}/executions)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "workflow": {
+            "type": "INTEGER",
+            "description": "The workflow id."
+          }
+        },
+        "required": [
+          "workflow"
+        ]
+      }
+    },
+    {
+      "name": "get_execution",
+      "description": "One execution with its per-step results — each step's status, logs, and (in preview mode) the input the skipped step would have used. This is where you read what actually happened. (GET /api/automation/workflow-executions/{execution})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "execution": {
+            "type": "INTEGER",
+            "description": "The execution id."
+          }
+        },
+        "required": [
+          "execution"
+        ]
+      }
+    },
+    {
+      "name": "clone_workflow",
+      "description": "Duplicate a workflow as a new Draft named \"<name> (Copy)\". Use it to change a live workflow safely — clone, edit the clone, test it, then swap. (POST /api/automation/workflows/{workflow}/clone)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "workflow": {
+            "type": "INTEGER",
+            "description": "The workflow id."
+          }
+        },
+        "required": [
+          "workflow"
+        ]
+      }
+    },
+    {
+      "name": "delete_workflow",
+      "description": "Permanently delete a workflow. Irreversible, and it takes the run history with it — disable instead unless the user explicitly asked to delete. (DELETE /api/automation/workflows/{workflow})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "workflow": {
+            "type": "INTEGER",
+            "description": "The workflow id."
+          }
+        },
+        "required": [
+          "workflow"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,503 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SKU.io — Create a Workflow (automation)",
+    "description": "Build, validate, publish and test-run a SKU.io automation workflow from the API — the same node/edge graph the visual Workflow Builder draws. Use this whenever a user wants something to happen automatically in response to something else: email or Slack me when an order lands on a given sales channel, tag or note orders that match a rule, post a webhook to another system, import a supplier feed on a schedule, or route orders to a warehouse. Discovers the node catalog live, assembles the graph, validates it before saving, and publishes only after a dry run the user has seen — including picking the right moment to fire on, which for an order alert is the channel import rather than the sales-order creation.",
+    "version": "1.1.0"
+  },
+  "servers": [
+    {
+      "url": "https://{tenant}.sku.io",
+      "variables": {
+        "tenant": {
+          "default": "app",
+          "description": "Your SKU.io account subdomain."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/automation/workflow-nodes": {
+      "get": {
+        "operationId": "list_node_types",
+        "summary": "The live catalog of every node type — its category, settings (key, type, required, default), outputs and outputSchema. Always read this first; it is the only reliable source for valid `nodes[*].type` values and their `data` keys.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/automation/lookups/sales-channels": {
+      "get": {
+        "operationId": "lookup_sales_channels",
+        "summary": "Sales channels as {id, name}. Feeds any node setting of type `multiselect` whose apiEndpoint is /automation/lookups/sales-channels — the values stored are the numeric ids, never the channel names.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/automation/lookups/warehouses": {
+      "get": {
+        "operationId": "lookup_warehouses",
+        "summary": "Warehouses as {id, name}, for warehouse-valued node settings.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/automation/lookups/tags": {
+      "get": {
+        "operationId": "lookup_tags",
+        "summary": "Order tags, for the Apply Tags node's `tags` setting.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/automation/workflows": {
+      "get": {
+        "operationId": "list_workflows",
+        "summary": "Paginated list of workflows with run stats. Use it to avoid creating a duplicate, and to find an existing workflow to update.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter[status]",
+            "in": "query",
+            "required": false,
+            "description": "draft | published | disabled.",
+            "schema": {
+              "type": "string",
+              "description": "draft | published | disabled.",
+              "example": "published"
+            }
+          },
+          {
+            "name": "filter[trigger_type]",
+            "in": "query",
+            "required": false,
+            "description": "event | schedule | manual | webhook | pre_dispatch.",
+            "schema": {
+              "type": "string",
+              "description": "event | schedule | manual | webhook | pre_dispatch.",
+              "example": "event"
+            }
+          },
+          {
+            "name": "filter[search]",
+            "in": "query",
+            "required": false,
+            "description": "Matches name or description.",
+            "schema": {
+              "type": "string",
+              "description": "Matches name or description."
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "create_workflow",
+        "summary": "Create a workflow in Draft status from a node/edge graph. The trigger type is derived from the trigger node — you do not set it. Drafts never fire.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Display name, max 128 chars.",
+                    "example": "TikTok Shop: email on new order"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "What it does and why it exists. Worth writing — it is what the next person reads before deciding whether to disable it."
+                  },
+                  "category": {
+                    "type": "string",
+                    "description": "Free-text grouping, max 50 chars (e.g. orders, imports, inventory).",
+                    "example": "orders"
+                  },
+                  "nodes": {
+                    "type": "array",
+                    "description": "One object per node: `id` (string, max 64, unique in the graph), `type` (a `type` from the node catalog), `position` {x, y} (numeric — the canvas coordinates the builder will draw it at), `data` (object — the node's settings, keyed by the `settings[*].key` the catalog lists; required even when empty), optional `label`.",
+                    "example": [
+                      {
+                        "id": "trigger-1",
+                        "type": "sales-order-created",
+                        "position": {
+                          "x": 80,
+                          "y": 200
+                        },
+                        "data": {
+                          "salesChannels": [
+                            30
+                          ],
+                          "orderStatuses": [
+                            "*"
+                          ]
+                        },
+                        "label": "Order created"
+                      }
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "edges": {
+                    "type": "array",
+                    "description": "One object per connection: `id`, `source` (node id), `target` (node id); optional `sourceHandle` (required to leave a branching node — `true`/`false` on IF, `case0…`/`fallback` on Switch), `targetHandle`, `label`, `branchLabel`.",
+                    "example": [
+                      {
+                        "id": "e1",
+                        "source": "trigger-1",
+                        "target": "node-2"
+                      }
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "viewport": {
+                    "type": "object",
+                    "description": "Canvas position {x, y, zoom} the builder opens at. Defaults are fine."
+                  },
+                  "preview_mode": {
+                    "type": "boolean",
+                    "description": "When true, every run executes triggers, conditions and lookups for real but SKIPS every state-changing Action/Integration step (emails, Slack, webhooks, order and inventory writes), recording what each would have done. Default false.",
+                    "example": true
+                  }
+                },
+                "required": [
+                  "name",
+                  "nodes",
+                  "edges"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/automation/workflows/validate": {
+      "post": {
+        "operationId": "validate_workflow",
+        "summary": "Check a graph without saving. Verifies exactly one trigger node, that every edge references existing nodes, and that every non-trigger node has an incoming connection. Call this before create and before update — it is free and catches the structural mistakes.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nodes": {
+                    "type": "array",
+                    "description": "The node list, same shape as on create.",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "edges": {
+                    "type": "array",
+                    "description": "The edge list, same shape as on create.",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "nodes",
+                  "edges"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/automation/workflows/{workflow}": {
+      "get": {
+        "operationId": "get_workflow",
+        "summary": "One workflow with its full graph, derived triggerType/triggerConfig, and publish state.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "workflow",
+            "in": "path",
+            "required": true,
+            "description": "The workflow id.",
+            "schema": {
+              "type": "integer",
+              "description": "The workflow id."
+            }
+          }
+        ]
+      },
+      "put": {
+        "operationId": "update_workflow",
+        "summary": "Update name, description, category, graph, settings or preview_mode. All fields optional. Submitting `nodes` re-derives the trigger type and trigger config, so send the WHOLE graph — a partial node list silently drops the nodes you left out.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "workflow",
+            "in": "path",
+            "required": true,
+            "description": "The workflow id.",
+            "schema": {
+              "type": "integer",
+              "description": "The workflow id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nodes": {
+                    "type": "array",
+                    "description": "The complete node list. Omit the key entirely to leave the graph untouched.",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "edges": {
+                    "type": "array",
+                    "description": "The complete edge list.",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "preview_mode": {
+                    "type": "boolean",
+                    "description": "Toggle preview (dry-run) mode on an existing workflow."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete_workflow",
+        "summary": "Permanently delete a workflow. Irreversible, and it takes the run history with it — disable instead unless the user explicitly asked to delete.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "workflow",
+            "in": "path",
+            "required": true,
+            "description": "The workflow id.",
+            "schema": {
+              "type": "integer",
+              "description": "The workflow id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/automation/workflows/{workflow}/publish": {
+      "post": {
+        "operationId": "publish_workflow",
+        "summary": "Validate then publish, making the trigger live. On validation failure nothing changes and the errors come back as 422. On success the version increments and publishedAt is set. A workflow only ever fires once published.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "workflow",
+            "in": "path",
+            "required": true,
+            "description": "The workflow id.",
+            "schema": {
+              "type": "integer",
+              "description": "The workflow id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/automation/workflows/{workflow}/toggle": {
+      "post": {
+        "operationId": "toggle_workflow",
+        "summary": "Flip between published (live) and disabled (paused). Only those two states can be toggled — a draft must be published first. This is the off switch; prefer it to delete.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "workflow",
+            "in": "path",
+            "required": true,
+            "description": "The workflow id.",
+            "schema": {
+              "type": "integer",
+              "description": "The workflow id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/automation/workflows/{workflow}/execute": {
+      "post": {
+        "operationId": "execute_workflow",
+        "summary": "Run a published workflow by hand against a payload you supply, instead of waiting for a real trigger. Queued asynchronously — the response is the execution record at status `pending`; poll get-execution for the result.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "workflow",
+            "in": "path",
+            "required": true,
+            "description": "The workflow id.",
+            "schema": {
+              "type": "integer",
+              "description": "The workflow id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "trigger_payload": {
+                    "type": "object",
+                    "description": "The data the trigger node would have emitted, shaped like that trigger's `outputSchema`. Omit it and event triggers fall back to sample data built from the most recent matching record."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/automation/workflows/{workflow}/executions": {
+      "get": {
+        "operationId": "list_executions",
+        "summary": "Run history for one workflow — status, duration, trigger reference, error.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "workflow",
+            "in": "path",
+            "required": true,
+            "description": "The workflow id.",
+            "schema": {
+              "type": "integer",
+              "description": "The workflow id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/automation/workflow-executions/{execution}": {
+      "get": {
+        "operationId": "get_execution",
+        "summary": "One execution with its per-step results — each step's status, logs, and (in preview mode) the input the skipped step would have used. This is where you read what actually happened.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "execution",
+            "in": "path",
+            "required": true,
+            "description": "The execution id.",
+            "schema": {
+              "type": "integer",
+              "description": "The execution id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/automation/workflows/{workflow}/clone": {
+      "post": {
+        "operationId": "clone_workflow",
+        "summary": "Duplicate a workflow as a new Draft named \"<name> (Copy)\". Use it to change a live workflow safely — clone, edit the clone, test it, then swap.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "workflow",
+            "in": "path",
+            "required": true,
+            "description": "The workflow id.",
+            "schema": {
+              "type": "integer",
+              "description": "The workflow id."
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "SKU.io Personal Access Token."
+      }
+    }
+  }
+}
