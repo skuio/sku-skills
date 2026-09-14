@@ -53,6 +53,7 @@ One source of truth, three idiomatic outputs. Fix the knowledge in one place; ev
 | `orders` | **create-sales-order** | Create a sales order with line items |
 | `platform` | **connect-to-sku** | Authenticate, verify the token and tenant, and establish scopes before anything else |
 | `platform` | **create-saved-view** | Create and favorite a saved view — columns, filters, sort — on any data table |
+| `platform` | **create-workflow** | Build, validate, publish and test an automation workflow from a node/edge graph |
 | `platform` | **sync-sops** | Reconcile your internal SOPs against what changed in SKU.io — automatically |
 | `products` | **build-product-catalog** | Import products from a spreadsheet, price list, web page, or pasted text |
 | `products` | **find-matrix-opportunities** | Spot size/colour families hiding in a flat catalog and group them into matrix products |

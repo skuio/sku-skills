@@ -1,0 +1,286 @@
+name: create-workflow
+title: Create a Workflow (automation)
+domain: platform
+version: 1.1.0
+description: >-
+  Build, validate, publish and test-run a SKU.io automation workflow from the API — the same
+  node/edge graph the visual Workflow Builder draws. Use this whenever a user wants something to
+  happen automatically in response to something else: email or Slack me when an order lands on a
+  given sales channel, tag or note orders that match a rule, post a webhook to another system,
+  import a supplier feed on a schedule, or route orders to a warehouse. Discovers the node
+  catalog live, assembles the graph, validates it before saving, and publishes only after a
+  dry run the user has seen — including picking the right moment to fire on, which for an
+  order alert is the channel import rather than the sales-order creation.
+tagline: Build, validate, publish and test an automation workflow from a node/edge graph
+tags: [automation, workflow, workflow-builder, triggers, notifications, no-code, integrations]
+maintainers: [kmizzi]
+pages:
+  - /automation/workflows
+auth:
+  scopes: [settings:read, settings:write]
+api:
+  base_url: https://{tenant}.sku.io
+  operations:
+    - id: list-node-types
+      method: GET
+      path: /api/automation/workflow-nodes
+      summary: >-
+        The live catalog of every node type — its category, settings (key, type, required,
+        default), outputs and outputSchema. Always read this first; it is the only reliable
+        source for valid `nodes[*].type` values and their `data` keys.
+    - id: lookup-sales-channels
+      method: GET
+      path: /api/automation/lookups/sales-channels
+      summary: >-
+        Sales channels as {id, name}. Feeds any node setting of type `multiselect` whose
+        apiEndpoint is /automation/lookups/sales-channels — the values stored are the numeric
+        ids, never the channel names.
+    - id: lookup-warehouses
+      method: GET
+      path: /api/automation/lookups/warehouses
+      summary: Warehouses as {id, name}, for warehouse-valued node settings.
+    - id: lookup-tags
+      method: GET
+      path: /api/automation/lookups/tags
+      summary: Order tags, for the Apply Tags node's `tags` setting.
+    - id: list-workflows
+      method: GET
+      path: /api/automation/workflows
+      summary: >-
+        Paginated list of workflows with run stats. Use it to avoid creating a duplicate, and to
+        find an existing workflow to update.
+      parameters:
+        - name: filter[status]
+          in: query
+          type: string
+          required: false
+          description: draft | published | disabled.
+          example: published
+        - name: filter[trigger_type]
+          in: query
+          type: string
+          required: false
+          description: event | schedule | manual | webhook | pre_dispatch.
+          example: event
+        - name: filter[search]
+          in: query
+          type: string
+          required: false
+          description: Matches name or description.
+    - id: validate-workflow
+      method: POST
+      path: /api/automation/workflows/validate
+      summary: >-
+        Check a graph without saving. Verifies exactly one trigger node, that every edge
+        references existing nodes, and that every non-trigger node has an incoming connection.
+        Call this before create and before update — it is free and catches the structural
+        mistakes.
+      parameters:
+        - name: nodes
+          in: body
+          type: array
+          required: true
+          description: The node list, same shape as on create.
+        - name: edges
+          in: body
+          type: array
+          required: true
+          description: The edge list, same shape as on create.
+    - id: create-workflow
+      method: POST
+      path: /api/automation/workflows
+      summary: >-
+        Create a workflow in Draft status from a node/edge graph. The trigger type is derived
+        from the trigger node — you do not set it. Drafts never fire.
+      parameters:
+        - name: name
+          in: body
+          type: string
+          required: true
+          description: Display name, max 128 chars.
+          example: 'TikTok Shop: email on new order'
+        - name: description
+          in: body
+          type: string
+          required: false
+          description: >-
+            What it does and why it exists. Worth writing — it is what the next person reads
+            before deciding whether to disable it.
+        - name: category
+          in: body
+          type: string
+          required: false
+          description: Free-text grouping, max 50 chars (e.g. orders, imports, inventory).
+          example: orders
+        - name: nodes
+          in: body
+          type: array
+          required: true
+          description: >-
+            One object per node: `id` (string, max 64, unique in the graph), `type` (a `type`
+            from the node catalog), `position` {x, y} (numeric — the canvas coordinates the
+            builder will draw it at), `data` (object — the node's settings, keyed by the
+            `settings[*].key` the catalog lists; required even when empty), optional `label`.
+          example:
+            - id: trigger-1
+              type: sales-order-created
+              position: {x: 80, y: 200}
+              data: {salesChannels: [30], orderStatuses: ['*']}
+              label: Order created
+        - name: edges
+          in: body
+          type: array
+          required: true
+          description: >-
+            One object per connection: `id`, `source` (node id), `target` (node id); optional
+            `sourceHandle` (required to leave a branching node — `true`/`false` on IF,
+            `case0…`/`fallback` on Switch), `targetHandle`, `label`, `branchLabel`.
+          example:
+            - id: e1
+              source: trigger-1
+              target: node-2
+        - name: viewport
+          in: body
+          type: object
+          required: false
+          description: Canvas position {x, y, zoom} the builder opens at. Defaults are fine.
+        - name: preview_mode
+          in: body
+          type: boolean
+          required: false
+          description: >-
+            When true, every run executes triggers, conditions and lookups for real but SKIPS
+            every state-changing Action/Integration step (emails, Slack, webhooks, order and
+            inventory writes), recording what each would have done. Default false.
+          example: true
+    - id: get-workflow
+      method: GET
+      path: /api/automation/workflows/{workflow}
+      summary: One workflow with its full graph, derived triggerType/triggerConfig, and publish state.
+      parameters:
+        - name: workflow
+          in: path
+          type: integer
+          required: true
+          description: The workflow id.
+    - id: update-workflow
+      method: PUT
+      path: /api/automation/workflows/{workflow}
+      summary: >-
+        Update name, description, category, graph, settings or preview_mode. All fields
+        optional. Submitting `nodes` re-derives the trigger type and trigger config, so send the
+        WHOLE graph — a partial node list silently drops the nodes you left out.
+      parameters:
+        - name: workflow
+          in: path
+          type: integer
+          required: true
+          description: The workflow id.
+        - name: nodes
+          in: body
+          type: array
+          required: false
+          description: The complete node list. Omit the key entirely to leave the graph untouched.
+        - name: edges
+          in: body
+          type: array
+          required: false
+          description: The complete edge list.
+        - name: preview_mode
+          in: body
+          type: boolean
+          required: false
+          description: Toggle preview (dry-run) mode on an existing workflow.
+    - id: publish-workflow
+      method: POST
+      path: /api/automation/workflows/{workflow}/publish
+      summary: >-
+        Validate then publish, making the trigger live. On validation failure nothing changes
+        and the errors come back as 422. On success the version increments and publishedAt is
+        set. A workflow only ever fires once published.
+      parameters:
+        - name: workflow
+          in: path
+          type: integer
+          required: true
+          description: The workflow id.
+    - id: toggle-workflow
+      method: POST
+      path: /api/automation/workflows/{workflow}/toggle
+      summary: >-
+        Flip between published (live) and disabled (paused). Only those two states can be
+        toggled — a draft must be published first. This is the off switch; prefer it to delete.
+      parameters:
+        - name: workflow
+          in: path
+          type: integer
+          required: true
+          description: The workflow id.
+    - id: execute-workflow
+      method: POST
+      path: /api/automation/workflows/{workflow}/execute
+      summary: >-
+        Run a published workflow by hand against a payload you supply, instead of waiting for a
+        real trigger. Queued asynchronously — the response is the execution record at status
+        `pending`; poll get-execution for the result.
+      parameters:
+        - name: workflow
+          in: path
+          type: integer
+          required: true
+          description: The workflow id.
+        - name: trigger_payload
+          in: body
+          type: object
+          required: false
+          description: >-
+            The data the trigger node would have emitted, shaped like that trigger's
+            `outputSchema`. Omit it and event triggers fall back to sample data built from the
+            most recent matching record.
+    - id: list-executions
+      method: GET
+      path: /api/automation/workflows/{workflow}/executions
+      summary: Run history for one workflow — status, duration, trigger reference, error.
+      parameters:
+        - name: workflow
+          in: path
+          type: integer
+          required: true
+          description: The workflow id.
+    - id: get-execution
+      method: GET
+      path: /api/automation/workflow-executions/{execution}
+      summary: >-
+        One execution with its per-step results — each step's status, logs, and (in preview
+        mode) the input the skipped step would have used. This is where you read what actually
+        happened.
+      parameters:
+        - name: execution
+          in: path
+          type: integer
+          required: true
+          description: The execution id.
+    - id: clone-workflow
+      method: POST
+      path: /api/automation/workflows/{workflow}/clone
+      summary: >-
+        Duplicate a workflow as a new Draft named "<name> (Copy)". Use it to change a live
+        workflow safely — clone, edit the clone, test it, then swap.
+      parameters:
+        - name: workflow
+          in: path
+          type: integer
+          required: true
+          description: The workflow id.
+    - id: delete-workflow
+      method: DELETE
+      path: /api/automation/workflows/{workflow}
+      summary: >-
+        Permanently delete a workflow. Irreversible, and it takes the run history with it —
+        disable instead unless the user explicitly asked to delete.
+      parameters:
+        - name: workflow
+          in: path
+          type: integer
+          required: true
+          description: The workflow id.
