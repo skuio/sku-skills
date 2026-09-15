@@ -129,7 +129,11 @@ for (const fam of families.values()) {
       }
       if (integ === 'ebay' && l.document_id) {
         const raw = await api('GET', `/api/ebay/${l.integration_instance_id}/products/${l.document_id}/raw`).then((r) => r.data || r).catch(() => null);
-        const d = raw?.Item?.Description || raw?.Description || raw?.data?.Item?.Description;
+        // The raw endpoint wraps the item as {data: {product: …}}; the item's
+        // Description sits either directly on it or under Item, depending on
+        // the connector's response DTO.
+        const item = raw?.product?.Item || raw?.product || raw?.Item || raw;
+        const d = item?.Description;
         if (d) { entry.sources.push({ label: `eBay listing (${l.sales_channel})`, text: strip(d).slice(0, 8000), url: l.listing_sku?.url || null }); break outer; }
       }
     }
