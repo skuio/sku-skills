@@ -96,15 +96,28 @@ api:
       method: GET
       path: /api/v2/products/{product}/listings
       summary: >-
-        The product's live listings across every channel. Each row carries sales_channel,
-        integration.name, integration_instance_id and document_id — the channel-product id you
-        need to fetch the channel's own copy for this product.
+        The product's live listings across every channel — one row per listing with
+        integration_name, channel_name, listing_url and title. It does NOT carry the ids needed
+        to fetch the channel's own copy; take each row's id to get-product-listing for those.
       parameters:
         - name: product
           in: path
           type: integer
           required: true
           description: The SKU.io product id.
+
+    - id: get-product-listing
+      method: GET
+      path: /api/v2/product-listings/{productListing}
+      summary: >-
+        One listing in full. integration_instance_id and document_id (the channel-product id)
+        are what the Amazon / eBay channel-product endpoints below take.
+      parameters:
+        - name: productListing
+          in: path
+          type: integer
+          required: true
+          description: The product listing id (a row id from get-product-listings).
 
     - id: get-amazon-channel-product
       method: GET

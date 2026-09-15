@@ -126,29 +126,38 @@ for (const fam of families.values()) {
   }
   if (entry.already_enriched) { log('  already enriched — skipped'); continue; }
 
-  // Rung 2 — copy live on another channel. Try every member until Amazon/eBay copy is found.
+  // Rung 2 — copy live on another channel. The product-scoped listings list
+  // carries the channel and integration NAMES; the ids needed to fetch the
+  // channel's own copy (integration instance + channel-product id) come from
+  // the canonical listing resource, one GET per candidate row.
   outer: for (const m of members) {
     const listings = await api('GET', `/api/v2/products/${m.id}/listings`).then((r) => r.data || []).catch(() => []);
     for (const l of listings) {
-      const integ = String(l.integration?.name || '').toLowerCase();
-      if (integ === 'amazon' && l.document_id) {
-        const cp = await api('GET', `/api/amazon/${l.integration_instance_id}/products/${l.document_id}?included=${encodeURIComponent('["catalog_data"]')}`).then((r) => r.data || r).catch(() => null);
-        const a = cp?.catalog_data?.attributes || {};
+      const integ = String(l.integration_name || l.integration?.name || '').toLowerCase();
+      if (integ !== 'amazon' && integ !== 'ebay') continue;
+      const full = await api('GET', `/api/v2/product-listings/${l.id}`).then((r) => r.data || r).catch(() => null);
+      const inst = full?.integration_instance_id; const doc = full?.document_id;
+      if (!inst || !doc) continue;
+      const channelName = l.channel_name || l.sales_channel || integ;
+      if (integ === 'amazon') {
+        const cp = await api('GET', `/api/amazon/${inst}/products/${doc}?included=${encodeURIComponent('["catalog_data"]')}`).then((r) => r.data || r).catch((e) => { log(`  amazon fetch failed: ${e.message}`); return null; });
+        let cd = cp?.catalog_data; if (typeof cd === 'string') { try { cd = JSON.parse(cd); } catch { cd = null; } }
+        const a = cd?.attributes || {};
         const desc = a.product_description?.[0]?.value; const bullets = (a.bullet_point || []).map((b) => b.value).filter(Boolean);
         const title = a.item_name?.[0]?.value;
-        if (desc) entry.sources.push({ label: `Amazon listing (${l.sales_channel})${m.id !== parent.id ? ' — ' + m.sku : ''}`, text: strip(desc), url: l.listing_sku?.url || null });
+        if (desc) entry.sources.push({ label: `Amazon listing (${channelName})${m.id !== parent.id ? ' — ' + m.sku : ''}`, text: strip(desc), url: l.listing_url || null });
         if (bullets.length) entry.sources.push({ label: 'Amazon bullets', text: bullets.map((b) => '• ' + strip(b)).join('\n'), url: null });
         if (title) entry.sources.push({ label: 'Amazon title', text: strip(title), url: null });
         if (desc || bullets.length) break outer;
       }
-      if (integ === 'ebay' && l.document_id) {
-        const raw = await api('GET', `/api/ebay/${l.integration_instance_id}/products/${l.document_id}/raw`).then((r) => r.data || r).catch(() => null);
+      if (integ === 'ebay') {
+        const raw = await api('GET', `/api/ebay/${inst}/products/${doc}/raw`).then((r) => r.data || r).catch((e) => { log(`  ebay fetch failed: ${e.message}`); return null; });
         // The raw endpoint wraps the item as {data: {product: …}}; the item's
         // Description sits either directly on it or under Item, depending on
         // the connector's response DTO.
         const item = raw?.product?.Item || raw?.product || raw?.Item || raw;
         const d = item?.Description;
-        if (d) { entry.sources.push({ label: `eBay listing (${l.sales_channel})`, text: strip(d).slice(0, 8000), url: l.listing_sku?.url || null }); break outer; }
+        if (d) { entry.sources.push({ label: `eBay listing (${channelName})`, text: strip(d).slice(0, 8000), url: l.listing_url || null }); break outer; }
       }
     }
   }

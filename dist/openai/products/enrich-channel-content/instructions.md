@@ -87,7 +87,9 @@ label; the report shows them side by side and the AI names them in its rationale
 and every short attribute (material, size, care, certifications) — these are facts.
 
 **Rung 2 — copy that is live on another channel.**
-`GET /api/v2/products/{id}/listings`, then per row by `integration.name`:
+`GET /api/v2/products/{id}/listings` lists the rows with `integration_name` and `channel_name`
+but not the ids you need; for each Amazon or eBay row, `GET /api/v2/product-listings/{row.id}`
+gives `integration_instance_id` and `document_id`. Then:
 
 - **Amazon** → `GET /api/amazon/{integration_instance_id}/products/{document_id}?included=["catalog_data"]`
   and read `catalog_data.attributes.product_description[0].value`,
@@ -218,7 +220,8 @@ See [shared/errors.md](https://github.com/skuio/sku-skills/blob/main/shared/erro
 | `GET` | `/api/v2/brands` | The brand catalogue. There is no name search — page through it (there are rarely more than a hundred) and match the brand name to get the id the products index filters by. |
 | `GET` | `/api/v2/products` | Paginated products. Filter by brand ID to scope an enrichment run to one supplier's catalogue; parent_id and type tell you which rows are matrix children. |
 | `GET` | `/api/v2/products/{product}` | One product in full — name, sku, brand, image / image_url / other_images, parent_id, type, matrix_product, variations, attributes, default_supplier. The image is what the review report shows so the reviewer knows what they are approving. |
-| `GET` | `/api/v2/products/{product}/listings` | The product's live listings across every channel. Each row carries sales_channel, integration.name, integration_instance_id and document_id — the channel-product id you need to fetch the channel's own copy for this product. |
+| `GET` | `/api/v2/products/{product}/listings` | The product's live listings across every channel — one row per listing with integration_name, channel_name, listing_url and title. It does NOT carry the ids needed to fetch the channel's own copy; take each row's id to get-product-listing for those. |
+| `GET` | `/api/v2/product-listings/{productListing}` | One listing in full. integration_instance_id and document_id (the channel-product id) are what the Amazon / eBay channel-product endpoints below take. |
 | `GET` | `/api/amazon/{integrationInstance}/products/{product}` | An Amazon channel product with its catalog data. Ask for catalog_data explicitly — it carries attributes.product_description[].value, attributes.bullet_point[].value and attributes.item_name[].value, the copy Amazon actually shows. |
 | `GET` | `/api/ebay/{integrationInstance}/products/{product}/raw` | The live eBay item straight from eBay (GetItem), including its Description HTML — the stored channel product does not carry it, so this is the only way to read eBay copy. |
 | `GET` | `/api/products/{productId}/attributes` | The product's attribute values, including any description already written for another channel (amazon_description, ebay_description) and the target channel attribute if it has been filled before. |

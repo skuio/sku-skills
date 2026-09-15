@@ -261,7 +261,7 @@
         "products:write",
         "suppliers:read"
       ],
-      "operations": 13,
+      "operations": 14,
       "tags": [
         "products",
         "pim",

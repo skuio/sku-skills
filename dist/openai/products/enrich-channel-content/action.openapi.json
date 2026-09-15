@@ -139,7 +139,7 @@
     "/api/v2/products/{product}/listings": {
       "get": {
         "operationId": "get_product_listings",
-        "summary": "The product's live listings across every channel. Each row carries sales_channel, integration.name, integration_instance_id and document_id — the channel-product id you need to fetch the channel's own copy for this product.",
+        "summary": "The product's live listings across every channel — one row per listing with integration_name, channel_name, listing_url and title. It does NOT carry the ids needed to fetch the channel's own copy; take each row's id to get-product-listing for those.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -154,6 +154,29 @@
             "schema": {
               "type": "integer",
               "description": "The SKU.io product id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/product-listings/{productListing}": {
+      "get": {
+        "operationId": "get_product_listing",
+        "summary": "One listing in full. integration_instance_id and document_id (the channel-product id) are what the Amazon / eBay channel-product endpoints below take.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "productListing",
+            "in": "path",
+            "required": true,
+            "description": "The product listing id (a row id from get-product-listings).",
+            "schema": {
+              "type": "integer",
+              "description": "The product listing id (a row id from get-product-listings)."
             }
           }
         ]

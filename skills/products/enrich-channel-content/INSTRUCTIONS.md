@@ -68,7 +68,9 @@ label; the report shows them side by side and the AI names them in its rationale
 and every short attribute (material, size, care, certifications) — these are facts.
 
 **Rung 2 — copy that is live on another channel.**
-`GET /api/v2/products/{id}/listings`, then per row by `integration.name`:
+`GET /api/v2/products/{id}/listings` lists the rows with `integration_name` and `channel_name`
+but not the ids you need; for each Amazon or eBay row, `GET /api/v2/product-listings/{row.id}`
+gives `integration_instance_id` and `document_id`. Then:
 
 - **Amazon** → `GET /api/amazon/{integration_instance_id}/products/{document_id}?included=["catalog_data"]`
   and read `catalog_data.attributes.product_description[0].value`,
