@@ -108,6 +108,12 @@ If a variant has its own distinct copy (different Amazon `product_description` f
 siblings), note it — but still generate once per family unless the variants are genuinely
 different products.
 
+**Rung 2b — a colour or size sold as its own product.** Some catalogues model "Change Pad
+CB Yellow" and "Change Pad CB Leaf" as separate standalone products, and only some colours
+are listed on Amazon. When a standalone product has no listing of its own, look for a sibling
+in the same brand whose name matches minus its last word(s) and *does* have copy, and use that
+— labelled as the sibling's, so the reviewer can see it. Same product, different colour.
+
 **Rung 3 — the manufacturer.** Only when rungs 1–2 produced nothing. Search the web for the
 brand's own product page (brand name + product name + SKU/MPN), read it, and use only what it
 states — materials, dimensions, what's included, care. Label the source with the URL. Never

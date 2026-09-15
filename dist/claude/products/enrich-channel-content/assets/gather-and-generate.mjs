@@ -4,7 +4,7 @@
  *
  *   SKU_TENANT=acme SKU_PAT='105|…' node gather-and-generate.mjs \
  *     --brand "Charlie Banana" --channel 30 --attribute tiktokshop_description \
- *     [--brand-id 16] [--limit 5] [--regenerate] [--tone professional] --out proposals.json
+ *     [--brand-id 16] [--limit 5] [--only 1864,1865] [--regenerate] [--tone professional] --out proposals.json
  *
  * For every family in the brand (a parent and its variants, or a standalone
  * product) it walks the fallback ladder — own attributes → Amazon catalog copy
@@ -35,6 +35,9 @@ if (!tenant || !pat || !args.brand || !args.channel || !args.attribute) {
 const base = `https://${tenant}.sku.io`;
 const out = args.out || 'proposals.json';
 const limit = args.limit ? Number(args.limit) : Infinity;
+// --only 1864,1865 re-runs just those families (parent product ids) — for a
+// second pass after manufacturer research, without paying for the rest again.
+const only = args.only ? new Set(String(args.only).split(',').map((x) => x.trim())) : null;
 const tone = args.tone || 'professional';
 
 async function api(method, path, body) {
@@ -96,6 +99,7 @@ const result = {
 };
 let n = 0;
 for (const fam of families.values()) {
+  if (only && !only.has(String(fam.parentId))) continue;
   if (n++ >= limit) break;
   const parent = byId.get(fam.parentId) || fam.members[0];
   const members = [parent, ...fam.members.filter((m) => m.id !== parent.id)].filter(Boolean);
@@ -108,11 +112,14 @@ for (const fam of families.values()) {
   result.families.push(entry);
   log(`\n[${parent.sku}] ${parent.name} — ${members.length} product(s)`);
 
-  // Image: parent first, else the first member that has one.
+  // Image: parent first, else the first member that has one. The full parent
+  // is kept — the index rows do not carry default_supplier, the full product does.
+  let fullParent = null;
   for (const m of members) {
     const full = await api('GET', `/api/v2/products/${m.id}`).then((r) => r.data || r).catch(() => null);
+    if (m.id === parent.id) fullParent = full;
     const img = full?.image_url || full?.image || (full?.other_images || [])[0];
-    if (img) { entry.parent.image_url = img; break; }
+    if (img) { entry.parent.image_url = img; if (fullParent) break; }
   }
 
   // Rung 1 — own attributes. Also decides "already enriched".
@@ -162,10 +169,26 @@ for (const fam of families.values()) {
     }
   }
 
+  // Rung 2b — a standalone colour/size variant with no listing of its own.
+  // Charlie Banana models "Change Pad CB Yellow" and "Change Pad CB Leaf" as
+  // separate products, and only some colours are on Amazon. If a sibling in
+  // the same brand shares the name minus its last token(s) and HAS copy, borrow
+  // it, labelled as the sibling's — same product, different colour.
+  if (entry.sources.length === 0 && members.length === 1) {
+    const base = (name) => String(name || '').replace(/\s*[-–—]\s*/g, ' ').trim().toLowerCase();
+    const stem = (name) => { const w = base(name).split(/\s+/); return w.length > 2 ? w.slice(0, -1).join(' ') : null; };
+    const mine = stem(parent.name);
+    const sibling = mine && result.families.find((f) => f.key !== entry.key && f.sources.length > 0 && (stem(f.parent.name) === mine || base(f.parent.name).startsWith(mine)));
+    if (sibling) {
+      log(`  no listing of its own — borrowing sources from sibling ${sibling.parent.sku} (${sibling.parent.name})`);
+      for (const src of sibling.sources) entry.sources.push({ ...src, label: `Sibling ${sibling.parent.sku}: ${src.label}` });
+    }
+  }
+
   if (entry.sources.length === 0) {
     entry.needs_research = true;
     log('  no copy anywhere → needs manufacturer research / supplier email');
-    const supplierId = parent.default_supplier?.id || products.find((p) => p.default_supplier?.id)?.default_supplier?.id;
+    const supplierId = fullParent?.default_supplier?.id || parent.default_supplier?.id || products.find((p) => p.default_supplier?.id)?.default_supplier?.id;
     const supplier = supplierId ? await api('GET', `/api/v2/suppliers/${supplierId}`).then((r) => r.data || r).catch(() => null) : null;
     if (supplier) {
       entry.supplier_email = {
