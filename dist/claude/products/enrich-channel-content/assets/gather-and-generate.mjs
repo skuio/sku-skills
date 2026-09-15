@@ -4,7 +4,7 @@
  *
  *   SKU_TENANT=acme SKU_PAT='105|…' node gather-and-generate.mjs \
  *     --brand "Charlie Banana" --channel 30 --attribute tiktokshop_description \
- *     [--brand-id 16] [--limit 5] [--only 1864,1865] [--regenerate] [--tone professional] --out proposals.json
+ *     [--brand-id 16] [--limit 5] [--only 1864,1865 --merge-into prior.json] [--regenerate] [--tone professional] --out proposals.json
  *
  * For every family in the brand (a parent and its variants, or a standalone
  * product) it walks the fallback ladder — own attributes → Amazon catalog copy
@@ -38,6 +38,9 @@ const limit = args.limit ? Number(args.limit) : Infinity;
 // --only 1864,1865 re-runs just those families (parent product ids) — for a
 // second pass after manufacturer research, without paying for the rest again.
 const only = args.only ? new Set(String(args.only).split(',').map((x) => x.trim())) : null;
+// --merge-into proposals.json: start from an earlier run — its families are sibling
+// candidates for rung 2b, and the re-run's entries replace theirs by key in --out.
+const prior = args['merge-into'] ? JSON.parse(fs.readFileSync(args['merge-into'], 'utf8')).families || [] : [];
 const tone = args.tone || 'professional';
 
 async function api(method, path, body) {
@@ -178,7 +181,8 @@ for (const fam of families.values()) {
     const base = (name) => String(name || '').replace(/\s*[-–—]\s*/g, ' ').trim().toLowerCase();
     const stem = (name) => { const w = base(name).split(/\s+/); return w.length > 2 ? w.slice(0, -1).join(' ') : null; };
     const mine = stem(parent.name);
-    const sibling = mine && result.families.find((f) => f.key !== entry.key && f.sources.length > 0 && (stem(f.parent.name) === mine || base(f.parent.name).startsWith(mine)));
+    const candidates = [...prior, ...result.families];
+    const sibling = mine && candidates.find((f) => f.key !== entry.key && (f.sources || []).length > 0 && (stem(f.parent.name) === mine || base(f.parent.name).startsWith(mine)));
     if (sibling) {
       log(`  no listing of its own — borrowing sources from sibling ${sibling.parent.sku} (${sibling.parent.name})`);
       for (const src of sibling.sources) entry.sources.push({ ...src, label: `Sibling ${sibling.parent.sku}: ${src.label}` });
@@ -216,6 +220,10 @@ for (const fam of families.values()) {
   }
 }
 
+if (prior.length) {
+  const byKey = new Map(result.families.map((f) => [f.key, f]));
+  result.families = [...prior.map((f) => byKey.get(f.key) || f), ...result.families.filter((f) => !prior.some((p) => p.key === f.key))];
+}
 fs.writeFileSync(out, JSON.stringify(result, null, 2));
 const stats = {
   families: result.families.length,
