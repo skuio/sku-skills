@@ -129,7 +129,11 @@ user to send. The product stays unenriched until the answer arrives.
 ## Step 2 — generate the proposal
 
 One call per family, target channel in `sales_channel_id`, every gathered source in
-`source_material`:
+`source_material`. The POST queues the generation and answers `202` with
+`data.id` and `data.poll_url`; poll `GET /api/ai/listing-content/{id}` every
+second or two until `data.status` is `completed` (the content fields are on that
+response) or `failed` (`data.error` says why). The bundled script does this for
+you; a bare curl needs the second call:
 
 ```bash
 curl -sS -X POST "https://$SKU_TENANT.sku.io/api/ai/listing-content" \

@@ -43,16 +43,42 @@ const only = args.only ? new Set(String(args.only).split(',').map((x) => x.trim(
 const prior = args['merge-into'] ? JSON.parse(fs.readFileSync(args['merge-into'], 'utf8')).families || [] : [];
 const tone = args.tone || 'professional';
 
+// A distinctive User-Agent: the pod's access log attributes every caller by UA
+// first, and Node's default ("node") says nothing about who is calling.
+const USER_AGENT = 'sku-skills/enrich-channel-content (gather-and-generate.mjs)';
+
 async function api(method, path, body) {
   const r = await fetch(base + path, {
     method,
-    headers: { Authorization: `Bearer ${pat}`, Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    headers: { Authorization: `Bearer ${pat}`, Accept: 'application/json', 'User-Agent': USER_AGENT, ...(body ? { 'Content-Type': 'application/json' } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await r.text();
   let json = null; try { json = JSON.parse(text); } catch { /* not json */ }
   if (!r.ok) { const err = new Error(`${method} ${path} → ${r.status} ${json?.message || text.slice(0, 200)}`); err.status = r.status; err.body = json; throw err; }
   return json;
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// POST /api/ai/listing-content queues the generation and answers 202 with a
+// tracked job id (the model call is 10-20s, so it runs off the web worker);
+// poll GET /api/ai/listing-content/{id} until it settles. An older build
+// answers 200 with the content inline — accept both, and hand back the same
+// { data: { content, provider, tokens, rufus_optimized } } shape either way.
+async function generateListingContent(body) {
+  const res = await api('POST', '/api/ai/listing-content', body);
+  if (res?.data?.content) return res;
+  const id = res?.data?.id;
+  if (!id) throw new Error(`listing-content: unexpected response ${JSON.stringify(res).slice(0, 200)}`);
+  const deadline = Date.now() + 150_000;
+  while (Date.now() < deadline) {
+    await sleep(1500);
+    const job = (await api('GET', `/api/ai/listing-content/${id}`))?.data || {};
+    if (job.status === 'completed') return { data: { content: job.content || {}, provider: job.provider, tokens: job.tokens, rufus_optimized: job.rufus_optimized } };
+    if (job.status === 'failed' || job.status === 'cancelled') throw new Error(`listing-content job ${id} ${job.status}: ${job.error || 'no reason given'}`);
+  }
+  throw new Error(`listing-content job ${id} did not finish within 150s`);
 }
 const strip = (html) => String(html || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
 const log = (...m) => console.error(...m);
@@ -206,11 +232,18 @@ for (const fam of families.values()) {
 
   // Rung generate — one call per family.
   try {
-    const res = await api('POST', '/api/ai/listing-content', {
+    const body = {
       product_id: parent.id, sales_channel_id: channel.id, fields: ['description'],
       source_material: entry.sources.slice(0, 10).map((s) => ({ label: s.label.slice(0, 80), text: s.text.slice(0, 8000) })),
       tone,
-    });
+    };
+    let res = await generateListingContent(body);
+    // A missing rationale usually means the model folded it into the description
+    // (reviewer prose that must never reach the channel). One retry is cheap.
+    if (res?.data?.content?.description && !res?.data?.content?.rationale) {
+      log('  rationale missing — retrying once');
+      res = await generateListingContent(body);
+    }
     const c = res?.data?.content || {};
     if (c.description) { entry.proposal = { description: c.description, rationale: c.rationale || '' }; log(`  proposal: ${c.description.length} chars (${res.data.provider})`); }
     else log('  generation returned no description');
