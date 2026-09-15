@@ -206,11 +206,18 @@ for (const fam of families.values()) {
 
   // Rung generate — one call per family.
   try {
-    const res = await api('POST', '/api/ai/listing-content', {
+    const body = {
       product_id: parent.id, sales_channel_id: channel.id, fields: ['description'],
       source_material: entry.sources.slice(0, 10).map((s) => ({ label: s.label.slice(0, 80), text: s.text.slice(0, 8000) })),
       tone,
-    });
+    };
+    let res = await api('POST', '/api/ai/listing-content', body);
+    // A missing rationale usually means the model folded it into the description
+    // (reviewer prose that must never reach the channel). One retry is cheap.
+    if (res?.data?.content?.description && !res?.data?.content?.rationale) {
+      log('  rationale missing — retrying once');
+      res = await api('POST', '/api/ai/listing-content', body);
+    }
     const c = res?.data?.content || {};
     if (c.description) { entry.proposal = { description: c.description, rationale: c.rationale || '' }; log(`  proposal: ${c.description.length} chars (${res.data.provider})`); }
     else log('  generation returned no description');
