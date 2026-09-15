@@ -139,7 +139,7 @@
     },
     {
       "name": "get_product_attributes",
-      "description": "The product's attribute values, including any description already written for another channel (amazon_description, ebay_description) and the target channel attribute if it has been filled before. (GET /api/products/{productId}/attributes)",
+      "description": "The product's attribute values — direct rows plus attribute-group rows — including any description already written for another channel (amazon_description, ebay_description) and the target channel attribute if it has been filled before. Use this, not the un-grouped /attributes, which does not carry values. (GET /api/products/{productId}/attributes-grouped)",
       "parameters": {
         "type": "OBJECT",
         "properties": {

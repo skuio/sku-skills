@@ -83,7 +83,8 @@ order and **stop at the first rung that yields real copy**. Record every source 
 label; the report shows them side by side and the AI names them in its rationale.
 
 **Rung 1 — the product's own attributes.**
-`GET /api/products/{id}/attributes`. Any `*_description` already written for another channel,
+`GET /api/products/{id}/attributes-grouped` (read `direct[]` and each group's rows; the
+un-grouped `/attributes` does not carry values). Any `*_description` already written for another channel,
 and every short attribute (material, size, care, certifications) — these are facts.
 
 **Rung 2 — copy that is live on another channel.**
@@ -234,7 +235,7 @@ See [shared/errors.md](https://github.com/skuio/sku-skills/blob/main/shared/erro
 | `GET` | `/api/v2/product-listings/{productListing}` | One listing in full. integration_instance_id and document_id (the channel-product id) are what the Amazon / eBay channel-product endpoints below take. |
 | `GET` | `/api/amazon/{integrationInstance}/products/{product}` | An Amazon channel product with its catalog data. Ask for catalog_data explicitly — it carries attributes.product_description[].value, attributes.bullet_point[].value and attributes.item_name[].value, the copy Amazon actually shows. |
 | `GET` | `/api/ebay/{integrationInstance}/products/{product}/raw` | The live eBay item straight from eBay (GetItem), including its Description HTML — the stored channel product does not carry it, so this is the only way to read eBay copy. |
-| `GET` | `/api/products/{productId}/attributes` | The product's attribute values, including any description already written for another channel (amazon_description, ebay_description) and the target channel attribute if it has been filled before. |
+| `GET` | `/api/products/{productId}/attributes-grouped` | The product's attribute values — direct rows plus attribute-group rows — including any description already written for another channel (amazon_description, ebay_description) and the target channel attribute if it has been filled before. Use this, not the un-grouped /attributes, which does not carry values. |
 | `GET` | `/api/v2/attributes` | The attribute catalogue — check whether the channel's description attribute exists before creating it. |
 | `POST` | `/api/attributes` | Create the channel-specific description attribute. Use type longtext; set display_options.is_html when the channel renders HTML so the PIM opens a rich-text editor. |
 | `POST` | `/api/ai/listing-content` | Ask SKU.io's AI for channel-correct content. Pass everything you gathered as source_material; the model amalgamates it under the target channel's own description rules (format, length, structure) and returns a rationale explaining what it used. Returned for review only — nothing is written. |

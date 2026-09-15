@@ -259,10 +259,10 @@
         ]
       }
     },
-    "/api/products/{productId}/attributes": {
+    "/api/products/{productId}/attributes-grouped": {
       "get": {
         "operationId": "get_product_attributes",
-        "summary": "The product's attribute values, including any description already written for another channel (amazon_description, ebay_description) and the target channel attribute if it has been filled before.",
+        "summary": "The product's attribute values — direct rows plus attribute-group rows — including any description already written for another channel (amazon_description, ebay_description) and the target channel attribute if it has been filled before. Use this, not the un-grouped /attributes, which does not carry values.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -280,49 +280,6 @@
             }
           }
         ]
-      },
-      "put": {
-        "operationId": "set_product_attributes",
-        "summary": "Write attribute values on a product. Only ever call this with descriptions the reviewer approved. Send the attribute by name; other attributes are left untouched.",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          }
-        },
-        "parameters": [
-          {
-            "name": "productId",
-            "in": "path",
-            "required": true,
-            "description": "The SKU.io product id.",
-            "schema": {
-              "type": "integer",
-              "description": "The SKU.io product id."
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "attributes": {
-                    "type": "array",
-                    "description": "Array of {name, value} (or {id, value}). e.g. [{\"name\":\"tiktokshop_description\",\"value\":\"<p>…</p>\"}]",
-                    "items": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "required": [
-                  "attributes"
-                ]
-              }
-            }
-          }
-        }
       }
     },
     "/api/v2/attributes": {
@@ -465,6 +422,51 @@
                 "required": [
                   "product_id",
                   "sales_channel_id"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products/{productId}/attributes": {
+      "put": {
+        "operationId": "set_product_attributes",
+        "summary": "Write attribute values on a product. Only ever call this with descriptions the reviewer approved. Send the attribute by name; other attributes are left untouched.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "description": "The SKU.io product id.",
+            "schema": {
+              "type": "integer",
+              "description": "The SKU.io product id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "attributes": {
+                    "type": "array",
+                    "description": "Array of {name, value} (or {id, value}). e.g. [{\"name\":\"tiktokshop_description\",\"value\":\"<p>…</p>\"}]",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "attributes"
                 ]
               }
             }

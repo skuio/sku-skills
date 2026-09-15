@@ -151,9 +151,15 @@ for (const fam of families.values()) {
     if (img) { entry.parent.image_url = img; if (fullParent) break; }
   }
 
-  // Rung 1 — own attributes. Also decides "already enriched".
-  const attrs = await api('GET', `/api/products/${parent.id}/attributes`).then((r) => r.data || r).catch(() => []);
-  const attrList = Array.isArray(attrs) ? attrs : Object.values(attrs || {});
+  // Rung 1 — own attributes. Also decides "already enriched". The grouped
+  // endpoint is the one that carries values: the legacy /attributes renders
+  // every row as nulls (2026-09-15, siber), which made this rung blind and
+  // "already enriched" impossible to detect.
+  const grouped = await api('GET', `/api/products/${parent.id}/attributes-grouped`).then((r) => r.data || r).catch(() => ({}));
+  const attrList = [
+    ...(Array.isArray(grouped?.direct) ? grouped.direct : []),
+    ...((Array.isArray(grouped?.groups) ? grouped.groups : []).flatMap((g) => g?.attributes || g?.items || [])),
+  ];
   for (const a of attrList) {
     const name = a.name || a.attribute?.name; const value = a.value ?? a.pivot?.value;
     if (!name || value == null || String(value).trim() === '') continue;

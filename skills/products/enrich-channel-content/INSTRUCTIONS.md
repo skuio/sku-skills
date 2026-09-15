@@ -64,7 +64,8 @@ order and **stop at the first rung that yields real copy**. Record every source 
 label; the report shows them side by side and the AI names them in its rationale.
 
 **Rung 1 — the product's own attributes.**
-`GET /api/products/{id}/attributes`. Any `*_description` already written for another channel,
+`GET /api/products/{id}/attributes-grouped` (read `direct[]` and each group's rows; the
+un-grouped `/attributes` does not carry values). Any `*_description` already written for another channel,
 and every short attribute (material, size, care, certifications) — these are facts.
 
 **Rung 2 — copy that is live on another channel.**
