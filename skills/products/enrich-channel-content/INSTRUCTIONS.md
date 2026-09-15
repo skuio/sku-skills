@@ -87,7 +87,7 @@ siblings), note it — but still generate once per family unless the variants ar
 different products.
 
 **Rung 2b — a colour or size sold as its own product.** Some catalogues model "Change Pad
-CB Yellow" and "Change Pad CB Leaf" as separate standalone products, and only some colours
+Yellow" and "Change Pad Leaf" as separate standalone products, and only some colours
 are listed on Amazon. When a standalone product has no listing of its own, look for a sibling
 in the same brand whose name matches minus its last word(s) and *does* have copy, and use that
 — labelled as the sibling's, so the reviewer can see it. Same product, different colour.
@@ -121,7 +121,7 @@ curl -sS -X POST "https://$SKU_TENANT.sku.io/api/ai/listing-content" \
     "sales_channel_id": 30,
     "fields": ["description"],
     "source_material": [
-      {"label": "Amazon listing (AMZ partusa)", "text": "At Charlie Banana, we are all about ..."},
+      {"label": "Amazon listing (AMZ US)", "text": "At Acme Baby, we are all about ..."},
       {"label": "Amazon bullets", "text": "Made with quality materials: tested to OEKO-TEX Standard 100 ...\nOne size ..."}
     ],
     "tone": "professional"

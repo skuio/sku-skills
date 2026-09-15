@@ -9,7 +9,7 @@
  *   "tenant": "acme",                       // the SKU.io tenant prefix
  *   "channel": {"id": 30, "name": "TikTok Shop"},
  *   "attribute": {"name": "tiktokshop_description", "is_html": true},
- *   "brand": "Charlie Banana",
+ *   "brand": "Acme Baby",
  *   "generated_at": "2026-09-15T18:00:00Z",
  *   "families": [
  *     {

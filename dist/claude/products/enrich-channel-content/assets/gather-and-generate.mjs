@@ -3,7 +3,7 @@
  * gather-and-generate.mjs — Steps 1–2 of the enrich-channel-content skill, end to end.
  *
  *   SKU_TENANT=acme SKU_PAT='105|…' node gather-and-generate.mjs \
- *     --brand "Charlie Banana" --channel 30 --attribute tiktokshop_description \
+ *     --brand "Acme Baby" --channel 30 --attribute tiktokshop_description \
  *     [--brand-id 16] [--limit 5] [--only 1864,1865 --merge-into prior.json] [--regenerate] [--tone professional] --out proposals.json
  *
  * For every family in the brand (a parent and its variants, or a standalone
@@ -153,7 +153,7 @@ for (const fam of families.values()) {
 
   // Rung 1 — own attributes. Also decides "already enriched". The grouped
   // endpoint is the one that carries values: the legacy /attributes renders
-  // every row as nulls (2026-09-15, siber), which made this rung blind and
+  // every row as nulls (seen 2026-09-15 on a live tenant), which made this rung blind and
   // "already enriched" impossible to detect.
   const grouped = await api('GET', `/api/products/${parent.id}/attributes-grouped`).then((r) => r.data || r).catch(() => ({}));
   const attrList = [
@@ -205,7 +205,7 @@ for (const fam of families.values()) {
   }
 
   // Rung 2b — a standalone colour/size variant with no listing of its own.
-  // Charlie Banana models "Change Pad CB Yellow" and "Change Pad CB Leaf" as
+  // Some catalogues model "Change Pad Yellow" and "Change Pad Leaf" as
   // separate products, and only some colours are on Amazon. If a sibling in
   // the same brand shares the name minus its last token(s) and HAS copy, borrow
   // it, labelled as the sibling's — same product, different colour.
