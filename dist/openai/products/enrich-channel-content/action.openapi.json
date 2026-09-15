@@ -1,0 +1,565 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SKU.io — Enrich Product Content for a Sales Channel",
+    "description": "Fill in the channel-specific product content a marketplace needs before you can list there — today, a per-channel description attribute such as tiktokshop_description — supplier by supplier or brand by brand. For each product it gathers what already exists (the live Amazon or eBay copy, the product's own attributes), asks SKU.io's AI to amalgamate it into copy that follows the target channel's own rules, and renders an HTML review report — product image, every source side by side, the proposal, and the AI's rationale — with approve/reject per product. Only approved descriptions are written back. When no copy exists anywhere it falls back to the manufacturer's site, and finally to a drafted email asking the supplier. Use it whenever \"we can't list these on TikTok Shop / Walmart / Temu because the descriptions are missing\" — or whenever a channel's content rules differ enough that reusing another channel's description would be wrong.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{tenant}.sku.io",
+      "variables": {
+        "tenant": {
+          "default": "app",
+          "description": "Your SKU.io account subdomain."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v2/brands": {
+      "get": {
+        "operationId": "list_brands",
+        "summary": "The brand catalogue. There is no name search — page through it (there are rarely more than a hundred) and match the brand name to get the id the products index filters by.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Page size (max 100).",
+            "schema": {
+              "type": "integer",
+              "description": "Page size (max 100).",
+              "example": 100
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer",
+              "description": "Page number.",
+              "example": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/products": {
+      "get": {
+        "operationId": "list_products_by_brand",
+        "summary": "Paginated products. Filter by brand ID to scope an enrichment run to one supplier's catalogue; parent_id and type tell you which rows are matrix children.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter[brand_id]",
+            "in": "query",
+            "required": false,
+            "description": "Brand id from list-brands. Comma-separate several ids, e.g. \"16,22\".",
+            "schema": {
+              "type": "string",
+              "description": "Brand id from list-brands. Comma-separate several ids, e.g. \"16,22\".",
+              "example": "16"
+            }
+          },
+          {
+            "name": "filter[search]",
+            "in": "query",
+            "required": false,
+            "description": "Free-text search over SKU / name / barcode / MPN / brand.",
+            "schema": {
+              "type": "string",
+              "description": "Free-text search over SKU / name / barcode / MPN / brand."
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Page size (max 100).",
+            "schema": {
+              "type": "integer",
+              "description": "Page size (max 100).",
+              "example": 100
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer",
+              "description": "Page number.",
+              "example": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/products/{product}": {
+      "get": {
+        "operationId": "get_product",
+        "summary": "One product in full — name, sku, brand, image / image_url / other_images, parent_id, type, matrix_product, variations, attributes, default_supplier. The image is what the review report shows so the reviewer knows what they are approving.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "product",
+            "in": "path",
+            "required": true,
+            "description": "The SKU.io product id.",
+            "schema": {
+              "type": "integer",
+              "description": "The SKU.io product id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/products/{product}/listings": {
+      "get": {
+        "operationId": "get_product_listings",
+        "summary": "The product's live listings across every channel — one row per listing with integration_name, channel_name, listing_url and title. It does NOT carry the ids needed to fetch the channel's own copy; take each row's id to get-product-listing for those.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "product",
+            "in": "path",
+            "required": true,
+            "description": "The SKU.io product id.",
+            "schema": {
+              "type": "integer",
+              "description": "The SKU.io product id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/product-listings/{productListing}": {
+      "get": {
+        "operationId": "get_product_listing",
+        "summary": "One listing in full. integration_instance_id and document_id (the channel-product id) are what the Amazon / eBay channel-product endpoints below take.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "productListing",
+            "in": "path",
+            "required": true,
+            "description": "The product listing id (a row id from get-product-listings).",
+            "schema": {
+              "type": "integer",
+              "description": "The product listing id (a row id from get-product-listings)."
+            }
+          }
+        ]
+      }
+    },
+    "/api/amazon/{integrationInstance}/products/{product}": {
+      "get": {
+        "operationId": "get_amazon_channel_product",
+        "summary": "An Amazon channel product with its catalog data. Ask for catalog_data explicitly — it carries attributes.product_description[].value, attributes.bullet_point[].value and attributes.item_name[].value, the copy Amazon actually shows.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "integrationInstance",
+            "in": "path",
+            "required": true,
+            "description": "The Amazon integration instance id (integration_instance_id on the listing row).",
+            "schema": {
+              "type": "integer",
+              "description": "The Amazon integration instance id (integration_instance_id on the listing row)."
+            }
+          },
+          {
+            "name": "product",
+            "in": "path",
+            "required": true,
+            "description": "The Amazon channel-product id (document_id on the listing row).",
+            "schema": {
+              "type": "integer",
+              "description": "The Amazon channel-product id (document_id on the listing row)."
+            }
+          },
+          {
+            "name": "included",
+            "in": "query",
+            "required": true,
+            "description": "JSON array of extra fields to include. Pass [\"catalog_data\"].",
+            "schema": {
+              "type": "string",
+              "description": "JSON array of extra fields to include. Pass [\"catalog_data\"].",
+              "example": "[\"catalog_data\"]"
+            }
+          }
+        ]
+      }
+    },
+    "/api/ebay/{integrationInstance}/products/{product}/raw": {
+      "get": {
+        "operationId": "get_ebay_channel_product_raw",
+        "summary": "The live eBay item straight from eBay (GetItem), including its Description HTML — the stored channel product does not carry it, so this is the only way to read eBay copy.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "integrationInstance",
+            "in": "path",
+            "required": true,
+            "description": "The eBay integration instance id.",
+            "schema": {
+              "type": "integer",
+              "description": "The eBay integration instance id."
+            }
+          },
+          {
+            "name": "product",
+            "in": "path",
+            "required": true,
+            "description": "The eBay channel-product id (document_id on the listing row).",
+            "schema": {
+              "type": "integer",
+              "description": "The eBay channel-product id (document_id on the listing row)."
+            }
+          }
+        ]
+      }
+    },
+    "/api/products/{productId}/attributes-grouped": {
+      "get": {
+        "operationId": "get_product_attributes",
+        "summary": "The product's attribute values — direct rows plus attribute-group rows — including any description already written for another channel (amazon_description, ebay_description) and the target channel attribute if it has been filled before. Use this, not the un-grouped /attributes, which does not carry values.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "description": "The SKU.io product id.",
+            "schema": {
+              "type": "integer",
+              "description": "The SKU.io product id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/attributes": {
+      "get": {
+        "operationId": "list_attributes",
+        "summary": "The attribute catalogue — check whether the channel's description attribute exists before creating it.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter[search]",
+            "in": "query",
+            "required": false,
+            "description": "Search by attribute name.",
+            "schema": {
+              "type": "string",
+              "description": "Search by attribute name.",
+              "example": "tiktokshop_description"
+            }
+          }
+        ]
+      }
+    },
+    "/api/attributes": {
+      "post": {
+        "operationId": "create_attribute",
+        "summary": "Create the channel-specific description attribute. Use type longtext; set display_options.is_html when the channel renders HTML so the PIM opens a rich-text editor.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Follow the existing convention {channel}_description, e.g. tiktokshop_description.",
+                    "example": "tiktokshop_description"
+                  },
+                  "type": {
+                    "type": "string",
+                    "description": "Always longtext for a description.",
+                    "example": "longtext"
+                  },
+                  "display_options": {
+                    "type": "object",
+                    "description": "{\"is_html\": true} when the channel renders HTML (TikTok Shop, eBay, Shopify); omit for plain-text channels (Amazon, Walmart)."
+                  },
+                  "notes": {
+                    "type": "string",
+                    "description": "Where the value is used, e.g. \"Mapped to TikTok Shop → Description on the channel profile.\""
+                  }
+                },
+                "required": [
+                  "name",
+                  "type"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/listing-content": {
+      "post": {
+        "operationId": "generate_listing_content",
+        "summary": "Ask SKU.io's AI for channel-correct content. Pass everything you gathered as source_material; the model amalgamates it under the target channel's own description rules (format, length, structure) and returns a rationale explaining what it used. Returned for review only — nothing is written.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "product_id": {
+                    "type": "integer",
+                    "description": "The SKU.io product id."
+                  },
+                  "sales_channel_id": {
+                    "type": "integer",
+                    "description": "The TARGET sales channel — the one the description is for."
+                  },
+                  "fields": {
+                    "type": "array",
+                    "description": "Which pieces to generate. For enrichment use [\"description\"].",
+                    "example": "[\"description\"]",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "source_material": {
+                    "type": "array",
+                    "description": "Up to 10 entries of {label, text} — existing copy from other channels, the manufacturer's page, a supplier sheet. Label each with its origin so the rationale can name it. Each text up to 8000 characters.",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "description_format": {
+                    "type": "string",
+                    "description": "\"html\" or \"plain\". Omit to use the channel's own rule (TikTok Shop html, Amazon plain, ...)."
+                  },
+                  "description_max_length": {
+                    "type": "integer",
+                    "description": "Override the channel's length cap (100-20000). Omit to use the channel's own."
+                  },
+                  "include_product_attributes": {
+                    "type": "boolean",
+                    "description": "Feed the product's own attributes as facts (default true)."
+                  },
+                  "tone": {
+                    "type": "string",
+                    "description": "e.g. professional, friendly, playful.",
+                    "example": "professional"
+                  },
+                  "target_keywords": {
+                    "type": "array",
+                    "description": "Up to 25 keywords to weave in where truthful.",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "additional_instructions": {
+                    "type": "string",
+                    "description": "Free-text steering, up to 500 characters."
+                  }
+                },
+                "required": [
+                  "product_id",
+                  "sales_channel_id"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products/{productId}/attributes": {
+      "put": {
+        "operationId": "set_product_attributes",
+        "summary": "Write attribute values on a product. Only ever call this with descriptions the reviewer approved. Send the attribute by name; other attributes are left untouched.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "description": "The SKU.io product id.",
+            "schema": {
+              "type": "integer",
+              "description": "The SKU.io product id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "attributes": {
+                    "type": "array",
+                    "description": "Array of {name, value} (or {id, value}). e.g. [{\"name\":\"tiktokshop_description\",\"value\":\"<p>…</p>\"}]",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "attributes"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/suppliers/{supplier}": {
+      "get": {
+        "operationId": "get_supplier",
+        "summary": "The supplier record — email, purchase_order_email, primary_contact_name, website. Used to address the enrichment request when no copy exists anywhere.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "supplier",
+            "in": "path",
+            "required": true,
+            "description": "The supplier id (default_supplier.id on the product).",
+            "schema": {
+              "type": "integer",
+              "description": "The supplier id (default_supplier.id on the product)."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/sales-channels/{salesChannel}/listing-profiles/{profile}/mappings": {
+      "put": {
+        "operationId": "sync_listing_profile_mappings",
+        "summary": "Point the channel profile's Description at the new attribute so every listing on that channel reads it. Full replace — send the profile's complete mapping set.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "salesChannel",
+            "in": "path",
+            "required": true,
+            "description": "The target sales channel id.",
+            "schema": {
+              "type": "integer",
+              "description": "The target sales channel id."
+            }
+          },
+          {
+            "name": "profile",
+            "in": "path",
+            "required": true,
+            "description": "The listing profile id.",
+            "schema": {
+              "type": "integer",
+              "description": "The listing profile id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mappings": {
+                    "type": "array",
+                    "description": "Complete set of {channel_field_name, source_type, source_value}. For the description: {\"channel_field_name\":\"Description\",\"source_type\":\"product_attribute\",\"source_value\":\"<attribute id>\"}",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "mappings"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "SKU.io Personal Access Token."
+      }
+    }
+  }
+}

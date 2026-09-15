@@ -1,6 +1,6 @@
 {
   "generatedFrom": "skills/",
-  "count": 16,
+  "count": 17,
   "skills": [
     {
       "name": "adjust-inventory",
@@ -247,6 +247,45 @@
         "claude": "dist/claude/products/build-product-catalog/SKILL.md",
         "openai": "dist/openai/products/build-product-catalog/",
         "gemini": "dist/gemini/products/build-product-catalog/"
+      }
+    },
+    {
+      "name": "enrich-channel-content",
+      "domain": "products",
+      "title": "Enrich Product Content for a Sales Channel",
+      "version": "1.0.0",
+      "description": "Fill in the channel-specific product content a marketplace needs before you can list there — today, a per-channel description attribute such as tiktokshop_description — supplier by supplier or brand by brand. For each product it gathers what already exists (the live Amazon or eBay copy, the product's own attributes), asks SKU.io's AI to amalgamate it into copy that follows the target channel's own rules, and renders an HTML review report — product image, every source side by side, the proposal, and the AI's rationale — with approve/reject per product. Only approved descriptions are written back. When no copy exists anywhere it falls back to the manufacturer's site, and finally to a drafted email asking the supplier. Use it whenever \"we can't list these on TikTok Shop / Walmart / Temu because the descriptions are missing\" — or whenever a channel's content rules differ enough that reusing another channel's description would be wrong.",
+      "tagline": "Amalgamate existing copy into channel-correct descriptions, reviewed before it lands",
+      "scopes": [
+        "products:read",
+        "products:write",
+        "suppliers:read"
+      ],
+      "operations": 14,
+      "tags": [
+        "products",
+        "pim",
+        "attributes",
+        "enrichment",
+        "description",
+        "tiktok",
+        "amazon",
+        "ebay",
+        "ai",
+        "content"
+      ],
+      "composes": [
+        "find-product"
+      ],
+      "pages": [
+        "/listings/profiles",
+        "/listings/templates",
+        "/products"
+      ],
+      "outputs": {
+        "claude": "dist/claude/products/enrich-channel-content/SKILL.md",
+        "openai": "dist/openai/products/enrich-channel-content/",
+        "gemini": "dist/gemini/products/enrich-channel-content/"
       }
     },
     {

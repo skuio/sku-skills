@@ -64,6 +64,9 @@ for (const skill of skills) {
   const claudeDir = path.join(DIST_DIR, 'claude', domain, name);
   writeFile(path.join(claudeDir, 'SKILL.md'), localizeShared(renderClaudeSkill(skill)) + IMPROVE_FOOTER);
   copyDir(path.join(dir, 'examples'), path.join(claudeDir, 'examples'));
+  // Bundled helpers a skill ships for the agent to run — report templates,
+  // small scripts. Optional; most skills have none.
+  copyDir(path.join(dir, 'assets'), path.join(claudeDir, 'assets'));
   copyDir(SHARED_SRC, path.join(claudeDir, 'shared'));
 
   // --- OpenAI: GPT instructions + importable Action + function tools -------
