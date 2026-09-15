@@ -58,8 +58,9 @@ Run **connect-to-sku**. Then agree three things with the user before touching an
 
 1. **Target channel** — resolve it to a `sales_channel_id` (`GET /api/v2/listing-publishing/channels`
    is the list of publishable channels; the name is enough to pick).
-2. **Scope** — one supplier / brand at a time. `GET /api/v2/products?filter[brand]=Charlie%20Banana&per_page=100`
-   and page through. Group by family: rows with a `parent_id` are variants of that parent.
+2. **Scope** — one supplier / brand at a time. Resolve the brand id first — `GET /api/v2/brands?per_page=100`
+   has no name search, so page it and match the name — then
+   `GET /api/v2/products?filter[brand_id]=16&per_page=100` and page through. Group by family: rows with a `parent_id` are variants of that parent.
    **Generate per family, not per variant** — a swim diaper in 31 colours has one description
    with the colour left to the variant attribute. Standalone products (no parent, no children)
    are their own family.
@@ -218,7 +219,8 @@ See [shared/errors.md](shared/errors.md) for `403` (scope) and `422` handling, a
 
 | Method | Path | What it does |
 | --- | --- | --- |
-| `GET` | `/api/v2/products` | Paginated products. Filter by brand NAME to scope an enrichment run to one supplier's catalogue; parent_id and type tell you which rows are matrix children. |
+| `GET` | `/api/v2/brands` | The brand catalogue. There is no name search — page through it (there are rarely more than a hundred) and match the brand name to get the id the products index filters by. |
+| `GET` | `/api/v2/products` | Paginated products. Filter by brand ID to scope an enrichment run to one supplier's catalogue; parent_id and type tell you which rows are matrix children. |
 | `GET` | `/api/v2/products/{product}` | One product in full — name, sku, brand, image / image_url / other_images, parent_id, type, matrix_product, variations, attributes, default_supplier. The image is what the review report shows so the reviewer knows what they are approving. |
 | `GET` | `/api/v2/products/{product}/listings` | The product's live listings across every channel. Each row carries sales_channel, integration.name, integration_instance_id and document_id — the channel-product id you need to fetch the channel's own copy for this product. |
 | `GET` | `/api/amazon/{integrationInstance}/products/{product}` | An Amazon channel product with its catalog data. Ask for catalog_data explicitly — it carries attributes.product_description[].value, attributes.bullet_point[].value and attributes.item_name[].value, the copy Amazon actually shows. |

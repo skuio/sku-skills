@@ -2,15 +2,37 @@
   {
     "type": "function",
     "function": {
-      "name": "list_products_by_brand",
-      "description": "Paginated products. Filter by brand NAME to scope an enrichment run to one supplier's catalogue; parent_id and type tell you which rows are matrix children. (GET /api/v2/products)",
+      "name": "list_brands",
+      "description": "The brand catalogue. There is no name search — page through it (there are rarely more than a hundred) and match the brand name to get the id the products index filters by. (GET /api/v2/brands)",
       "parameters": {
         "type": "object",
         "properties": {
-          "filter[brand]": {
+          "per_page": {
+            "type": "integer",
+            "description": "Page size (max 100).",
+            "example": 100
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number.",
+            "example": 1
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_products_by_brand",
+      "description": "Paginated products. Filter by brand ID to scope an enrichment run to one supplier's catalogue; parent_id and type tell you which rows are matrix children. (GET /api/v2/products)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "filter[brand_id]": {
             "type": "string",
-            "description": "Exact brand name, e.g. \"Charlie Banana\". Accepts an array for several brands.",
-            "example": "Charlie Banana"
+            "description": "Brand id from list-brands. Comma-separate several ids, e.g. \"16,22\".",
+            "example": "16"
           },
           "filter[search]": {
             "type": "string",

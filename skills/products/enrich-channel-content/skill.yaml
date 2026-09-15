@@ -27,19 +27,39 @@ auth:
 api:
   base_url: https://{tenant}.sku.io
   operations:
+    - id: list-brands
+      method: GET
+      path: /api/v2/brands
+      summary: >-
+        The brand catalogue. There is no name search — page through it (there are rarely more
+        than a hundred) and match the brand name to get the id the products index filters by.
+      parameters:
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Page size (max 100).
+          example: 100
+        - name: page
+          in: query
+          type: integer
+          required: false
+          description: Page number.
+          example: 1
+
     - id: list-products-by-brand
       method: GET
       path: /api/v2/products
       summary: >-
-        Paginated products. Filter by brand NAME to scope an enrichment run to one supplier's
+        Paginated products. Filter by brand ID to scope an enrichment run to one supplier's
         catalogue; parent_id and type tell you which rows are matrix children.
       parameters:
-        - name: filter[brand]
+        - name: filter[brand_id]
           in: query
           type: string
           required: false
-          description: Exact brand name, e.g. "Charlie Banana". Accepts an array for several brands.
-          example: Charlie Banana
+          description: Brand id from list-brands. Comma-separate several ids, e.g. "16,22".
+          example: "16"
         - name: filter[search]
           in: query
           type: string

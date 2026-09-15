@@ -35,8 +35,9 @@ Run **connect-to-sku**. Then agree three things with the user before touching an
 
 1. **Target channel** — resolve it to a `sales_channel_id` (`GET /api/v2/listing-publishing/channels`
    is the list of publishable channels; the name is enough to pick).
-2. **Scope** — one supplier / brand at a time. `GET /api/v2/products?filter[brand]=Charlie%20Banana&per_page=100`
-   and page through. Group by family: rows with a `parent_id` are variants of that parent.
+2. **Scope** — one supplier / brand at a time. Resolve the brand id first — `GET /api/v2/brands?per_page=100`
+   has no name search, so page it and match the name — then
+   `GET /api/v2/products?filter[brand_id]=16&per_page=100` and page through. Group by family: rows with a `parent_id` are variants of that parent.
    **Generate per family, not per variant** — a swim diaper in 31 colours has one description
    with the colour left to the variant attribute. Standalone products (no parent, no children)
    are their own family.

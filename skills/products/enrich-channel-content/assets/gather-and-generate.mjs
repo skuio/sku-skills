@@ -4,7 +4,7 @@
  *
  *   SKU_TENANT=acme SKU_PAT='105|…' node gather-and-generate.mjs \
  *     --brand "Charlie Banana" --channel 30 --attribute tiktokshop_description \
- *     [--limit 5] [--regenerate] [--tone professional] --out proposals.json
+ *     [--brand-id 16] [--limit 5] [--regenerate] [--tone professional] --out proposals.json
  *
  * For every family in the brand (a parent and its variants, or a standalone
  * product) it walks the fallback ladder — own attributes → Amazon catalog copy
@@ -57,12 +57,26 @@ const channel = channels.find((c) => String(c.id) === String(args.channel));
 if (!channel) { console.error(`channel ${args.channel} is not publishable; known: ${channels.map((c) => c.id + '=' + c.name).join(', ')}`); process.exit(1); }
 log(`channel: ${channel.name} (#${channel.id})`);
 
-// ── products in scope, grouped into families ───────────────────────────────
+// ── brand → id, then products in scope, grouped into families ──────────────
+// The products index filters by brand ID, and the brands index has no name
+// search — so list brands (there are never many) and match the name here.
+let brandId = args['brand-id'] ? Number(args['brand-id']) : null;
+if (!brandId) {
+  const want = String(args.brand).trim().toLowerCase();
+  for (let page = 1; ; page++) {
+    const res = await api('GET', `/api/v2/brands?per_page=100&page=${page}`);
+    const hit = (res.data || []).find((b) => String(b.name || '').trim().toLowerCase() === want);
+    if (hit) { brandId = hit.id; break; }
+    if ((res.current_page ?? page) >= (res.last_page ?? page)) break;
+  }
+  if (!brandId) { console.error(`brand "${args.brand}" not found — pass --brand-id <id> if the name differs`); process.exit(1); }
+}
+log(`brand: ${args.brand} (#${brandId})`);
 const products = [];
 for (let page = 1; ; page++) {
-  const res = await api('GET', `/api/v2/products?filter[brand]=${encodeURIComponent(args.brand)}&per_page=100&page=${page}`);
+  const res = await api('GET', `/api/v2/products?filter[brand_id]=${brandId}&per_page=100&page=${page}`);
   products.push(...(res.data || []));
-  if (!res.next_page_url && (res.current_page ?? page) >= (res.last_page ?? page)) break;
+  if ((res.current_page ?? page) >= (res.last_page ?? page)) break;
 }
 log(`products in brand "${args.brand}": ${products.length}`);
 const byId = new Map(products.map((p) => [p.id, p]));
