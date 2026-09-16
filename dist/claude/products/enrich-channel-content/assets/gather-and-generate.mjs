@@ -4,7 +4,7 @@
  *
  *   SKU_TENANT=acme SKU_PAT='105|…' node gather-and-generate.mjs \
  *     --brand "Acme Baby" --channel 30 --attribute tiktokshop_description \
- *     [--brand-id 16] [--limit 5] [--only 1864,1865 --merge-into prior.json] [--regenerate] [--tone professional] --out proposals.json
+ *     [--fields title,description --title-attribute tiktokshop_title] [--brand-id 16] [--limit 5] [--only 1864,1865 --merge-into prior.json] [--regenerate] [--tone professional] --out proposals.json
  *
  * For every family in the brand (a parent and its variants, or a standalone
  * product) it walks the fallback ladder — own attributes → Amazon catalog copy
@@ -42,6 +42,13 @@ const only = args.only ? new Set(String(args.only).split(',').map((x) => x.trim(
 // candidates for rung 2b, and the re-run's entries replace theirs by key in --out.
 const prior = args['merge-into'] ? JSON.parse(fs.readFileSync(args['merge-into'], 'utf8')).families || [] : [];
 const tone = args.tone || 'professional';
+// --fields title,description (default: description). Titles need their own
+// attribute: --title-attribute tiktokshop_title. Each requested field is judged
+// "already enriched" against its own attribute.
+const fields = String(args.fields || 'description').split(',').map((x) => x.trim()).filter(Boolean);
+const titleAttribute = args['title-attribute'] || null;
+if (fields.includes('title') && !titleAttribute) { console.error('--fields title needs --title-attribute <name>'); process.exit(1); }
+const attributeFor = (field) => (field === 'title' ? titleAttribute : args.attribute);
 
 // A distinctive User-Agent: the pod's access log attributes every caller by UA
 // first, and Node's default ("node") says nothing about who is calling.
@@ -124,6 +131,8 @@ log(`families: ${families.size}`);
 const result = {
   tenant, channel: { id: channel.id, name: channel.name },
   attribute: { name: args.attribute, is_html: true },
+  title_attribute: titleAttribute ? { name: titleAttribute } : null,
+  fields,
   brand: args.brand, generated_at: new Date().toISOString(), families: [],
 };
 let n = 0;
@@ -147,7 +156,10 @@ for (const fam of families.values()) {
   for (const m of members) {
     const full = await api('GET', `/api/v2/products/${m.id}`).then((r) => r.data || r).catch(() => null);
     if (m.id === parent.id) fullParent = full;
-    const img = full?.image_url || full?.image || (full?.other_images || [])[0];
+    let img = full?.image_url || full?.image || (full?.other_images || [])[0];
+    // Tenant-relative storage paths (/storage/images/…) cannot load from the
+    // report's own origin — anchor them to the tenant.
+    if (img && String(img).startsWith('/')) img = base + img;
     if (img) { entry.parent.image_url = img; if (fullParent) break; }
   }
 
@@ -163,9 +175,12 @@ for (const fam of families.values()) {
   for (const a of attrList) {
     const name = a.name || a.attribute?.name; const value = a.value ?? a.pivot?.value;
     if (!name || value == null || String(value).trim() === '') continue;
-    if (name === args.attribute) { entry.already_enriched = !args.regenerate; continue; }
+    if (fields.map(attributeFor).includes(name)) { entry.filled = entry.filled || {}; entry.filled[name] = true; continue; }
     if (/description/i.test(name)) entry.sources.push({ label: `Product attribute: ${name}`, text: strip(value), url: null });
   }
+  const missing = fields.filter((f) => !(entry.filled && entry.filled[attributeFor(f)]));
+  entry.already_enriched = !args.regenerate && missing.length === 0;
+  entry.fields = args.regenerate ? fields : missing;
   if (entry.already_enriched) { log('  already enriched — skipped'); continue; }
 
   // Rung 2 — copy live on another channel. The product-scoped listings list
@@ -239,20 +254,25 @@ for (const fam of families.values()) {
   // Rung generate — one call per family.
   try {
     const body = {
-      product_id: parent.id, sales_channel_id: channel.id, fields: ['description'],
+      product_id: parent.id, sales_channel_id: channel.id, fields: entry.fields,
       source_material: entry.sources.slice(0, 10).map((s) => ({ label: s.label.slice(0, 80), text: s.text.slice(0, 8000) })),
       tone,
     };
     let res = await generateListingContent(body);
     // A missing rationale usually means the model folded it into the description
     // (reviewer prose that must never reach the channel). One retry is cheap.
-    if (res?.data?.content?.description && !res?.data?.content?.rationale) {
+    if (entry.fields.includes('description') && res?.data?.content?.description && !res?.data?.content?.rationale) {
       log('  rationale missing — retrying once');
       res = await generateListingContent(body);
     }
     const c = res?.data?.content || {};
-    if (c.description) { entry.proposal = { description: c.description, rationale: c.rationale || '' }; log(`  proposal: ${c.description.length} chars (${res.data.provider})`); }
-    else log('  generation returned no description');
+    const got = entry.fields.filter((f) => c[f]);
+    if (got.length) {
+      entry.proposal = { rationale: c.rationale || '' };
+      if (c.title) entry.proposal.title = c.title;
+      if (c.description) entry.proposal.description = c.description;
+      log(`  proposal: ${got.map((f) => `${f} ${String(c[f]).length} chars`).join(', ')} (${res.data.provider})`);
+    } else log(`  generation returned none of: ${entry.fields.join(', ')}`);
   } catch (e) {
     log(`  generation failed: ${e.message}`);
     if (e.status === 422 && /disabled|not configured/i.test(e.message)) { console.error('AI listing content is not enabled on this tenant — stopping.'); break; }
@@ -267,6 +287,7 @@ fs.writeFileSync(out, JSON.stringify(result, null, 2));
 const stats = {
   families: result.families.length,
   proposals: result.families.filter((f) => f.proposal).length,
+  titles: result.families.filter((f) => f.proposal && f.proposal.title).length,
   already_enriched: result.families.filter((f) => f.already_enriched).length,
   needs_research: result.families.filter((f) => f.needs_research).length,
 };
