@@ -131,7 +131,7 @@ const html = `<!DOCTYPE html>
     <button class="primary" id="apply">Apply approved to ${esc(data.tenant)}.sku.io</button>
     <button id="approve-all">Approve all proposals</button>
     <button id="copy-json">Copy approved as JSON</button>
-    <span class="chars" id="apply-note">Serve this file from http://localhost:8080 — the API accepts that origin; file:// is refused.</span>
+    <span class="chars" id="apply-note">Serve this file with <code>review-server.mjs</code> (the skill applies approvals with its own session) — or from http://localhost:8080 with a token; file:// is refused.</span>
   </div></div>
 
   ${families.map((f, i) => renderFamily(f, i)).join('\n')}
@@ -224,11 +224,23 @@ document.getElementById('copy-json').onclick = async () => {
 };
 function note(t, bad) { const n = document.getElementById('apply-note'); n.textContent = t; n.style.color = bad ? 'var(--bad)' : ''; }
 
+// Served by review-server.mjs? Then the skill's process holds the credential
+// and does the writes — the token box is hidden and never needed.
+let SERVED = false;
+fetch('/session', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((j) => {
+  if (j && j.served) {
+    SERVED = true;
+    document.getElementById('pat').hidden = true;
+    note('Approvals are applied by the skill’s own session — no token needed here.');
+  }
+}).catch(() => {});
+
 document.getElementById('apply').onclick = async () => {
-  const pat = document.getElementById('pat').value.trim();
-  if (!pat) return note('Enter a personal access token with products:write first.', true);
   const list = approved();
   if (!list.length) return note('Nothing approved yet.', true);
+  if (SERVED) return applyServed(list);
+  const pat = document.getElementById('pat').value.trim();
+  if (!pat) return note('Enter a personal access token with products:write first.', true);
   const attrNames = Array.from(new Set(list.flatMap((f) => f.attributes.map((a) => a.name)))).join(' + ');
   if (!confirm('Write ' + attrNames + ' on ' + list.reduce((n, f) => n + f.product_ids.length, 0) + ' products across ' + list.length + ' families?')) return;
   const base = 'https://' + DATA.tenant + '.sku.io';
@@ -254,6 +266,25 @@ document.getElementById('apply').onclick = async () => {
   document.getElementById('apply').disabled = false;
   note(okN + ' families written' + (badN ? ', ' + badN + ' failed (see console). If every call failed, the page is probably not served from http://localhost:8080.' : '.'), badN > 0);
 };
+
+async function applyServed(list) {
+  const attrNames = Array.from(new Set(list.flatMap((f) => f.attributes.map((a) => a.name)))).join(' + ');
+  if (!confirm('Write ' + attrNames + ' on ' + list.reduce((n, f) => n + f.product_ids.length, 0) + ' products across ' + list.length + ' families?')) return;
+  document.getElementById('apply').disabled = true;
+  list.forEach((f) => { const s = document.getElementById('f-' + f.key).querySelector('.status'); s.dataset.result = '1'; s.textContent = 'Writing…'; });
+  try {
+    const r = await fetch('/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ families: list }) });
+    const j = await r.json();
+    let okN = 0, badN = 0;
+    for (const x of j.results || []) {
+      const s = document.getElementById('f-' + x.key).querySelector('.status');
+      if (x.failed) { badN++; s.textContent = 'Failed on ' + x.failed + ' of ' + (x.failed + x.written); s.style.color = 'var(--bad)'; }
+      else { okN++; s.textContent = 'Written to ' + x.written + ' product' + (x.written === 1 ? '' : 's'); s.style.color = 'var(--ok)'; }
+    }
+    note(okN + ' families written' + (badN ? ', ' + badN + ' failed (see the server log).' : '.'), badN > 0);
+  } catch (e) { note('Apply failed: ' + e.message, true); }
+  document.getElementById('apply').disabled = false;
+}
 
 DATA.families.forEach((f) => paint(f.key)); counts();
 // Tenant storage images need a signed-in SKU.io tab; from this origin they redirect
