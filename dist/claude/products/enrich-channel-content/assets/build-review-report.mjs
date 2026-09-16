@@ -140,7 +140,7 @@ const html = `<!DOCTYPE html>
 </main>
 <script>
 const DATA = ${JSON.stringify(data)};
-const KEY = 'enrich:' + DATA.tenant + ':' + (DATA.channel && DATA.channel.id) + ':' + (DATA.attribute && DATA.attribute.name);
+const KEY = 'enrich:' + DATA.tenant + ':' + (DATA.channel && DATA.channel.id) + ':' + DATA.brand + ':' + [DATA.attribute && DATA.attribute.name, DATA.title_attribute && DATA.title_attribute.name].filter(Boolean).join('+') + ':' + (DATA.fields || ['description']).join(',');
 let state = {};
 try { state = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { state = {}; }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
@@ -256,6 +256,17 @@ document.getElementById('apply').onclick = async () => {
 };
 
 DATA.families.forEach((f) => paint(f.key)); counts();
+// Tenant storage images need a signed-in SKU.io tab; from this origin they redirect
+// to login. Swap a failed image for a link to the product so the reviewer can still see it.
+document.querySelectorAll('.card-head img').forEach((img) => {
+  img.addEventListener('error', () => {
+    const a = document.createElement('a');
+    a.className = 'noimg'; a.target = '_blank'; a.rel = 'noopener';
+    a.href = 'https://' + DATA.tenant + '.sku.io/v2/products/' + (img.dataset.product || '');
+    a.textContent = 'View in SKU.io';
+    img.replaceWith(a);
+  }, { once: true });
+});
 </script>
 </body>
 </html>`;
@@ -306,7 +317,7 @@ function renderFamily(f, i) {
   return `
   <section class="card" id="f-${esc(f.key)}">
     <div class="card-head">
-      ${p.image_url ? `<img src="${esc(absImage(p.image_url))}" alt="">` : `<div class="noimg">no image</div>`}
+      ${p.image_url ? `<img src="${esc(absImage(p.image_url))}" alt="" data-product="${esc(p.id ?? '')}">` : `<div class="noimg">no image</div>`}
       <div style="min-width:0">
         <h2>${esc(p.name || p.sku || 'Family ' + (i + 1))}</h2>
         <div class="skus">${(f.members || []).length} product${(f.members || []).length === 1 ? '' : 's'}: ${members}</div>

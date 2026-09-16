@@ -200,6 +200,11 @@ for (const fam of families.values()) {
         const cp = await api('GET', `/api/amazon/${inst}/products/${doc}?included=${encodeURIComponent('["catalog_data"]')}`).then((r) => r.data || r).catch((e) => { log(`  amazon fetch failed: ${e.message}`); return null; });
         let cd = cp?.catalog_data; if (typeof cd === 'string') { try { cd = JSON.parse(cd); } catch { cd = null; } }
         const a = cd?.attributes || {};
+        // Amazon's MAIN image is public (m.media-amazon.com); a tenant-relative
+        // /storage image redirects to login for anyone but a signed-in browser
+        // tab, so it cannot show in a report served from localhost.
+        const amzImg = (cd?.images || []).flatMap((g) => g.images || []).find((i) => i.variant === 'MAIN')?.link;
+        if (amzImg && !entry.parent.channel_image_url) entry.parent.channel_image_url = amzImg;
         const desc = a.product_description?.[0]?.value; const bullets = (a.bullet_point || []).map((b) => b.value).filter(Boolean);
         const title = a.item_name?.[0]?.value;
         if (desc) entry.sources.push({ label: `Amazon listing (${channelName})${m.id !== parent.id ? ' — ' + m.sku : ''}`, text: strip(desc), url: l.listing_url || null });
@@ -234,6 +239,10 @@ for (const fam of families.values()) {
       log(`  no listing of its own — borrowing sources from sibling ${sibling.parent.sku} (${sibling.parent.name})`);
       for (const src of sibling.sources) entry.sources.push({ ...src, label: `Sibling ${sibling.parent.sku}: ${src.label}` });
     }
+  }
+
+  if (entry.parent.channel_image_url && (!entry.parent.image_url || /\/storage\//.test(String(entry.parent.image_url)))) {
+    entry.parent.image_url = entry.parent.channel_image_url;
   }
 
   if (entry.sources.length === 0) {
