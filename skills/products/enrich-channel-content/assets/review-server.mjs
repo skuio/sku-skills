@@ -3,7 +3,7 @@
  * Serve an enrichment review report AND apply its approvals with the skill's
  * own credential — so the reviewer never handles a token.
  *
- *   SKU_TENANT=siber SKU_PAT=… node review-server.mjs review.html [--port 8080]
+ *   SKU_TENANT=acme SKU_PAT=… node review-server.mjs review.html [--port 8080]
  *
  * The page is served on http://localhost:<port>/ (an origin the SKU.io API
  * accepts). The page probes GET /session; when it answers, the page hides its
