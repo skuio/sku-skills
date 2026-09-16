@@ -4,7 +4,7 @@
  *
  *   SKU_TENANT=acme SKU_PAT='105|…' node gather-and-generate.mjs \
  *     --brand "Acme Baby" --channel 30 --attribute tiktokshop_description \
- *     [--fields title,description --title-attribute tiktokshop_title] [--brand-id 16] [--limit 5] [--only 1864,1865 --merge-into prior.json] [--regenerate] [--tone professional] --out proposals.json
+ *     [--fields title,description --title-attribute tiktokshop_title] [--brand-id 16] [--limit 5] [--only 1864,1865 --merge-into prior.json] [--regenerate] [--tone professional] [--instructions "…"] --out proposals.json
  *
  * For every family in the brand (a parent and its variants, or a standalone
  * product) it walks the fallback ladder — own attributes → Amazon catalog copy
@@ -42,6 +42,9 @@ const only = args.only ? new Set(String(args.only).split(',').map((x) => x.trim(
 // candidates for rung 2b, and the re-run's entries replace theirs by key in --out.
 const prior = args['merge-into'] ? JSON.parse(fs.readFileSync(args['merge-into'], 'utf8')).families || [] : [];
 const tone = args.tone || 'professional';
+// --instructions "…" → additional_instructions (the endpoint caps it at 500 chars):
+// the merchant's steer, e.g. a channel's title rules, "British spelling".
+const instructions = args.instructions ? String(args.instructions).slice(0, 500) : null;
 // --fields title,description (default: description). Titles need their own
 // attribute: --title-attribute tiktokshop_title. Each requested field is judged
 // "already enriched" against its own attribute.
@@ -266,6 +269,7 @@ for (const fam of families.values()) {
       product_id: parent.id, sales_channel_id: channel.id, fields: entry.fields,
       source_material: entry.sources.slice(0, 10).map((s) => ({ label: s.label.slice(0, 80), text: s.text.slice(0, 8000) })),
       tone,
+      ...(instructions ? { additional_instructions: instructions } : {}),
     };
     let res = await generateListingContent(body);
     // A missing rationale usually means the model folded it into the description

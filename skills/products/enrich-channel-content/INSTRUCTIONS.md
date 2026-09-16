@@ -159,19 +159,22 @@ Write the gathered sources and proposals to a JSON file (one entry per family �
 
 ```bash
 node assets/build-review-report.mjs proposals.json review.html
-cd "$(dirname review.html)" && python3 -m http.server 8080
+SKU_TENANT=$SKU_TENANT SKU_PAT=$SKU_PAT node assets/review-server.mjs review.html --port 8080
 ```
 
-Open `http://localhost:8080/review.html` **served, not as a file** — the report applies
-approvals by calling the API from the browser, and `http://localhost:8080` is an origin the
-API accepts; `file://` is not. The report shows, per family: the product image, name and SKU
+Open `http://localhost:8080/`. The server holds the skill's credential: when the reviewer
+presses **Apply approved**, the page posts the approved families to the server and the server
+writes the attributes with `SKU_PAT` — the token never appears in the page, the file, or the
+browser. (Served any other way — e.g. `python3 -m http.server 8080` — the page falls back to
+asking for a personal access token, because a static page cannot reach the skill's session;
+`file://` is refused by the API either way.) The report shows, per family: the product image, name and SKU
 list; every source, labelled and collapsible; the proposed title (editable, with a 255 counter, next to
 the current product name), the proposed description rendered as the channel will render it, with
 a raw view; the rationale; and Approve / Edit / Reject. Apply writes exactly the attributes that
 were proposed — a title-only run never rewrites descriptions. Decisions persist
-in the browser. **Apply approved** writes each approved description to the attribute, with the
-outcome shown inline; **Copy approved as JSON** is the fallback if the browser cannot reach the
-API, in which case apply them yourself with Step 4.
+in the browser. **Apply approved** writes each approved attribute through the server, with the
+outcome shown inline; **Copy approved as JSON** is the fallback if the server is not running, in
+which case apply them yourself with Step 4.
 
 Never write a description the reviewer did not approve. Never write to any attribute other than
 the channel's own description attribute. Never touch the product name, brand, or images.
