@@ -242,7 +242,7 @@ api:
           in: body
           type: array
           required: false
-          description: 'Which pieces to generate. For enrichment use ["description"].'
+          description: 'Which pieces to generate: ["description"], ["title"], or both. The title follows the channel''s own cap and shape (brand first, keyword-rich).'
           example: '["description"]'
         - name: source_material
           in: body

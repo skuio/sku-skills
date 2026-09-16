@@ -60,8 +60,11 @@ Run **connect-to-sku**. Then agree three things with the user before touching an
    **Generate per family, not per variant** — a swim diaper in 31 colours has one description
    with the colour left to the variant attribute. Standalone products (no parent, no children)
    are their own family.
-3. **The attribute name** — `{channel}_description`, lower-case, matching what the tenant already
-   uses. Confirm with `GET /api/v2/attributes?filter[search]=description` and reuse anything
+3. **The attribute name(s)** — `{channel}_description`, lower-case, matching what the tenant already
+   uses; and `{channel}_title` when the channel's title rules differ from the product name (they
+   usually do: product names are warehouse names — short, often without the brand — while TikTok,
+   Amazon and Walmart rank on brand-first, keyword-rich titles). A title attribute is a plain
+   `string`; TikTok's cap is 255. Confirm with `GET /api/v2/attributes?filter[search]=description` and reuse anything
    that already exists for this channel rather than creating a near-duplicate.
 
 Create it only if missing:
@@ -126,7 +129,11 @@ user to send. The product stays unenriched until the answer arrives.
 ## Step 2 — generate the proposal
 
 One call per family, target channel in `sales_channel_id`, every gathered source in
-`source_material`. The POST queues the generation and answers `202` with
+`source_material`, and `fields` naming what you need — `["description"]`, `["title"]`, or both
+(`assets/gather-and-generate.mjs --fields title,description --title-attribute tiktokshop_title`;
+each field is judged "already enriched" against its own attribute, so a title-only pass on a
+catalogue whose descriptions are done costs one call per family and touches nothing else). The
+POST queues the generation and answers `202` with
 `data.id` and `data.poll_url`; poll `GET /api/ai/listing-content/{id}` every
 second or two until `data.status` is `completed` (the content fields are on that
 response) or `failed` (`data.error` says why). The bundled script does this for
@@ -147,7 +154,8 @@ curl -sS -X POST "https://$SKU_TENANT.sku.io/api/ai/listing-content" \
   }'
 ```
 
-The response carries `content.description` in the channel's own format and length, and
+The completed job carries `content.title` (brand first, product type, key attributes, pack size,
+under the channel's cap) and/or `content.description` in the channel's own format and length, and
 `content.rationale` — the model's own account of which sources it drew on, what it reconciled
 or left out, and why the copy is shaped the way it is. Keep both; the rationale is what the
 reviewer reads.
@@ -176,8 +184,10 @@ cd "$(dirname review.html)" && python3 -m http.server 8080
 Open `http://localhost:8080/review.html` **served, not as a file** — the report applies
 approvals by calling the API from the browser, and `http://localhost:8080` is an origin the
 API accepts; `file://` is not. The report shows, per family: the product image, name and SKU
-list; every source, labelled and collapsible; the proposed description rendered as the channel
-will render it, with a raw view; the rationale; and Approve / Edit / Reject. Decisions persist
+list; every source, labelled and collapsible; the proposed title (editable, with a 255 counter, next to
+the current product name), the proposed description rendered as the channel will render it, with
+a raw view; the rationale; and Approve / Edit / Reject. Apply writes exactly the attributes that
+were proposed — a title-only run never rewrites descriptions. Decisions persist
 in the browser. **Apply approved** writes each approved description to the attribute, with the
 outcome shown inline; **Copy approved as JSON** is the fallback if the browser cannot reach the
 API, in which case apply them yourself with Step 4.
@@ -202,8 +212,11 @@ Sending the attribute by `name` leaves every other attribute on the product unto
 ## Step 5 — point the channel profile at it
 
 `GET /api/v2/sales-channels/{channel}/listing-profiles/{profile}/mappings`, change the
-`Description` row to `{"source_type":"product_attribute","source_value":"<attribute id>"}`, and
-`PUT` the complete set back (it is a full replace). From then on every listing on that channel —
+`Description` row (and `Title`, if you generated titles) to
+`{"source_type":"product_attribute","source_value":"<attribute id>"}`, and `PUT` the complete set
+back (it is a full replace). Mind the gap on a required field: a product that has not been
+enriched yet resolves to nothing from that attribute — enrich the whole catalogue you publish
+from, or keep `Title` on the product name until you have. From then on every listing on that channel —
 templated or not, if the profile is the channel default — reads the new attribute. Confirm by
 publishing one product and reading the draft's `Description` provenance: it should say
 `profile_mapping`.

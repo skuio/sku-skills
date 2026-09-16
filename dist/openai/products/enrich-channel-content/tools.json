@@ -251,7 +251,7 @@
           },
           "fields": {
             "type": "array",
-            "description": "Which pieces to generate. For enrichment use [\"description\"].",
+            "description": "Which pieces to generate: [\"description\"], [\"title\"], or both. The title follows the channel's own cap and shape (brand first, keyword-rich).",
             "example": "[\"description\"]",
             "items": {
               "type": "string"

@@ -41,7 +41,11 @@ const esc = (s) => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const families = Array.isArray(data.families) ? data.families : [];
-const withProposal = families.filter((f) => f.proposal && f.proposal.description);
+const withProposal = families.filter((f) => f.proposal && (f.proposal.description || f.proposal.title));
+const titleAttr = data.title_attribute && data.title_attribute.name ? data.title_attribute : null;
+const tenantBase = `https://${data.tenant}.sku.io`;
+// Tenant-relative storage paths (/storage/images/…) cannot load from the report's origin.
+const absImage = (u) => (u && String(u).startsWith('/') ? tenantBase + u : u);
 const needSupplier = families.filter((f) => !f.proposal && f.supplier_email);
 const already = families.filter((f) => f.already_enriched);
 
@@ -91,6 +95,7 @@ const html = `<!DOCTYPE html>
   .proposal { border:1px solid var(--line); border-radius:6px; padding:12px 14px; max-height:520px; overflow:auto; }
   .proposal ul { padding-left:20px }
   textarea.edit { width:100%; min-height:260px; font:13px/1.45 ui-monospace, Menlo, monospace; border:1px solid var(--line); border-radius:6px; padding:10px; }
+  input.edit-title { width:100%; font:inherit; font-weight:600; padding:8px 10px; border:1px solid var(--line); border-radius:8px; }
   .rationale { margin-top:12px; padding:10px 12px; background:#f8f5ee; border-left:3px solid #d9c38a; font-size:13px; }
   .rationale b { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:#8a6d1f; margin-bottom:4px; }
   .tabs { display:flex; gap:6px; margin-bottom:8px; }
@@ -107,7 +112,7 @@ const html = `<!DOCTYPE html>
 <header>
   <div>
     <h1>Enrichment review — ${esc(data.brand)} → ${esc(data.channel?.name)}</h1>
-    <div class="meta">Writes <code>${esc(data.attribute?.name)}</code> on approved families · generated ${esc(data.generated_at || '')} · tenant <code>${esc(data.tenant)}</code></div>
+    <div class="meta">Writes <code>${esc(data.attribute?.name)}</code>${titleAttr ? ` + <code>${esc(titleAttr.name)}</code>` : ''} on approved families · generated ${esc(data.generated_at || '')} · tenant <code>${esc(data.tenant)}</code></div>
   </div>
   <div class="spacer"></div>
   <div class="counts">
@@ -148,6 +153,11 @@ function text(key) {
 }
 function setDecision(key, d) { state[key] = Object.assign({}, state[key], { decision: d }); save(); paint(key); counts(); }
 function setText(key, t) { state[key] = Object.assign({}, state[key], { text: t }); save(); }
+function titleText(key) {
+  const f = fam(key);
+  return (state[key] && typeof state[key].title === 'string') ? state[key].title : ((f && f.proposal && f.proposal.title) || '');
+}
+function setTitle(key, t) { state[key] = Object.assign({}, state[key], { title: t }); save(); }
 
 function paint(key) {
   const card = document.getElementById('f-' + key); if (!card) return;
@@ -164,9 +174,18 @@ function counts() {
   document.getElementById('c-approved').textContent = a + ' approved';
   document.getElementById('c-rejected').textContent = r + ' rejected';
 }
+// One entry per approved family; "attributes" is exactly what gets written:
+// the description attribute when a description was proposed, the title
+// attribute when a title was, so a title-only run never touches descriptions.
 function approved() {
-  return DATA.families.filter((f) => decision(f.key) === 'approve' && text(f.key).trim() !== '')
-    .map((f) => ({ key: f.key, product_ids: (f.members || []).map((m) => m.id), value: text(f.key) }));
+  return DATA.families.filter((f) => decision(f.key) === 'approve' && f.proposal && (text(f.key).trim() !== '' || titleText(f.key).trim() !== ''))
+    .map((f) => {
+      const attributes = [];
+      if (f.proposal.description && text(f.key).trim() !== '') attributes.push({ name: DATA.attribute.name, value: text(f.key) });
+      if (f.proposal.title && DATA.title_attribute && titleText(f.key).trim() !== '') attributes.push({ name: DATA.title_attribute.name, value: titleText(f.key).trim() });
+      return { key: f.key, product_ids: (f.members || []).map((m) => m.id), value: text(f.key), title: titleText(f.key), attributes };
+    })
+    .filter((f) => f.attributes.length > 0);
 }
 
 document.addEventListener('click', (e) => {
@@ -181,6 +200,12 @@ document.addEventListener('click', (e) => {
   }
 });
 document.addEventListener('input', (e) => {
+  const ti = e.target.closest('input.edit-title');
+  if (ti) {
+    setTitle(ti.dataset.key, ti.value);
+    const c = document.getElementById('f-' + ti.dataset.key).querySelector('.title-n'); if (c) c.textContent = ti.value.length + ' / 255';
+    return;
+  }
   const t = e.target.closest('textarea.edit'); if (!t) return;
   setText(t.dataset.key, t.value);
   const card = document.getElementById('f-' + t.dataset.key);
@@ -190,10 +215,10 @@ document.addEventListener('input', (e) => {
 function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 document.getElementById('approve-all').onclick = () => {
-  DATA.families.forEach((f) => { if (f.proposal && f.proposal.description && !f.already_enriched) setDecision(f.key, 'approve'); });
+  DATA.families.forEach((f) => { if (f.proposal && (f.proposal.description || f.proposal.title) && !f.already_enriched) setDecision(f.key, 'approve'); });
 };
 document.getElementById('copy-json').onclick = async () => {
-  const payload = JSON.stringify({ attribute: DATA.attribute.name, approved: approved() }, null, 2);
+  const payload = JSON.stringify({ attribute: DATA.attribute.name, title_attribute: DATA.title_attribute ? DATA.title_attribute.name : null, approved: approved() }, null, 2);
   try { await navigator.clipboard.writeText(payload); note('Copied ' + approved().length + ' approved families as JSON.'); }
   catch (e) { prompt('Copy this JSON:', payload); }
 };
@@ -204,7 +229,8 @@ document.getElementById('apply').onclick = async () => {
   if (!pat) return note('Enter a personal access token with products:write first.', true);
   const list = approved();
   if (!list.length) return note('Nothing approved yet.', true);
-  if (!confirm('Write ' + DATA.attribute.name + ' on ' + list.reduce((n, f) => n + f.product_ids.length, 0) + ' products across ' + list.length + ' families?')) return;
+  const attrNames = Array.from(new Set(list.flatMap((f) => f.attributes.map((a) => a.name)))).join(' + ');
+  if (!confirm('Write ' + attrNames + ' on ' + list.reduce((n, f) => n + f.product_ids.length, 0) + ' products across ' + list.length + ' families?')) return;
   const base = 'https://' + DATA.tenant + '.sku.io';
   document.getElementById('apply').disabled = true;
   let okN = 0, badN = 0;
@@ -217,7 +243,7 @@ document.getElementById('apply').onclick = async () => {
         const r = await fetch(base + '/api/products/' + id + '/attributes', {
           method: 'PUT',
           headers: { 'Authorization': 'Bearer ' + pat, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-          body: JSON.stringify({ attributes: [{ name: DATA.attribute.name, value: f.value }] }),
+          body: JSON.stringify({ attributes: f.attributes }),
         });
         if (!r.ok) { failed++; console.error('PUT failed', id, r.status, await r.text()); }
       } catch (e) { failed++; console.error('PUT threw', id, e); }
@@ -244,21 +270,26 @@ function renderFamily(f, i) {
       </details>`).join('');
   const isHtml = !!(data.attribute && data.attribute.is_html);
   const desc = f.proposal?.description || '';
+  const title = f.proposal?.title || '';
   const rendered = isHtml ? desc : esc(desc).replace(/\n/g, '<br>');
+  const titleBlock = title ? `
+      <h3>Proposed ${esc(data.channel?.name)} title <span class="title-n chars">${title.length} / 255</span></h3>
+      <input class="edit-title" data-key="${esc(f.key)}" maxlength="255" value="${esc(title)}">
+      <p class="chars" style="margin:4px 0 14px">Current product name: <em>${esc(p.name || '')}</em></p>` : '';
 
   let right;
   if (f.already_enriched) {
     right = `<h3>Already enriched</h3><p class="chars">This family already has <code>${esc(data.attribute?.name)}</code>. Re-run with regeneration requested to replace it.</p>`;
-  } else if (desc) {
-    right = `
+  } else if (desc || title) {
+    right = `${titleBlock}${desc ? `
       <h3>Proposed ${esc(data.channel?.name)} description <span class="chars-n chars">${desc.length} chars</span></h3>
       <div class="tabs">
         <button class="on" data-act="tab" data-tab="rendered" data-key="${esc(f.key)}">As the channel shows it</button>
         <button data-act="tab" data-tab="raw" data-key="${esc(f.key)}">Edit ${isHtml ? 'HTML' : 'text'}</button>
       </div>
       <div class="view-rendered"><div class="proposal">${rendered}</div></div>
-      <div class="view-raw" hidden><textarea class="edit" data-key="${esc(f.key)}">${esc(desc)}</textarea></div>
-      <div class="rationale"><b>Why it is built this way</b>${esc(f.proposal?.rationale || 'No rationale returned.')}</div>`;
+      <div class="view-raw" hidden><textarea class="edit" data-key="${esc(f.key)}">${esc(desc)}</textarea></div>` : ''}
+      ${f.proposal?.rationale ? `<div class="rationale"><b>Why it is built this way</b>${esc(f.proposal.rationale)}</div>` : (title && !desc ? `<div class="rationale"><b>Built from</b>${esc((f.sources || []).map((x) => x.label).join(' · ') || 'the product itself')} — brand first, product type, key attributes and pack size, under TikTok's 255-character cap.</div>` : '')}`;
   } else if (f.supplier_email) {
     const em = f.supplier_email;
     const mailto = `mailto:${encodeURIComponent(em.to || '')}?subject=${encodeURIComponent(em.subject || '')}&body=${encodeURIComponent(em.body || '')}`;
@@ -271,11 +302,11 @@ function renderFamily(f, i) {
     right = `<h3>No proposal</h3><p class="chars">Generation returned nothing for this family.</p>`;
   }
 
-  const decidable = !!desc && !f.already_enriched;
+  const decidable = !!(desc || title) && !f.already_enriched;
   return `
   <section class="card" id="f-${esc(f.key)}">
     <div class="card-head">
-      ${p.image_url ? `<img src="${esc(p.image_url)}" alt="">` : `<div class="noimg">no image</div>`}
+      ${p.image_url ? `<img src="${esc(absImage(p.image_url))}" alt="">` : `<div class="noimg">no image</div>`}
       <div style="min-width:0">
         <h2>${esc(p.name || p.sku || 'Family ' + (i + 1))}</h2>
         <div class="skus">${(f.members || []).length} product${(f.members || []).length === 1 ? '' : 's'}: ${members}</div>
