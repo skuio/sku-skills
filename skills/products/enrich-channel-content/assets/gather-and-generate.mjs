@@ -179,7 +179,15 @@ for (const fam of families.values()) {
     const name = a.name || a.attribute?.name; const value = a.value ?? a.pivot?.value;
     if (!name || value == null || String(value).trim() === '') continue;
     if (fields.map(attributeFor).includes(name)) { entry.filled = entry.filled || {}; entry.filled[name] = true; continue; }
-    if (/description/i.test(name)) entry.sources.push({ label: `Product attribute: ${name}`, text: strip(value), url: null });
+    // Guard on the STRIPPED text, not the raw value: the check above only
+    // rejects an empty attribute, but markup-only copy ('<p></p>', '&nbsp;')
+    // is non-empty and strips to nothing. The API rejects a source_material
+    // entry with empty text, which failed the WHOLE call -- so one blank
+    // description attribute killed families that had good Amazon copy.
+    if (/description/i.test(name)) {
+      const text = strip(value);
+      if (text) entry.sources.push({ label: `Product attribute: ${name}`, text, url: null });
+    }
   }
   const missing = fields.filter((f) => !(entry.filled && entry.filled[attributeFor(f)]));
   entry.already_enriched = !args.regenerate && missing.length === 0;
@@ -267,7 +275,8 @@ for (const fam of families.values()) {
   try {
     const body = {
       product_id: parent.id, sales_channel_id: channel.id, fields: entry.fields,
-      source_material: entry.sources.slice(0, 10).map((s) => ({ label: s.label.slice(0, 80), text: s.text.slice(0, 8000) })),
+      source_material: entry.sources.filter((s) => s.text && s.text.trim()).slice(0, 10)
+        .map((s) => ({ label: s.label.slice(0, 80), text: s.text.slice(0, 8000) })),
       tone,
       ...(instructions ? { additional_instructions: instructions } : {}),
     };
