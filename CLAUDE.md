@@ -50,6 +50,10 @@ npm ci
 npm run check      # validate schema + build all three targets
 ```
 
+Changing a workflow skill? Also run `npm run check:node-refs -- --source <sku app checkout>` (or
+with `SKU_TENANT`/`SKU_PAT` set) — it fails if a node type the skill names is gone from the app's
+registry. It is not in CI, which has neither.
+
 Match the structure and quality of the exemplars: `skills/products/find-product/` (simple),
 `skills/orders/create-sales-order/` (request body + guardrails).
 

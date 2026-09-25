@@ -20,6 +20,7 @@
     "validate": "node tools/validate.mjs",
     "scan": "node tools/scan-secrets.mjs",
     "check": "node tools/validate.mjs && node tools/scan-secrets.mjs && node tools/build.mjs",
+    "check:node-refs": "node tools/check-node-refs.mjs",
     "clean": "rm -rf dist"
   },
   "dependencies": {
