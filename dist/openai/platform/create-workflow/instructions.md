@@ -62,7 +62,7 @@ fill a node in is a pointer inside its entry; follow the pointer rather than gue
 | `settings[*].key` / `type` / `required` / `defaultValue` | The node's `data` keys, exactly. A key not listed here is accepted on save and ignored at run time. |
 | a setting with `apiEndpoint` | `GET /api<apiEndpoint>` and store the item's `id` — never the display name you were given. Most are numeric (`salesChannels: [30]`, not `"TikTok Shop"`); a few are names by design (`…/lookups/integrations` returns `{"id":"Shopify"}`). Store whatever `id` says. |
 | a setting typed `credential_select` | `GET /api/automation/workflow-credentials/lookup?type=<its credentialTypes, comma-joined>` and store the chosen `uuid` as `credentialUuid`. None stored → see *Credentials* below. |
-| a setting typed `conditions` | Its `operators` list (newer builds) is the full set of valid operator strings. |
+| IF's `conditions` or Switch's `rules` setting | Its `operators` list (newer builds) is the full set of valid operator strings. |
 | `outputs[*].key` | The branch handles (Switch: the defaults — see *Graph shape*). Any handle other than `main` must go on the leaving edge's `sourceHandle`. |
 | `outputSchema` | The fields downstream expressions may reference (`{{ $json.… }}` for a trigger). |
 | `preview` / `mutates` (newer builds) | What a preview run does with the node: `runs`, `skipped`, or `simulated` (reports what it would have done). `mutates: true` means it changes state live. |
@@ -152,8 +152,8 @@ write the two sentences out. Always read a real rendered run before publishing �
 catches this.
 
 IF/Switch conditions are `{ "field": "{{ $json.… }}", "operator": "…", "value": … }` with
-`combineOperation` `and`/`or`. Take the operator strings from the `conditions` setting's
-`operators` list in the catalog. Builds that don't publish it yet accept: `equals`, `not_equals`,
+`combineOperation` `and`/`or`. Take the operator strings from that setting's `operators` list in
+the catalog. Builds that don't publish it yet accept: `equals`, `not_equals`,
 `contains`, `not_contains`, `starts_with`, `ends_with`, `is_empty`, `is_not_empty`,
 `greater_than`, `less_than`, `greater_than_or_equal`, `less_than_or_equal`, `in`, `not_in`,
 `regex`, `is_true`, `is_false`. An unrecognised operator evaluates **false**, quietly — copy the
