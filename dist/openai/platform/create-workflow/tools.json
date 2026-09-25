@@ -3,7 +3,7 @@
     "type": "function",
     "function": {
       "name": "list_node_types",
-      "description": "The live catalog of every node type — its category, settings (key, type, required, default), outputs and outputSchema. Always read this first; it is the only reliable source for valid `nodes[*].type` values and their `data` keys. (GET /api/automation/workflow-nodes)",
+      "description": "The live catalog of every node type — its category, description, settings (key, type, required, default, apiEndpoint, credentialTypes), outputs (the branch handles) and outputSchema; on newer builds also `preview`/`mutates`, condition `operators`, and a trigger's `availability` on this account. Always read this first; it is the only reliable source for valid `nodes[*].type` values and their `data` keys. (GET /api/automation/workflow-nodes)",
       "parameters": {
         "type": "object",
         "properties": {}
@@ -13,8 +13,59 @@
   {
     "type": "function",
     "function": {
+      "name": "get_sample_payload",
+      "description": "A trigger payload built from the most recent real record that matches the trigger's settings — the right `trigger_payload` for a dry run. Returns `data: null` when nothing on the account matches yet. (POST /api/automation/workflow-nodes/sample-payload)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "node_type": {
+            "type": "string",
+            "description": "The trigger's `type` from the node catalog.",
+            "example": "channel-order-imported"
+          },
+          "parameters": {
+            "type": "object",
+            "description": "The trigger node's `data`, so the sample respects its filters.",
+            "example": {
+              "salesChannels": [
+                30
+              ]
+            }
+          }
+        },
+        "required": [
+          "node_type"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
       "name": "lookup_sales_channels",
-      "description": "Sales channels as {id, name}. Feeds any node setting of type `multiselect` whose apiEndpoint is /automation/lookups/sales-channels — the values stored are the numeric ids, never the channel names. (GET /api/automation/lookups/sales-channels)",
+      "description": "Sales channels as {id, name}. The stored value is the numeric id. (GET /api/automation/lookups/sales-channels)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "lookup_integrations",
+      "description": "Connected integrations as {id, name}, where `id` IS the name (e.g. `Shopify`) — the integration order filter matches on the name as text. (GET /api/automation/lookups/integrations)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "lookup_sub_sales_channels",
+      "description": "Sub sales channels as {id, name}, where `id` is the sub-channel name (e.g. `POS`) and `name` also names its parent channel(s). (GET /api/automation/lookups/sub-sales-channels)",
       "parameters": {
         "type": "object",
         "properties": {}
@@ -40,6 +91,141 @@
       "parameters": {
         "type": "object",
         "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "lookup_airtable_instances",
+      "description": "Connected Airtable instances, for the Airtable node. (GET /api/automation/lookups/airtable-instances)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "lookup_order_filter_fields",
+      "description": "The sales-order fields an order filter may test. The filter is evaluated against this allow-list, so a field not in it never matches. (GET /api/automation/lookups/order-filter-fields)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "lookup_credentials",
+      "description": "Stored credentials as {uuid, name}, filtered by type — the values for a `credential_select` setting's `credentialUuid`. (GET /api/automation/workflow-credentials/lookup)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "One type or a comma-separated list, from the setting's `credentialTypes`.",
+            "example": "ftp,sftp"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_credential",
+      "description": "Store a credential (secrets encrypted at rest, redacted on read). Only with values the user supplied for this purpose; `google_oauth` cannot be created here — it needs the browser consent flow in the Workflow Builder. (POST /api/automation/workflow-credentials)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Display name, max 128 chars.",
+            "example": "Supplier SFTP"
+          },
+          "type": {
+            "type": "string",
+            "description": "basic_auth | api_key | bearer_token | ftp | sftp | webhook_token.",
+            "example": "sftp"
+          },
+          "data": {
+            "type": "object",
+            "description": "The type's fields — for ftp/sftp `host`, `port`, `username`, `password` or `privateKey` (+ `passphrase`), `root`."
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "data"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_templates",
+      "description": "Ready-made workflows with their `parameterPrompts` (what must be filled in) and `requiredCredentials`. Check here before assembling a graph by hand. (GET /api/automation/workflow-templates)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_template",
+      "description": "One template with its prompts and required credentials. (GET /api/automation/workflow-templates/{slug})",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "The template slug.",
+            "example": "import-products-ftp-hourly"
+          }
+        },
+        "required": [
+          "slug"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "instantiate_template",
+      "description": "Create a Draft workflow from a template, writing each answered prompt into the graph. A prompt you leave out keeps the template's placeholder, so answer every required one. (POST /api/automation/workflow-templates/{slug}/instantiate)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "The template slug."
+          },
+          "name": {
+            "type": "string",
+            "description": "Workflow name; defaults to the template's."
+          },
+          "parameters": {
+            "type": "object",
+            "description": "Answers keyed by each prompt's `key`, typed as the prompt says.",
+            "example": {
+              "fbaWarehouseId": 3,
+              "threePlWarehouseId": 7
+            }
+          }
+        },
+        "required": [
+          "slug"
+        ]
       }
     }
   },

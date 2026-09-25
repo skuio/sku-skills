@@ -1,6 +1,6 @@
 # Create a Workflow (automation)
 
-_Build, validate, publish and test-run a SKU.io automation workflow from the API — the same node/edge graph the visual Workflow Builder draws. Use this whenever a user wants something to happen automatically in response to something else: email or Slack me when an order lands on a given sales channel, tag or note orders that match a rule, post a webhook to another system, import a supplier feed on a schedule, or route orders to a warehouse. Discovers the node catalog live, assembles the graph, validates it before saving, and publishes only after a dry run the user has seen — including picking the right moment to fire on, which for an order alert is the channel import rather than the sales-order creation._
+_Build, validate, publish, test-run and maintain SKU.io automation workflows from the API — the same node/edge graph the visual Workflow Builder draws. Use this whenever a user wants something to happen automatically in response to something else: email or Slack me when an order lands on a given sales channel, tag or note orders that match a rule, post a webhook to another system, import a supplier feed from FTP on a schedule, or route orders to a warehouse — and when an existing workflow needs changing, pausing, or diagnosing because it did not fire. Starts from a template when one fits, discovers the node catalog and credentials live, and publishes only after a dry run the user has seen — including picking the right moment to fire on, which for an order alert is the channel import rather than the sales-order creation._
 
 Use this skill to build a SKU.io **automation workflow** from the API — the same directed graph of
 nodes and edges the visual Workflow Builder draws. A workflow is "when X happens, do Y (maybe only
@@ -8,7 +8,8 @@ if Z)": a trigger node, optional logic and data nodes, and one or more action or
 
 Reach for it whenever the ask is *automatic*: "email me when an order comes in on TikTok Shop",
 "Slack the warehouse when stock runs low", "tag every order over $500", "pull the supplier feed off
-SFTP every morning", "post new orders to our ERP".
+SFTP every morning", "post new orders to our ERP" — and when an existing workflow needs changing,
+pausing, or explaining ("why didn't it fire?").
 
 ## Step 0 — Connect first
 
@@ -27,37 +28,66 @@ the user named. Writing to the wrong account is the one mistake here the API can
 
 ## Before you build
 
-**Read the node catalog first — every time.** The set of nodes and their settings is
-account-and-version specific, and it is the only place the valid `nodes[*].type` strings and
-`data` keys exist:
+### Start from a template when one fits
+
+```bash
+curl -s -H "Authorization: Bearer $SKU_PAT" \
+  "https://$SKU_TENANT.sku.io/api/automation/workflow-templates" | jq '.data[] | {slug, name, description}'
+```
+
+A template is a tested graph. If one matches the ask, `GET …/workflow-templates/{slug}`, answer its
+`parameterPrompts` (each has a `key`, a `type`, `required`, and — like a node setting — often an
+`apiEndpoint` to resolve the value from), make sure every `requiredCredentials` entry exists, then
+`POST …/workflow-templates/{slug}/instantiate` with `{"name": …, "parameters": {<key>: <value>}}`.
+It lands as a draft; carry on from step 4 below. A prompt you leave out keeps the template's
+placeholder, so answer every required one. Build by hand only when no template fits.
+
+### Read the node catalog — every time
+
+The catalog is the only place the valid `nodes[*].type` strings and `data` keys exist, and it
+changes with each SKU.io release — this skill deliberately does not list the nodes:
 
 ```bash
 curl -s -H "Authorization: Bearer $SKU_PAT" -H 'Accept: application/json' \
-  "https://$SKU_TENANT.sku.io/api/automation/workflow-nodes" | jq '.data[] | {type, category, label}'
+  "https://$SKU_TENANT.sku.io/api/automation/workflow-nodes" \
+  | jq '.data[] | {type, category, label, description, preview, availability}'
 ```
 
-Each entry carries `settings` (the `data` keys: `key`, `type`, `required`, `defaultValue`),
-`outputSchema` (the fields downstream nodes can reference), and `supportsBranching`. **Never
-hand-write a node type from memory** — if it isn't in that response, it doesn't exist here.
+Read each candidate's `description` before choosing it. **Never hand-write a node type from
+memory** — if it isn't in that response, it doesn't exist on this build. Everything else you need to
+fill a node in is a pointer inside its entry; follow the pointer rather than guessing:
+
+| In the catalog entry | What to do with it |
+| --- | --- |
+| `settings[*].key` / `type` / `required` / `defaultValue` | The node's `data` keys, exactly. A key not listed here is accepted on save and ignored at run time. |
+| a setting with `apiEndpoint` | `GET /api<apiEndpoint>` and store the item's `id` — never the display name you were given. Most are numeric (`salesChannels: [30]`, not `"TikTok Shop"`); a few are names by design (`…/lookups/integrations` returns `{"id":"Shopify"}`). Store whatever `id` says. |
+| a setting typed `credential_select` | `GET /api/automation/workflow-credentials/lookup?type=<its credentialTypes, comma-joined>` and store the chosen `uuid` as `credentialUuid`. None stored → see *Credentials* below. |
+| IF's `conditions` or Switch's `rules` setting | Its `operators` list (newer builds) is the full set of valid operator strings. |
+| `outputs[*].key` | The branch handles (Switch: the defaults — see *Graph shape*). Any handle other than `main` must go on the leaving edge's `sourceHandle`. |
+| `outputSchema` | The fields downstream expressions may reference (`{{ $json.… }}` for a trigger). |
+| `preview` / `mutates` (newer builds) | What a preview run does with the node: `runs`, `skipped`, or `simulated` (reports what it would have done). `mutates: true` means it changes state live. |
+| `availability` on a trigger (newer builds) | `available: false` means nothing on this account emits that event yet — the workflow would publish and never run. Read `reason`, and tell the user. |
+
+On a build that does not yet return `preview` / `mutates`, the rule is: every node in the
+`actions` and `integrations` categories changes state and is skipped in preview, except
+read-only ones such as a plain URL download.
 
 Nodes fall into six categories: `triggers` (what starts a run — exactly one per workflow),
 `logic` (IF / Switch / stock checks — these branch), `actions` (write to SKU.io: orders, products,
 inventory, tags, notes), `integrations` (reach outside: email, Slack, webhook, HTTP, Sheets,
 Airtable, FTP), `data` (parse, reshape, aggregate), `utilities` (delay).
 
-### Resolve ids, never names
+### Credentials
 
-A setting typed `multiselect` with an `apiEndpoint` stores **numeric ids**. The Sales Channels
-filter on an order trigger is the common case — `"TikTok Shop"` is not a value, `30` is:
+FTP/SFTP, Google Sheets, and authenticated HTTP nodes carry a **required** `credentialUuid`. Look
+for an existing one first (the lookup above). If none exists:
 
-```bash
-curl -s -H "Authorization: Bearer $SKU_PAT" \
-  "https://$SKU_TENANT.sku.io/api/automation/lookups/sales-channels"
-# {"data":[{"name":"TikTok Shop","id":30}, …]}
-```
-
-Same for `…/lookups/warehouses` and `…/lookups/tags`. Look the id up; don't guess it, and don't
-pass the display name.
+- `ftp`, `sftp`, `basic_auth`, `api_key`, `bearer_token`, `webhook_token` — you may
+  `POST /api/automation/workflow-credentials` with `{name, type, data}`, **only** with values the
+  user gave you for this purpose. Never echo a secret back into chat or logs; the API redacts secret
+  fields on read, so don't try to read one back to "check" it.
+- `google_oauth` — cannot be created from the API; it needs the browser consent flow. Ask the user
+  to connect the Google account in the Workflow Builder, then look it up.
 
 ## Graph shape
 
@@ -86,9 +116,11 @@ name a node in the graph, and every non-trigger node needs an incoming edge. `po
 canvas layout — space nodes ~300px apart on x so the builder is readable when a human opens it.
 `data` is required on every node even when empty (`{}`).
 
-**Leaving a branching node needs a `sourceHandle`.** IF exposes `true` and `false`; Switch exposes
-`case0`, `case1`, … and `fallback`. An edge off a branching node with no `sourceHandle` is a
-silently dead path:
+**Leaving a branching node needs a `sourceHandle`**, taken from that node's `outputs[*].key` in the
+catalog (IF is `true`/`false`). Switch is the exception — its handles come from its own `data`:
+rule *n* emits on that rule's `output` if set, else `case<n>`, and no match emits on the
+`fallbackOutput` setting (default `fallback`); match the edge to what you configured. An edge off a
+branching node with no matching `sourceHandle` is a silently dead path:
 
 ```json
 { "id": "e2", "source": "if-1", "target": "email-1", "sourceHandle": "true" }
@@ -120,10 +152,12 @@ write the two sentences out. Always read a real rendered run before publishing �
 catches this.
 
 IF/Switch conditions are `{ "field": "{{ $json.… }}", "operator": "…", "value": … }` with
-`combineOperation` `and`/`or`. Operators: `equals`, `not_equals`, `contains`, `not_contains`,
-`starts_with`, `ends_with`, `is_empty`, `is_not_empty`, `greater_than`, `less_than`,
-`greater_than_or_equal`, `less_than_or_equal`, `in`, `not_in`, `regex`, `is_true`, `is_false`.
-An unrecognised operator evaluates **false**, quietly — copy the spelling exactly.
+`combineOperation` `and`/`or`. Take the operator strings from that setting's `operators` list in
+the catalog. Builds that don't publish it yet accept: `equals`, `not_equals`,
+`contains`, `not_contains`, `starts_with`, `ends_with`, `is_empty`, `is_not_empty`,
+`greater_than`, `less_than`, `greater_than_or_equal`, `less_than_or_equal`, `in`, `not_in`,
+`regex`, `is_true`, `is_false`. An unrecognised operator evaluates **false**, quietly — copy the
+spelling exactly.
 
 ## Choosing the trigger: arrival or readiness?
 
@@ -143,15 +177,20 @@ failure they most need to hear about is the one where it arrived and then nothin
 **Acting on an order → `sales-order-created`.** Tagging, noting, routing and warehouse work all
 need the sales order to exist, so the later moment is the correct one.
 
-Check the live catalog for which triggers this account actually has — `channel-order-imported` is
-dispatched per integration, so an account whose channels do not yet publish it will see no runs.
+The catalog lists every trigger on every account, but `channel-order-imported` is only emitted by
+integrations that publish it. Check its `availability` in the catalog: `available: false` means no
+connected channel on this account emits it yet — use `sales-order-created` and tell the user the
+alert will stay silent for orders that never become sales orders. On a build without
+`availability`, ask `get-sample-payload` for it: `data: null` on an account with recent orders on
+that channel is the same signal.
 
 ## Steps
 
 1. **Check for a duplicate.** `GET /api/automation/workflows?filter[search]=<name>`. If one already
    does this job, update or clone it rather than adding a second — every matching published
    workflow fires, so two near-identical ones mean two emails.
-2. **Read the node catalog** and resolve every id (channels, warehouses, tags).
+2. **Check the templates, then read the node catalog** and resolve every lookup value and
+   credential the chosen nodes point at.
 3. **Assemble the graph**, then **validate it before saving**:
 
    ```bash
@@ -176,10 +215,12 @@ dispatched per integration, so an account whose channels do not yet publish it w
      -d '{"trigger_payload":{"salesOrder":{…},"lines":[…]}}'
    ```
 
-   Build `trigger_payload` to match the trigger's `outputSchema`, populated from a **real** record
-   you fetched — a made-up payload proves the graph runs, not that it renders. Omit
-   `trigger_payload` entirely and an event trigger falls back to sample data from the most recent
-   matching record. The call returns an execution at `pending`; poll
+   Get `trigger_payload` from `POST /api/automation/workflow-nodes/sample-payload` with
+   `{"node_type": "<trigger type>", "parameters": <the trigger node's data>}` — the most recent
+   **real** matching record, shaped exactly like the trigger's output. A made-up payload proves the
+   graph runs, not that it renders. If it returns `data: null`, nothing matches yet: say so, and
+   only then build one from a record you fetched. (Omitting `trigger_payload` makes an event
+   trigger fall back to the same sample.) The call returns an execution at `pending`; poll
    `GET /api/automation/workflow-executions/{id}` until it leaves `pending`/`running`, then read
    `steps[]` — each step's `status`, `logs`, and in preview mode the input the skipped step would
    have used.
@@ -236,6 +277,8 @@ fix is a token with the workflow scope, not a retry.
 | Published, matching orders exist, zero executions | The trigger's filter doesn't match. Re-check that ids — not names — went into `salesChannels`, and compare against `triggerConfig` on the workflow. For `channel-order-imported`, also confirm that integration publishes the event on this build. |
 | A field renders as `{"id":…}` or vanishes entirely | A non-scalar or a boolean was interpolated into text — see the expressions section. |
 | `{{#each}}` renders nothing | The trigger doesn't emit that array. Check its `outputSchema`. |
+| Trigger shows `availability.available: false` | Nothing on this account emits that event; the workflow will publish and never run. Use the fallback trigger its `reason` names. |
+| A run fails at an FTP/Sheets/HTTP node with an auth error | The `credentialUuid` is missing, deleted, or of the wrong type. Re-run the credentials lookup with that setting's `credentialTypes`. |
 
 See [shared/errors.md](https://github.com/skuio/sku-skills/blob/main/shared/errors.md) for the standard status-code contract and
 [shared/authentication.md](https://github.com/skuio/sku-skills/blob/main/shared/authentication.md) for token handling.
@@ -244,10 +287,20 @@ See [shared/errors.md](https://github.com/skuio/sku-skills/blob/main/shared/erro
 
 | Method | Path | What it does |
 | --- | --- | --- |
-| `GET` | `/api/automation/workflow-nodes` | The live catalog of every node type — its category, settings (key, type, required, default), outputs and outputSchema. Always read this first; it is the only reliable source for valid `nodes[*].type` values and their `data` keys. |
-| `GET` | `/api/automation/lookups/sales-channels` | Sales channels as {id, name}. Feeds any node setting of type `multiselect` whose apiEndpoint is /automation/lookups/sales-channels — the values stored are the numeric ids, never the channel names. |
+| `GET` | `/api/automation/workflow-nodes` | The live catalog of every node type — its category, description, settings (key, type, required, default, apiEndpoint, credentialTypes), outputs (the branch handles) and outputSchema; on newer builds also `preview`/`mutates`, condition `operators`, and a trigger's `availability` on this account. Always read this first; it is the only reliable source for valid `nodes[*].type` values and their `data` keys. |
+| `POST` | `/api/automation/workflow-nodes/sample-payload` | A trigger payload built from the most recent real record that matches the trigger's settings — the right `trigger_payload` for a dry run. Returns `data: null` when nothing on the account matches yet. |
+| `GET` | `/api/automation/lookups/sales-channels` | Sales channels as {id, name}. The stored value is the numeric id. |
+| `GET` | `/api/automation/lookups/integrations` | Connected integrations as {id, name}, where `id` IS the name (e.g. `Shopify`) — the integration order filter matches on the name as text. |
+| `GET` | `/api/automation/lookups/sub-sales-channels` | Sub sales channels as {id, name}, where `id` is the sub-channel name (e.g. `POS`) and `name` also names its parent channel(s). |
 | `GET` | `/api/automation/lookups/warehouses` | Warehouses as {id, name}, for warehouse-valued node settings. |
 | `GET` | `/api/automation/lookups/tags` | Order tags, for the Apply Tags node's `tags` setting. |
+| `GET` | `/api/automation/lookups/airtable-instances` | Connected Airtable instances, for the Airtable node. |
+| `GET` | `/api/automation/lookups/order-filter-fields` | The sales-order fields an order filter may test. The filter is evaluated against this allow-list, so a field not in it never matches. |
+| `GET` | `/api/automation/workflow-credentials/lookup` | Stored credentials as {uuid, name}, filtered by type — the values for a `credential_select` setting's `credentialUuid`. |
+| `POST` | `/api/automation/workflow-credentials` | Store a credential (secrets encrypted at rest, redacted on read). Only with values the user supplied for this purpose; `google_oauth` cannot be created here — it needs the browser consent flow in the Workflow Builder. |
+| `GET` | `/api/automation/workflow-templates` | Ready-made workflows with their `parameterPrompts` (what must be filled in) and `requiredCredentials`. Check here before assembling a graph by hand. |
+| `GET` | `/api/automation/workflow-templates/{slug}` | One template with its prompts and required credentials. |
+| `POST` | `/api/automation/workflow-templates/{slug}/instantiate` | Create a Draft workflow from a template, writing each answered prompt into the graph. A prompt you leave out keeps the template's placeholder, so answer every required one. |
 | `GET` | `/api/automation/workflows` | Paginated list of workflows with run stats. Use it to avoid creating a duplicate, and to find an existing workflow to update. |
 | `POST` | `/api/automation/workflows/validate` | Check a graph without saving. Verifies exactly one trigger node, that every edge references existing nodes, and that every non-trigger node has an incoming connection. Call this before create and before update — it is free and catches the structural mistakes. |
 | `POST` | `/api/automation/workflows` | Create a workflow in Draft status from a node/edge graph. The trigger type is derived from the trigger node — you do not set it. Drafts never fire. |

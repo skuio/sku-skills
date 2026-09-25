@@ -159,14 +159,14 @@
       "name": "create-workflow",
       "domain": "platform",
       "title": "Create a Workflow (automation)",
-      "version": "1.1.0",
-      "description": "Build, validate, publish and test-run a SKU.io automation workflow from the API — the same node/edge graph the visual Workflow Builder draws. Use this whenever a user wants something to happen automatically in response to something else: email or Slack me when an order lands on a given sales channel, tag or note orders that match a rule, post a webhook to another system, import a supplier feed on a schedule, or route orders to a warehouse. Discovers the node catalog live, assembles the graph, validates it before saving, and publishes only after a dry run the user has seen — including picking the right moment to fire on, which for an order alert is the channel import rather than the sales-order creation.",
+      "version": "1.2.0",
+      "description": "Build, validate, publish, test-run and maintain SKU.io automation workflows from the API — the same node/edge graph the visual Workflow Builder draws. Use this whenever a user wants something to happen automatically in response to something else: email or Slack me when an order lands on a given sales channel, tag or note orders that match a rule, post a webhook to another system, import a supplier feed from FTP on a schedule, or route orders to a warehouse — and when an existing workflow needs changing, pausing, or diagnosing because it did not fire. Starts from a template when one fits, discovers the node catalog and credentials live, and publishes only after a dry run the user has seen — including picking the right moment to fire on, which for an order alert is the channel import rather than the sales-order creation.",
       "tagline": "Build, validate, publish and test an automation workflow from a node/edge graph",
       "scopes": [
         "settings:read",
         "settings:write"
       ],
-      "operations": 16,
+      "operations": 26,
       "tags": [
         "automation",
         "workflow",
