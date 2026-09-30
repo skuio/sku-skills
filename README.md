@@ -48,6 +48,7 @@ One source of truth, three idiomatic outputs. Fix the knowledge in one place; ev
 <!-- BEGIN:skills-table -->
 | Domain | Skill | What it does |
 | --- | --- | --- |
+| `integrations` | **manage-amazon-recovery** | Triage, file and follow up on Amazon reimbursement claims |
 | `inventory` | **adjust-inventory** | Increase / decrease / set on-hand stock at a warehouse |
 | `inventory` | **set-initial-inventory** | Load opening stock per warehouse as an initial count on the inventory start date |
 | `orders` | **create-sales-order** | Create a sales order with line items |
