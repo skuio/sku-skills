@@ -193,6 +193,13 @@ instructions**. Record it with `POST /{id}/record-response`:
 Put Amazon's reply verbatim in `amazon_response`. No reply yet → leave it; add a note only if
 something happened.
 
+- **Underpaid reimbursements (and any request to re-value a reimbursement)** go through Amazon's
+  **Reimbursement Revaluation Tool**, not a case reply or the support chat. Amazon refuses free-text
+  re-evaluation requests ("Your request cannot be processed without using the tool"), and it values
+  the unit from the **sourcing cost the seller has on file** (Manage Your Sourcing Cost). So first
+  check that cost: if it is missing or lower than what the case says is owed, the seller must
+  update it with proof of value (an invoice) before the revaluation can succeed — report that
+  rather than filing. Only then submit the revaluation with the invoice.
 - **Partial payment** (`partially_reimbursed`) → `POST /{id}/case-text` with `{"purpose": "reply"}`
   for text asking for the rest, send it on the same Amazon case (approval gate), then move it back
   with `POST /{id}/transition` `{"status": "submitted"}`.
