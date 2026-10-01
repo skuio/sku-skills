@@ -56,7 +56,8 @@ cases ready for a person to file.
 | Stage | Status | Meaning | Your job |
 | --- | --- | --- | --- |
 | `found` | `potential` | SKU.io thinks Amazon owes it, nobody has checked it yet | Check it — confirm, dismiss or put on hold |
-| `on_hold` | `under_review` | Checked, but can't be filed yet — the reason is on the case (`dismissed_reason`) | Re-check; release it when the blocker clears |
+| `on_hold` | `under_review` | Checked, but can't be filed yet — the reason is on the case (`hold_reason`) | Re-check; release it when the blocker clears |
+| `on_hold` | `ready_to_submit` | Confirmed, but Amazon's claim window hasn't opened (`hold_reason` gives the date) | Nothing — it moves to `ready` by itself that day |
 | `ready` | `ready_to_submit` | Confirmed and ready | File it with Amazon |
 | `waiting` | `submitted` | Filed; Amazon has it | Follow up; record Amazon's answer |
 | `paid` / `auto_paid` | `reimbursed`, `partially_reimbursed`, `auto_reimbursed` | Money arrived (matched from Amazon's reimbursement report) | Reply for the rest on a partial |
