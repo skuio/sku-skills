@@ -51,7 +51,8 @@ cases ready for a person to file.
 
 | Stage | Status | Meaning | Your job |
 | --- | --- | --- | --- |
-| `found` | `potential`, `under_review` | SKU.io thinks Amazon owes it, not yet confirmed | Check it — confirm or dismiss |
+| `found` | `potential` | SKU.io thinks Amazon owes it, nobody has checked it yet | Check it — confirm, dismiss or put on hold |
+| `on_hold` | `under_review` | Checked, but can't be filed yet — the reason is on the case (`dismissed_reason`) | Re-check; release it when the blocker clears |
 | `ready` | `ready_to_submit` | Confirmed and ready | File it with Amazon |
 | `waiting` | `submitted` | Filed; Amazon has it | Follow up; record Amazon's answer |
 | `paid` / `auto_paid` | `reimbursed`, `partially_reimbursed`, `auto_reimbursed` | Money arrived (matched from Amazon's reimbursement report) | Reply for the rest on a partial |
@@ -62,7 +63,8 @@ A case's `allowed_transitions` lists the statuses it can move to; nothing else i
 ## Step 1 — Get the picture
 
 `GET /api/amazon/unified/reimbursement-cases/summary` for money and counts per stage, then
-`GET /api/amazon/unified/reimbursement-cases/session` for the ready queue, most urgent first. Work
+`GET /api/amazon/unified/reimbursement-cases/session` for the ready queue, most urgent first.
+Triage covers `filter[ui_group]=found` (new) and `on_hold` (re-check whether the hold still applies). Work
 the queue in that order: `days_left` is the claim window, and a case past it can no longer be filed.
 
 ```bash
@@ -83,7 +85,12 @@ seller.
   (or `"Units were found or returned"`, `"Already filed outside SKU.io"`, or your own words).
 - **Evidence holds and Amazon hasn't handled it** → confirm:
   `{"status": "ready_to_submit"}`.
-- **Unsure** → leave it and say why in your report. Don't confirm a case you couldn't check.
+- **Not claimable yet, or unsure** → put it on hold with the reason:
+  `{"status": "under_review", "reason": "Warehouse still receiving removal order 26091515TY"}`
+  (max 255 characters; the reason is required and shows on the case). Never leave a checked case
+  in `found` — that reads as "nobody has looked". Don't confirm a case you couldn't check.
+- **On hold, blocker cleared** (the warehouse closed the order, the invoice arrived, Amazon's
+  re-measure came back) → confirm it (`ready_to_submit`) or dismiss it; the hold reason clears.
 
 A case whose `informational` is `true` (category `reimbursed_then_returned`) is a heads-up, not a
 claim: there is nothing to file, so it can only be dismissed once read. Dismissed and expired cases
