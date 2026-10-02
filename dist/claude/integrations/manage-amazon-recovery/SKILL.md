@@ -153,6 +153,25 @@ Amazon takes two kinds of claim as one request covering several cases:
   returns every open charge month of the product. File **one** request for the product: use its
   `facts` and `note` (covering every month and the total), not a single month's text.
 
+  **A fee overcharge is a re-measurement request, and Amazon allows 20 per account per month** (at most
+  two per product in 60 days, and only while units are in its fulfillment centers). Before filing any:
+  1. `GET /remeasure-plan` (optionally `?integration_instance_ids=`). File **only** products with
+     `recommended: true`, in `rank` order. Everything else stays on hold: put the product's
+     `eligibility_label` in the hold reason, or for one that is merely `above_floor: false`, "Not worth a
+     re-measurement: $X/yr, below the $Y/yr floor".
+  2. Read the remaining count in the marketplace's own re-measurement tool and record it:
+     `POST /remeasure-quota` `{integration_instance_id, remaining}`. The plan's `remaining` then trusts
+     the lower of the two, so the order holds even if requests were made outside SKU.io.
+  3. Filing the product's cases (3g) records the request. When Amazon answers, `record-response` sets
+     the outcome (`denied` = measured the same, `paid` = corrected and refunded). If Amazon refuses it
+     without measuring (monthly limit, measured twice in 60 days, no units), record that with
+     `POST /remeasurements` `{integration_instance_id, records: [{fnsku, amazon_case_id, requested_at,
+     outcome: "refused_monthly_limit" | "refused_cooldown" | "refused_no_inventory"}]}` so the plan
+     doesn't count it as used.
+  A `gap_kind: "real"` product (Amazon's size far off the record) is worth asking the warehouse to
+  measure a finished unit before filing; a `packaging` gap is usually Amazon correctly billing the boxed
+  unit.
+
 Either way the one Amazon case ID is recorded on **every** case in the group (3g).
 
 ### 3e. Otherwise, follow the guidance
