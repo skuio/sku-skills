@@ -1,0 +1,238 @@
+{
+  "functionDeclarations": [
+    {
+      "name": "find_supplier",
+      "description": "Resolve the supplier named on the memo to its id. (A bare GET /api/suppliers 405s.) (GET /api/v2/suppliers)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "filter[search]": {
+            "type": "STRING",
+            "description": "Supplier name or email from the memo."
+          }
+        }
+      }
+    },
+    {
+      "name": "list_vendor_credits",
+      "description": "List vendor credits. Used twice — the duplicate check (by the supplier's credit memo number) and to read how earlier credits from the same supplier were recorded, so the new one matches them. (GET /api/vendor-credits)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "filter[vendor_credit_number]": {
+            "type": "STRING",
+            "description": "The supplier's credit memo number, exactly as printed. The duplicate check."
+          },
+          "filter[search]": {
+            "type": "STRING",
+            "description": "Free-text over credit number, supplier name and references."
+          },
+          "filter[supplier_id]": {
+            "type": "STRING",
+            "description": "Narrow to one supplier's credits (precedent lookup)."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_vendor_credit",
+      "description": "Full credit with lines (each line's nominal_code_id / nominal_code, cost_impact, description), allocations, totals, remaining_amount and credit_status. (GET /api/vendor-credits/{vendor_credit})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "vendor_credit": {
+            "type": "INTEGER",
+            "description": "Vendor credit id."
+          }
+        },
+        "required": [
+          "vendor_credit"
+        ]
+      }
+    },
+    {
+      "name": "list_credit_reasons",
+      "description": "The credit reasons (goods_returned, goods_damaged, price_correction, volume_rebate, short_shipped, overpayment, marketing_allowance, services_provided, other), each with its consequence and default cost impact. (GET /api/vendor-credits/credit-reasons)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "find_nominal_code",
+      "description": "Resolve the expense / income account the credit posts against (e.g. \"Advertising\") to its id. Prefer the account earlier credits from the same supplier used. (GET /api/v2/nominal-codes)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "filter[search]": {
+            "type": "STRING",
+            "description": "Account name or code."
+          }
+        }
+      }
+    },
+    {
+      "name": "create_vendor_credit",
+      "description": "Create the credit. Send credit_status \"draft\" — omitting it creates the credit already OPEN, which posts its accounting immediately and skips the impact preview. (POST /api/vendor-credits)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "supplier_id": {
+            "type": "INTEGER",
+            "description": "Supplier id (from find-supplier)."
+          },
+          "credit_status": {
+            "type": "STRING",
+            "description": "draft | open | closed | void. Use \"draft\"; the model default is open."
+          },
+          "vendor_credit_number": {
+            "type": "STRING",
+            "description": "The supplier's credit memo number, exactly as printed. Unique across the account — a 422 \"already used\" means the memo is already recorded."
+          },
+          "credit_date": {
+            "type": "STRING",
+            "description": "ISO date. See the instructions on memo date vs. service-period date."
+          },
+          "credit_reason": {
+            "type": "STRING",
+            "description": "A value from list-credit-reasons; it sets each line's default cost_impact."
+          },
+          "supplier_reference": {
+            "type": "STRING",
+            "description": "Any other reference printed on the memo (the bill or invoice it answers)."
+          },
+          "currency_code": {
+            "type": "STRING",
+            "description": "Omit for the account currency. Must match any bill it will be allocated to."
+          },
+          "vendor_credit_note": {
+            "type": "STRING",
+            "description": "Free-text note — what the credit is for and what document it answers."
+          },
+          "lines": {
+            "type": "ARRAY",
+            "description": "Each: { description, quantity (min 1), amount (unit amount, positive), nominal_code_id, is_product: false, cost_impact: \"financial_only\" }. A line needs description, purchase_order_line_id or financial_line_id.",
+            "items": {
+              "type": "STRING"
+            }
+          }
+        },
+        "required": [
+          "supplier_id"
+        ]
+      }
+    },
+    {
+      "name": "preview_cost_impact",
+      "description": "Read-only preview of what authorizing will do: accounts_payable_change, stock and cost basis changes, and touches_closed_period. A financial-only credit should show only an A/P change. (GET /api/vendor-credits/{vendor_credit}/cost-impact)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "vendor_credit": {
+            "type": "INTEGER",
+            "description": "Vendor credit id."
+          }
+        },
+        "required": [
+          "vendor_credit"
+        ]
+      }
+    },
+    {
+      "name": "authorize_vendor_credit",
+      "description": "Move the draft to open and post its accounting. Reversible with /unauthorize while unallocated. (POST /api/vendor-credits/{vendor_credit}/authorize)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "vendor_credit": {
+            "type": "INTEGER",
+            "description": "Vendor credit id."
+          }
+        },
+        "required": [
+          "vendor_credit"
+        ]
+      }
+    },
+    {
+      "name": "list_open_bills",
+      "description": "The supplier's bills that still have a balance to apply the credit to. Each row carries outstanding_balance, applied_vendor_credits_total, status and purchase_invoice_date. (GET /api/purchase-invoices)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "filter[supplier_id]": {
+            "type": "STRING",
+            "description": "Supplier id. Always send it — without it the list spans every supplier."
+          },
+          "filter[status]": {
+            "type": "STRING",
+            "description": "Comma list — use unpaid,partially_paid."
+          },
+          "sort": {
+            "type": "STRING",
+            "description": "purchase_invoice_date for oldest first."
+          },
+          "limit": {
+            "type": "INTEGER",
+            "description": "Page size."
+          }
+        }
+      }
+    },
+    {
+      "name": "allocate_vendor_credit",
+      "description": "Apply some or all of an open credit to one bill. Same supplier and currency only; amount may not exceed the credit's remaining balance or the bill's outstanding balance. A fully allocated credit closes itself. (POST /api/vendor-credits/{vendor_credit}/allocate)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "vendor_credit": {
+            "type": "INTEGER",
+            "description": "Vendor credit id."
+          },
+          "purchase_invoice_id": {
+            "type": "INTEGER",
+            "description": "The bill's id (from list-open-bills) — not its supplier invoice number."
+          },
+          "amount": {
+            "type": "NUMBER",
+            "description": "Amount to apply (min 0.01)."
+          },
+          "allocated_at": {
+            "type": "STRING",
+            "description": "Optional ISO date; defaults to now."
+          },
+          "notes": {
+            "type": "STRING",
+            "description": "Why this bill (max 1000 chars)."
+          }
+        },
+        "required": [
+          "vendor_credit",
+          "purchase_invoice_id",
+          "amount"
+        ]
+      }
+    },
+    {
+      "name": "attach_document",
+      "description": "Upload the credit memo as multipart/form-data (field \"file\"; PDF, PNG, JPG, WEBP up to 20 MB). (POST /api/vendor-credits/{vendorCredit}/attachments)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "vendorCredit": {
+            "type": "INTEGER",
+            "description": "Vendor credit id."
+          },
+          "file": {
+            "type": "STRING",
+            "description": "The memo file (multipart form field)."
+          }
+        },
+        "required": [
+          "vendorCredit",
+          "file"
+        ]
+      }
+    }
+  ]
+}
