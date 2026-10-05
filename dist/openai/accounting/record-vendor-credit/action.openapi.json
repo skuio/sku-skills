@@ -1,0 +1,426 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SKU.io — Record a Vendor Credit",
+    "description": "Record a supplier's credit memo (vendor credit, credit note) in SKU.io from the memo document — a PDF or email from the supplier — then apply it to the supplier bill(s) it should reduce. Built for non-inventory credits: co-op or advertising credits, marketing allowances, rebates paid as account credit, overbilling and other \"only what we owe changes\" credits. Checks for a duplicate by credit number, follows how the account recorded earlier credits from the same supplier (date, expense account, wording), creates the credit as a draft, previews its accounting impact, authorizes it, allocates it to an open purchase invoice, attaches the source document, and prints direct links. Returned or damaged goods and price corrections against a PO line are flagged and routed rather than forced into a financial-only credit.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{tenant}.sku.io",
+      "variables": {
+        "tenant": {
+          "default": "app",
+          "description": "Your SKU.io account subdomain."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v2/suppliers": {
+      "get": {
+        "operationId": "find_supplier",
+        "summary": "Resolve the supplier named on the memo to its id. (A bare GET /api/suppliers 405s.)",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter[search]",
+            "in": "query",
+            "required": false,
+            "description": "Supplier name or email from the memo.",
+            "schema": {
+              "type": "string",
+              "description": "Supplier name or email from the memo.",
+              "example": "Acme Batteries"
+            }
+          }
+        ]
+      }
+    },
+    "/api/vendor-credits": {
+      "get": {
+        "operationId": "list_vendor_credits",
+        "summary": "List vendor credits. Used twice — the duplicate check (by the supplier's credit memo number) and to read how earlier credits from the same supplier were recorded, so the new one matches them.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter[vendor_credit_number]",
+            "in": "query",
+            "required": false,
+            "description": "The supplier's credit memo number, exactly as printed. The duplicate check.",
+            "schema": {
+              "type": "string",
+              "description": "The supplier's credit memo number, exactly as printed. The duplicate check.",
+              "example": "0002411"
+            }
+          },
+          {
+            "name": "filter[search]",
+            "in": "query",
+            "required": false,
+            "description": "Free-text over credit number, supplier name and references.",
+            "schema": {
+              "type": "string",
+              "description": "Free-text over credit number, supplier name and references."
+            }
+          },
+          {
+            "name": "filter[supplier_id]",
+            "in": "query",
+            "required": false,
+            "description": "Narrow to one supplier's credits (precedent lookup).",
+            "schema": {
+              "type": "string",
+              "description": "Narrow to one supplier's credits (precedent lookup)."
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "create_vendor_credit",
+        "summary": "Create the credit. Send credit_status \"draft\" — omitting it creates the credit already OPEN, which posts its accounting immediately and skips the impact preview.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "supplier_id": {
+                    "type": "integer",
+                    "description": "Supplier id (from find-supplier)."
+                  },
+                  "credit_status": {
+                    "type": "string",
+                    "description": "draft | open | closed | void. Use \"draft\"; the model default is open.",
+                    "example": "draft"
+                  },
+                  "vendor_credit_number": {
+                    "type": "string",
+                    "description": "The supplier's credit memo number, exactly as printed. Unique across the account — a 422 \"already used\" means the memo is already recorded.",
+                    "example": "0002411"
+                  },
+                  "credit_date": {
+                    "type": "string",
+                    "description": "ISO date. See the instructions on memo date vs. service-period date.",
+                    "example": "2026-07-31"
+                  },
+                  "credit_reason": {
+                    "type": "string",
+                    "description": "A value from list-credit-reasons; it sets each line's default cost_impact.",
+                    "example": "marketing_allowance"
+                  },
+                  "supplier_reference": {
+                    "type": "string",
+                    "description": "Any other reference printed on the memo (the bill or invoice it answers)."
+                  },
+                  "currency_code": {
+                    "type": "string",
+                    "description": "Omit for the account currency. Must match any bill it will be allocated to."
+                  },
+                  "vendor_credit_note": {
+                    "type": "string",
+                    "description": "Free-text note — what the credit is for and what document it answers."
+                  },
+                  "lines": {
+                    "type": "array",
+                    "description": "Each: { description, quantity (min 1), amount (unit amount, positive), nominal_code_id, is_product: false, cost_impact: \"financial_only\" }. A line needs description, purchase_order_line_id or financial_line_id.",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "supplier_id"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vendor-credits/{vendor_credit}": {
+      "get": {
+        "operationId": "get_vendor_credit",
+        "summary": "Full credit with lines (each line's nominal_code_id / nominal_code, cost_impact, description), allocations, totals, remaining_amount and credit_status.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "vendor_credit",
+            "in": "path",
+            "required": true,
+            "description": "Vendor credit id.",
+            "schema": {
+              "type": "integer",
+              "description": "Vendor credit id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/vendor-credits/credit-reasons": {
+      "get": {
+        "operationId": "list_credit_reasons",
+        "summary": "The credit reasons (goods_returned, goods_damaged, price_correction, volume_rebate, short_shipped, overpayment, marketing_allowance, services_provided, other), each with its consequence and default cost impact.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v2/nominal-codes": {
+      "get": {
+        "operationId": "find_nominal_code",
+        "summary": "Resolve the expense / income account the credit posts against (e.g. \"Advertising\") to its id. Prefer the account earlier credits from the same supplier used.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter[search]",
+            "in": "query",
+            "required": false,
+            "description": "Account name or code.",
+            "schema": {
+              "type": "string",
+              "description": "Account name or code.",
+              "example": "Advertising"
+            }
+          }
+        ]
+      }
+    },
+    "/api/vendor-credits/{vendor_credit}/cost-impact": {
+      "get": {
+        "operationId": "preview_cost_impact",
+        "summary": "Read-only preview of what authorizing will do: accounts_payable_change, stock and cost basis changes, and touches_closed_period. A financial-only credit should show only an A/P change.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "vendor_credit",
+            "in": "path",
+            "required": true,
+            "description": "Vendor credit id.",
+            "schema": {
+              "type": "integer",
+              "description": "Vendor credit id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/vendor-credits/{vendor_credit}/authorize": {
+      "post": {
+        "operationId": "authorize_vendor_credit",
+        "summary": "Move the draft to open and post its accounting. Reversible with /unauthorize while unallocated.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "vendor_credit",
+            "in": "path",
+            "required": true,
+            "description": "Vendor credit id.",
+            "schema": {
+              "type": "integer",
+              "description": "Vendor credit id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/purchase-invoices": {
+      "get": {
+        "operationId": "list_open_bills",
+        "summary": "The supplier's bills that still have a balance to apply the credit to. Each row carries outstanding_balance, applied_vendor_credits_total, status and purchase_invoice_date.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter[supplier_id]",
+            "in": "query",
+            "required": false,
+            "description": "Supplier id. Always send it — without it the list spans every supplier.",
+            "schema": {
+              "type": "string",
+              "description": "Supplier id. Always send it — without it the list spans every supplier."
+            }
+          },
+          {
+            "name": "filter[status]",
+            "in": "query",
+            "required": false,
+            "description": "Comma list — use unpaid,partially_paid.",
+            "schema": {
+              "type": "string",
+              "description": "Comma list — use unpaid,partially_paid.",
+              "example": "unpaid,partially_paid"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "purchase_invoice_date for oldest first.",
+            "schema": {
+              "type": "string",
+              "description": "purchase_invoice_date for oldest first.",
+              "example": "purchase_invoice_date"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Page size.",
+            "schema": {
+              "type": "integer",
+              "description": "Page size."
+            }
+          }
+        ]
+      }
+    },
+    "/api/vendor-credits/{vendor_credit}/allocate": {
+      "post": {
+        "operationId": "allocate_vendor_credit",
+        "summary": "Apply some or all of an open credit to one bill. Same supplier and currency only; amount may not exceed the credit's remaining balance or the bill's outstanding balance. A fully allocated credit closes itself.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "vendor_credit",
+            "in": "path",
+            "required": true,
+            "description": "Vendor credit id.",
+            "schema": {
+              "type": "integer",
+              "description": "Vendor credit id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "purchase_invoice_id": {
+                    "type": "integer",
+                    "description": "The bill's id (from list-open-bills) — not its supplier invoice number."
+                  },
+                  "amount": {
+                    "type": "number",
+                    "description": "Amount to apply (min 0.01)."
+                  },
+                  "allocated_at": {
+                    "type": "string",
+                    "description": "Optional ISO date; defaults to now."
+                  },
+                  "notes": {
+                    "type": "string",
+                    "description": "Why this bill (max 1000 chars)."
+                  }
+                },
+                "required": [
+                  "purchase_invoice_id",
+                  "amount"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vendor-credits/{vendorCredit}/attachments": {
+      "post": {
+        "operationId": "attach_document",
+        "summary": "Upload the credit memo as multipart/form-data (field \"file\"; PDF, PNG, JPG, WEBP up to 20 MB).",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "vendorCredit",
+            "in": "path",
+            "required": true,
+            "description": "Vendor credit id.",
+            "schema": {
+              "type": "integer",
+              "description": "Vendor credit id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "The memo file (multipart form field)."
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "SKU.io Personal Access Token."
+      }
+    }
+  }
+}

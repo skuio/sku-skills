@@ -1,0 +1,18 @@
+{
+  "supplier_id": 9,
+  "credit_status": "draft",
+  "vendor_credit_number": "0002411",
+  "credit_date": "2026-07-31",
+  "credit_reason": "marketing_allowance",
+  "vendor_credit_note": "Supplier credit memo 0002411 (issued 2026-10-05) for July 2026 co-op advertising, answering our invoice TM-2026-07.",
+  "lines": [
+    {
+      "description": "Advertising on Amazon - July 2026",
+      "quantity": 1,
+      "amount": 439.36,
+      "nominal_code_id": 28,
+      "is_product": false,
+      "cost_impact": "financial_only"
+    }
+  ]
+}
