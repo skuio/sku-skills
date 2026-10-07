@@ -1,0 +1,123 @@
+{
+  "functionDeclarations": [
+    {
+      "name": "list_tiktok_integration_instances",
+      "description": "The tenant's connected TikTok Shop integration instances. Resolve the instance to work on here — its `id` is the `tikTokShopIntegrationInstance` path segment every other operation takes. Confirm the name/shop with the user when more than one is connected. (GET /api/tiktok-shop/integration-instances)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_listing_quality_summary",
+      "description": "Tier counts for the instance — total_products, diagnosed, undiagnosed, and poor / fair / good — the starting picture that sizes the run and sets the POOR-first order. (GET /api/tiktok-shop/integration-instances/{tikTokShopIntegrationInstance}/listing-quality/summary)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "tikTokShopIntegrationInstance": {
+            "type": "INTEGER",
+            "description": "The SKU.io TikTok Shop integration instance id (from list-tiktok-integration-instances)."
+          }
+        },
+        "required": [
+          "tikTokShopIntegrationInstance"
+        ]
+      }
+    },
+    {
+      "name": "list_listing_quality",
+      "description": "Paginated TikTok products with their latest stored diagnosis, worst-first by default. Each row carries id (the TikTok-product row id the diagnose-one path takes), tiktok_product_id, title, main_image_url, current_tier, remaining_recommendations, total_issues, field_summary, the full diagnoses[] (field, diagnosis_results[].{code,how_to_solve,quality_tier}, seo_words), diagnosed_at, is_diagnosed and mapped_product. This is the work queue. (GET /api/tiktok-shop/integration-instances/{tikTokShopIntegrationInstance}/listing-quality)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "tikTokShopIntegrationInstance": {
+            "type": "INTEGER",
+            "description": "The SKU.io TikTok Shop integration instance id."
+          },
+          "filter[tier]": {
+            "type": "STRING",
+            "description": "Tier(s), comma-separated: POOR, FAIR, GOOD. e.g. \"POOR\" or \"POOR,FAIR\"."
+          },
+          "filter[undiagnosed]": {
+            "type": "BOOLEAN",
+            "description": "true = only never-diagnosed listings; false = only diagnosed ones. Omit for all."
+          },
+          "filter[search]": {
+            "type": "STRING",
+            "description": "Free-text over the TikTok title and tiktok_product_id."
+          },
+          "sort": {
+            "type": "STRING",
+            "description": "Sort field, prefix - for descending. tier (worst-first, the default), remaining_recommendations, diagnosed_at, title, id."
+          },
+          "per_page": {
+            "type": "INTEGER",
+            "description": "Page size (default 10)."
+          },
+          "page": {
+            "type": "INTEGER",
+            "description": "Page number."
+          }
+        },
+        "required": [
+          "tikTokShopIntegrationInstance"
+        ]
+      }
+    },
+    {
+      "name": "diagnose_listings",
+      "description": "(Re)diagnose many listings via a background tracked job — an initial or refresh sweep. Pass `ids` (selected TikTok-product row ids) OR `diagnose_all: true`. Returns data.tracked_job_log_id; progress shows in the job tray. Prefer diagnose-one-listing for the tight fix→verify loop, where you need the refreshed diagnosis back synchronously. (POST /api/tiktok-shop/integration-instances/{tikTokShopIntegrationInstance}/listing-quality/diagnose)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "tikTokShopIntegrationInstance": {
+            "type": "INTEGER",
+            "description": "The SKU.io TikTok Shop integration instance id."
+          },
+          "ids": {
+            "type": "ARRAY",
+            "description": "TikTok-product row ids to diagnose (the `id` field of listing-quality rows). Required unless diagnose_all is true.",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "diagnose_all": {
+            "type": "BOOLEAN",
+            "description": "Diagnose every non-archived listing on the instance instead of a selected set."
+          },
+          "fields": {
+            "type": "ARRAY",
+            "description": "Which optimization suggestions TikTok should return, any of TITLE, DESCRIPTION, IMAGE, ALL, NONE. Pass [\"ALL\"] to get seo_words for every field; defaults to [\"NONE\"] (issue list only, no suggestions).",
+            "items": {
+              "type": "STRING"
+            }
+          }
+        },
+        "required": [
+          "tikTokShopIntegrationInstance"
+        ]
+      }
+    },
+    {
+      "name": "diagnose_one_listing",
+      "description": "(Re)diagnose a single listing synchronously and return its refreshed diagnosis resource (current_tier, remaining_recommendations, diagnoses[]). This is the verification call: run it before fixing a stale/missing diagnosis, and again after the fix is applied to confirm the tier moved. 403 if the product isn't on this instance; 422 if it has no TikTok category to diagnose against. (POST /api/tiktok-shop/integration-instances/{tikTokShopIntegrationInstance}/products/{tikTokShopProduct}/diagnose)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "tikTokShopIntegrationInstance": {
+            "type": "INTEGER",
+            "description": "The SKU.io TikTok Shop integration instance id."
+          },
+          "tikTokShopProduct": {
+            "type": "INTEGER",
+            "description": "The SKU.io TikTok-product row id (the `id` field of a listing-quality row), NOT the tiktok_product_id."
+          }
+        },
+        "required": [
+          "tikTokShopIntegrationInstance",
+          "tikTokShopProduct"
+        ]
+      }
+    }
+  ]
+}

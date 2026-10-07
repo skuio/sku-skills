@@ -1,0 +1,62 @@
+{
+  "_comment": "Dry-run output for one listing (derived from listing-quality-row.json). This is what the skill emits for human approval BEFORE anything is written to TikTok. `title`/`description` carry current vs proposed; `issues_addressed` ties each change to the TikTok diagnosis result that drove it; `image_checklist` is merchant action (never auto-applied); `expected` is the tier after the title+description writes land. Nothing here is written until a reviewer approves AND the Edit Product apply path exists.",
+  "mode": "dry-run",
+  "listing": {
+    "id": 8821,
+    "tiktok_product_id": "1729592969712203232",
+    "sku": "DRS-COT-MIDI-BLU-M",
+    "current_tier": "POOR",
+    "remaining_recommendations": 3,
+    "main_image_url": "https://p16-oec-sg.tiktokcdn.com/example/main.jpeg"
+  },
+  "title": {
+    "current": "Cotton Dress",
+    "current_length": 12,
+    "proposed": "Acme Cotton Midi Dress for Women — Breathable A-Line Summer Dress, Machine Washable",
+    "proposed_length": 83,
+    "cap": 255,
+    "seo_words_used": ["dress", "cotton", "midi", "women", "summer", "a-line"],
+    "issues_addressed": [
+      { "code": "TITLE_LESS_THAN_40_CHARACTERS", "how_to_solve": "Names must be at least 40 characters long." }
+    ]
+  },
+  "description": {
+    "current": "<p>Cotton dress.</p>",
+    "current_length": 20,
+    "proposed_html": "<p>Stay cool and effortlessly put-together in the Acme Cotton Midi Dress. Cut from breathable cotton in a flattering A-line silhouette, it carries you from the office to the weekend.</p><ul><li><strong>Breathable cotton</strong> — soft, lightweight fabric for all-day comfort in warm weather.</li><li><strong>A-line midi length</strong> — a flattering cut that suits every body shape.</li><li><strong>Machine washable</strong> — easy care; wash cold and hang to dry.</li><li><strong>Everyday to occasion</strong> — dress it up or down with a jacket or sandals.</li></ul>",
+    "proposed_length": 523,
+    "seo_words_used": ["breathable", "a-line", "machine washable"],
+    "issues_addressed": [
+      { "code": "DESCRIPTION_TOO_SHORT", "how_to_solve": "Add a detailed description of at least 300 characters covering materials, fit and care." }
+    ],
+    "fact_sources": [
+      "current TikTok title/description",
+      "mapped SKU.io product attributes (product 51234): material=Cotton, fit=A-line, care=Machine washable"
+    ]
+  },
+  "image_checklist": [
+    {
+      "code": "IMAGE_COUNT_LOW_AND_FIRST_NOT_WHITE",
+      "how_to_solve": "Add more images and make the first image a product shot on a plain white background.",
+      "merchant_action": "Add images to reach TikTok's minimum (aim for 5+). Make the FIRST image a clean product shot on a plain white background. This cannot be auto-generated — merchant to supply."
+    }
+  ],
+  "expected": {
+    "after_title_description_writes": {
+      "tier": "FAIR",
+      "note": "Title and description issues resolved. The IMAGE issue remains until the merchant acts on the checklist; full GOOD depends on it."
+    }
+  },
+  "apply": {
+    "ready": false,
+    "blocked_on": "Edit Product API not yet implemented in Modules/TikTokShop (see INSTRUCTIONS.md > API availability).",
+    "would_send": {
+      "endpoint": "POST /api/tiktok-shop/integration-instances/42/products/8821/optimize (proposed, not yet built)",
+      "payload": {
+        "product_id": "1729592969712203232",
+        "title": "Acme Cotton Midi Dress for Women — Breathable A-Line Summer Dress, Machine Washable",
+        "description": "<p>Stay cool and effortlessly put-together in the Acme Cotton Midi Dress...</p>"
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 {
   "generatedFrom": "skills/",
-  "count": 19,
+  "count": 20,
   "skills": [
     {
       "name": "record-vendor-credit",
@@ -69,6 +69,42 @@
         "claude": "dist/claude/integrations/manage-amazon-recovery/SKILL.md",
         "openai": "dist/openai/integrations/manage-amazon-recovery/",
         "gemini": "dist/gemini/integrations/manage-amazon-recovery/"
+      }
+    },
+    {
+      "name": "optimize-tiktok-listing-quality",
+      "domain": "integrations",
+      "title": "Optimize TikTok Shop Listing Quality",
+      "version": "1.0.0",
+      "description": "Lift a TikTok Shop integration's listings out of POOR/FAIR Listing Quality toward GOOD, driven by TikTok's own \"Diagnose and Optimize Product\" results. For each in-scope listing it reads the cached diagnosis (re-diagnosing first when it is stale or missing), then for every issue TikTok reports — keyed on the field (TITLE / DESCRIPTION / IMAGE), its `code`, TikTok's `how_to_solve` guidance and the suggested `seo_words` — it plans a concrete fix: a rewritten title that satisfies the rule, an expanded structured description, and an actionable image checklist (images can't be auto-generated). It runs POOR before FAIR, defaults to a dry-run that emits the proposed new title/description as a diff for human approval, and — once the apply path is wired (see the dependency note) — writes the approved copy back to TikTok and re-diagnoses to confirm the tier improved. Use it for \"fix our TikTok listing quality\", \"get these POOR listings to GOOD\", or \"why are these TikTok listings rated FAIR and what do we change\".",
+      "tagline": "Diagnose and fix POOR/FAIR TikTok Shop listings toward GOOD, reviewed before it lands",
+      "scopes": [
+        "integrations:read",
+        "integrations:write"
+      ],
+      "operations": 5,
+      "tags": [
+        "tiktok",
+        "tiktok-shop",
+        "listing-quality",
+        "diagnose",
+        "optimize",
+        "title",
+        "description",
+        "seo",
+        "content",
+        "ai"
+      ],
+      "composes": [
+        "enrich-channel-content"
+      ],
+      "pages": [
+        "/integrations/tiktok-shop"
+      ],
+      "outputs": {
+        "claude": "dist/claude/integrations/optimize-tiktok-listing-quality/SKILL.md",
+        "openai": "dist/openai/integrations/optimize-tiktok-listing-quality/",
+        "gemini": "dist/gemini/integrations/optimize-tiktok-listing-quality/"
       }
     },
     {
