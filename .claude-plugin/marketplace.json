@@ -1,0 +1,38 @@
+{
+  "name": "sku-skills",
+  "owner": {
+    "name": "SKU.io",
+    "url": "https://www.sku.io"
+  },
+  "metadata": {
+    "description": "Open-source agent skills for running inventory, orders and purchasing in SKU.io through its API."
+  },
+  "plugins": [
+    {
+      "name": "sku-skills",
+      "source": "./",
+      "description": "Agent skills for the SKU.io API: products, inventory, orders, purchasing, accounting and settings.",
+      "skills": [
+        "./dist/claude/accounting/record-vendor-credit",
+        "./dist/claude/integrations/manage-amazon-recovery",
+        "./dist/claude/inventory/adjust-inventory",
+        "./dist/claude/inventory/set-initial-inventory",
+        "./dist/claude/orders/create-sales-order",
+        "./dist/claude/platform/connect-to-sku",
+        "./dist/claude/platform/create-saved-view",
+        "./dist/claude/platform/create-workflow",
+        "./dist/claude/platform/sync-sops",
+        "./dist/claude/products/build-product-catalog",
+        "./dist/claude/products/enrich-channel-content",
+        "./dist/claude/products/find-matrix-opportunities",
+        "./dist/claude/products/find-product",
+        "./dist/claude/products/publish-listing",
+        "./dist/claude/products/update-catalog-pricing",
+        "./dist/claude/purchase-orders/create-purchase-order",
+        "./dist/claude/purchase-orders/record-purchase-invoice",
+        "./dist/claude/settings/edit-packing-slip-template",
+        "./dist/claude/settings/edit-pdf-template"
+      ]
+    }
+  ]
+}
