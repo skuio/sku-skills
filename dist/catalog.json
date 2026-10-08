@@ -75,14 +75,14 @@
       "name": "optimize-tiktok-listing-quality",
       "domain": "integrations",
       "title": "Optimize TikTok Shop Listing Quality",
-      "version": "1.0.0",
-      "description": "Lift a TikTok Shop integration's listings out of POOR/FAIR Listing Quality toward GOOD, driven by TikTok's own \"Diagnose and Optimize Product\" results. For each in-scope listing it reads the cached diagnosis (re-diagnosing first when it is stale or missing), then for every issue TikTok reports — keyed on the field (TITLE / DESCRIPTION / IMAGE), its `code`, TikTok's `how_to_solve` guidance and the suggested `seo_words` — it plans a concrete fix: a rewritten title that satisfies the rule, an expanded structured description, and an actionable image checklist (images can't be auto-generated). It runs POOR before FAIR, defaults to a dry-run that emits the proposed new title/description as a diff for human approval, and — once the apply path is wired (see the dependency note) — writes the approved copy back to TikTok and re-diagnoses to confirm the tier improved. Use it for \"fix our TikTok listing quality\", \"get these POOR listings to GOOD\", or \"why are these TikTok listings rated FAIR and what do we change\".",
+      "version": "1.1.0",
+      "description": "Lift a TikTok Shop integration's listings out of POOR/FAIR Listing Quality toward GOOD, driven by TikTok's own \"Diagnose and Optimize Product\" results. For each in-scope listing it reads the cached diagnosis (re-diagnosing first when stale or missing), then for every issue TikTok reports — keyed on the field (TITLE / DESCRIPTION / IMAGE), its `code`, `how_to_solve` guidance and the suggested `seo_words` — plans a concrete fix: a rewritten title, an expanded description, and a sourced replacement image (images are never auto-generated). It runs POOR before FAIR, defaults to a dry-run that emits the proposed copy as a diff for approval, and — on the built apply endpoint (`POST .../products/{product}/optimize`, with AI-drafted copy from `.../optimize/draft`) — writes the approved title/description/main-image back to the live listing and re-diagnoses to confirm the tier improved. Use it for \"fix our TikTok listing quality\", \"get these POOR listings to GOOD\", or \"why are these listings rated FAIR\".",
       "tagline": "Diagnose and fix POOR/FAIR TikTok Shop listings toward GOOD, reviewed before it lands",
       "scopes": [
         "integrations:read",
         "integrations:write"
       ],
-      "operations": 5,
+      "operations": 7,
       "tags": [
         "tiktok",
         "tiktok-shop",

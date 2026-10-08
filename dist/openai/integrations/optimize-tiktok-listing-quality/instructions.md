@@ -1,6 +1,6 @@
 # Optimize TikTok Shop Listing Quality
 
-_Lift a TikTok Shop integration's listings out of POOR/FAIR Listing Quality toward GOOD, driven by TikTok's own "Diagnose and Optimize Product" results. For each in-scope listing it reads the cached diagnosis (re-diagnosing first when it is stale or missing), then for every issue TikTok reports — keyed on the field (TITLE / DESCRIPTION / IMAGE), its `code`, TikTok's `how_to_solve` guidance and the suggested `seo_words` — it plans a concrete fix: a rewritten title that satisfies the rule, an expanded structured description, and an actionable image checklist (images can't be auto-generated). It runs POOR before FAIR, defaults to a dry-run that emits the proposed new title/description as a diff for human approval, and — once the apply path is wired (see the dependency note) — writes the approved copy back to TikTok and re-diagnoses to confirm the tier improved. Use it for "fix our TikTok listing quality", "get these POOR listings to GOOD", or "why are these TikTok listings rated FAIR and what do we change"._
+_Lift a TikTok Shop integration's listings out of POOR/FAIR Listing Quality toward GOOD, driven by TikTok's own "Diagnose and Optimize Product" results. For each in-scope listing it reads the cached diagnosis (re-diagnosing first when stale or missing), then for every issue TikTok reports — keyed on the field (TITLE / DESCRIPTION / IMAGE), its `code`, `how_to_solve` guidance and the suggested `seo_words` — plans a concrete fix: a rewritten title, an expanded description, and a sourced replacement image (images are never auto-generated). It runs POOR before FAIR, defaults to a dry-run that emits the proposed copy as a diff for approval, and — on the built apply endpoint (`POST .../products/{product}/optimize`, with AI-drafted copy from `.../optimize/draft`) — writes the approved title/description/main-image back to the live listing and re-diagnoses to confirm the tier improved. Use it for "fix our TikTok listing quality", "get these POOR listings to GOOD", or "why are these listings rated FAIR"._
 
 Use this skill to raise a TikTok Shop integration's **Listing Quality** — to move listings TikTok
 rates **POOR** or **FAIR** toward **GOOD**, driven by TikTok's own *Diagnose and Optimize Product*
@@ -36,9 +36,9 @@ the user named. Writing to the wrong account is the one mistake here the API can
 | **dry-run** (default) | Diagnose → plan fixes → emit the proposed title/description as a diff + the image checklist, for human approval | No |
 | **apply** | Everything dry-run does, then write approved copy back to TikTok and re-diagnose to verify | Yes — to TikTok |
 
-Default to dry-run. Only enter apply mode when the user has approved the proposals **and** the
-apply path is wired (see **API availability** at the end — the apply write depends on a TikTok
-*Edit Product* request that does not exist in the app yet).
+Default to dry-run. Only enter apply mode when the user has approved the proposals. The apply write
+goes through the app's `POST …/products/{product}/optimize` endpoint (see **API availability** at the
+end — it is now wired).
 
 ## Who writes the copy
 
@@ -204,18 +204,22 @@ Assemble, per listing, a proposal (see [`examples/proposed-fixes.json`](./exampl
 Present this for approval. In a terminal run, a clear per-listing summary is enough; for a batch,
 render a light-mode HTML report (never dark mode) so the reviewer sees image + diffs + rationale
 side by side and approves/edits/rejects per listing. **Nothing is written in dry-run** — this is the
-whole output when the apply path isn't wired, or when the user only wants proposals.
+whole output when the user only wants proposals.
 
 ## Step 5 — apply approved fixes, then verify
 
-> **This step depends on an Edit Product capability the app does not have yet — see API
-> availability. Until it is wired, stop at Step 4 and hand over the approved proposals.**
+> **The apply write goes through the app's `POST …/products/{product}/optimize` endpoint — see API
+> availability. In dry-run you still stop at Step 4 and hand over the approved proposals.**
 
-Once approved and once the apply endpoint exists:
+Once the proposals are approved:
 
-1. **Write the approved title/description back to TikTok** through the app's Edit-Product endpoint,
-   one listing at a time, passing exactly the approved values. Apply title and description together
-   when both changed. Never write the image checklist — that's the merchant's.
+1. **Write the approved fixes back to TikTok** via
+   `POST /api/tiktok-shop/integration-instances/{instance}/products/{product}/optimize`, body
+   `{title?, description?, main_image_url?}` (at least one) — one listing at a time, passing exactly
+   the approved values. Title and description go through TikTok's partial-edit together; an optional
+   `main_image_url` (a **sourced** replacement photo) is fetched, uploaded and set as the main image,
+   preserving the existing gallery. Images are never AI-generated — only a real sourced photo is
+   applied; otherwise the image remedy stays a merchant checklist.
 2. **Re-diagnose to verify**: `POST .../products/{id}/diagnose` and compare `current_tier` and
    `remaining_recommendations` before vs after. Record the result.
 3. If the tier **did not move** (or an issue persists), do not re-write blindly — read the new
@@ -279,25 +283,25 @@ that works once prerequisite (1) is in place; **apply** additionally needs (2).
    Until it ships, run this skill from a first-party/session context, or treat it as a specification
    for the API change.
 
-2. **Writing the fix back to TikTok needs an Edit Product request that does not exist yet.** The app
-   has a *Diagnose and Optimize Product* request (`POST /product/202411/products/diagnose_optimize`)
-   but **no** *Edit Product* / *Partial Edit Product* request in `Modules/TikTokShop/Http/Integrations/`,
-   and no SKU.io endpoint that exposes one. To enable Step 5, the app must add:
-   - a Saloon request wrapping TikTok Shop's **Partial Edit Product** endpoint — the
-     `POST /product/{version}/products/{product_id}/partial_edit` family on TikTok's Product API
-     (confirm the live version against partner.tiktokshop.com; the app's diagnose request is on
-     `202411`). Partial edit updates only the fields you send, which is what a title/description-only
-     fix wants; it requires the connection's product-management (write) scope;
-   - a token-scoped SKU.io route to drive it, e.g.
-     `POST /api/tiktok-shop/integration-instances/{instance}/products/{product}/optimize` under
-     `scope.rw:integrations`, backed by a manager method.
-   - **The exact inputs this skill would hand that endpoint, per listing:** the TikTok
-     `product_id` (the row's `tiktok_product_id`), the approved **`title`**, the approved
-     **`description`** (TikTok HTML), and — if TikTok's edit requires it — the unchanged
-     `category_id` from the stored product. Images are **not** sent.
-
-   Do not simulate this write or report a tier as improved without it. In its absence the skill is
-   complete through Step 4 and hands over an approved, concrete fix set.
+2. **Writing the fix back to TikTok now goes through a built endpoint.** The app exposes
+   `POST /api/tiktok-shop/integration-instances/{instance}/products/{product}/optimize` under
+   `scope.rw:integrations`, backed by `TikTokShopListingOptimizeManager::applyFixes()`. That manager
+   calls `TikTokShopProductManager::partialEditRemoteProduct()`, which wraps TikTok Shop's **Partial
+   Edit Product** endpoint (`POST /product/202309/products/{product_id}/partial_edit` — partial edit
+   updates only the fields you send, and works even on a deactivated listing), then re-diagnoses the
+   listing so the dashboard reflects the re-audit.
+   - **The inputs this skill hands that endpoint, per listing** (any subset, at least one required):
+     the approved **`title`** (plain text ≤255), the approved **`description`** (TikTok HTML), and/or
+     a **`main_image_url`** — a public URL to a *real sourced photo* which the backend fetches,
+     uploads to TikTok (`MAIN_IMAGE`), and sets as the main image while preserving the rest of the
+     gallery. The TikTok `product_id` comes from the row's `tiktok_product_id`; the path carries the
+     instance + product.
+   - The companion `POST .../products/{product}/optimize/draft` returns **AI-drafted** copy for the
+     flagged title/description (grounded in TikTok's own diagnosis + suggested keywords), gated by
+     `AiSettings.ai_listing_quality_enabled`. The draft is a *proposal* — the merchant approves it
+     before it is sent to the apply endpoint.
+   - **Images are never AI-generated** (that would fabricate a real product's photo). A main-image
+     fix is always a sourced replacement photo, never synthesized.
 
 See [shared/errors.md](https://github.com/skuio/sku-skills/blob/main/shared/errors.md) for the `403` (scope) / `422` response shapes and
 [shared/pagination.md](https://github.com/skuio/sku-skills/blob/main/shared/pagination.md) for paging a large catalogue.
@@ -307,7 +311,7 @@ See [shared/errors.md](https://github.com/skuio/sku-skills/blob/main/shared/erro
 End with a per-listing table: `tiktok_product_id` / SKU, tier before, issues by field, what was
 proposed (title/description changed? image actions?), and — in apply mode — tier after and remaining
 issues. Group by outcome: improved, proposed-and-awaiting-approval, blocked (and why: missing scope,
-apply path not wired, image-only, thin sources). Link each listing to its dashboard row under
+image-only with no better photo available, thin sources). Link each listing to its dashboard row under
 `https://$SKU_TENANT.sku.io/v2/integrations/tiktok-shop`. Do not call the run "done" for any listing
 whose improvement a re-diagnose didn't confirm.
 
@@ -320,6 +324,8 @@ whose improvement a re-diagnose didn't confirm.
 | `GET` | `/api/tiktok-shop/integration-instances/{tikTokShopIntegrationInstance}/listing-quality` | Paginated TikTok products with their latest stored diagnosis, worst-first by default. Each row carries id (the TikTok-product row id the diagnose-one path takes), tiktok_product_id, title, main_image_url, current_tier, remaining_recommendations, total_issues, field_summary, the full diagnoses[] (field, diagnosis_results[].{code,how_to_solve,quality_tier}, seo_words), diagnosed_at, is_diagnosed and mapped_product. This is the work queue. |
 | `POST` | `/api/tiktok-shop/integration-instances/{tikTokShopIntegrationInstance}/listing-quality/diagnose` | (Re)diagnose many listings via a background tracked job — an initial or refresh sweep. Pass `ids` (selected TikTok-product row ids) OR `diagnose_all: true`. Returns data.tracked_job_log_id; progress shows in the job tray. Prefer diagnose-one-listing for the tight fix→verify loop, where you need the refreshed diagnosis back synchronously. |
 | `POST` | `/api/tiktok-shop/integration-instances/{tikTokShopIntegrationInstance}/products/{tikTokShopProduct}/diagnose` | (Re)diagnose a single listing synchronously and return its refreshed diagnosis resource (current_tier, remaining_recommendations, diagnoses[]). This is the verification call: run it before fixing a stale/missing diagnosis, and again after the fix is applied to confirm the tier moved. 403 if the product isn't on this instance; 422 if it has no TikTok category to diagnose against. |
+| `POST` | `/api/tiktok-shop/integration-instances/{tikTokShopIntegrationInstance}/products/{tikTokShopProduct}/optimize/draft` | AI-draft improved copy for whichever of TITLE/DESCRIPTION the listing was flagged on, grounded in the current copy, TikTok's `how_to_solve` guidance and the suggested `seo_words`. Returns ai_available plus title/description blocks ({current, proposed, issue}) and seo_words. proposed is null when AI is unavailable/disabled (AiSettings.ai_listing_quality_enabled) or the field has no issue — the drawer then prefills the current text for manual editing. The draft is a proposal: the merchant approves before it is sent to apply-listing-optimization. |
+| `POST` | `/api/tiktok-shop/integration-instances/{tikTokShopIntegrationInstance}/products/{tikTokShopProduct}/optimize` | Apply the merchant-approved fixes to the live TikTok listing via TikTok's Partial Edit Product seam, then re-diagnose. Send any subset of title / description / main_image_url (at least one required). The main_image_url is a public URL to a real sourced photo that the backend fetches, uploads to TikTok as MAIN_IMAGE, and sets while preserving the rest of the gallery — images are never AI-generated. Returns applied[] (which fields changed) and audit.status. 403 if the product isn't on this instance; 422 on validation; the call surfaces a clear error if TikTok rejects the edit or the image can't be used. |
 
 ## Authentication
 

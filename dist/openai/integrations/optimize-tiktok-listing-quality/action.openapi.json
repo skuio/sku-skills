@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "SKU.io — Optimize TikTok Shop Listing Quality",
-    "description": "Lift a TikTok Shop integration's listings out of POOR/FAIR Listing Quality toward GOOD, driven by TikTok's own \"Diagnose and Optimize Product\" results. For each in-scope listing it reads the cached diagnosis (re-diagnosing first when it is stale or missing), then for every issue TikTok reports — keyed on the field (TITLE / DESCRIPTION / IMAGE), its `code`, TikTok's `how_to_solve` guidance and the suggested `seo_words` — it plans a concrete fix: a rewritten title that satisfies the rule, an expanded structured description, and an actionable image checklist (images can't be auto-generated). It runs POOR before FAIR, defaults to a dry-run that emits the proposed new title/description as a diff for human approval, and — once the apply path is wired (see the dependency note) — writes the approved copy back to TikTok and re-diagnoses to confirm the tier improved. Use it for \"fix our TikTok listing quality\", \"get these POOR listings to GOOD\", or \"why are these TikTok listings rated FAIR and what do we change\".",
-    "version": "1.0.0"
+    "description": "Lift a TikTok Shop integration's listings out of POOR/FAIR Listing Quality toward GOOD, driven by TikTok's own \"Diagnose and Optimize Product\" results. For each in-scope listing it reads the cached diagnosis (re-diagnosing first when stale or missing), then for every issue TikTok reports — keyed on the field (TITLE / DESCRIPTION / IMAGE), its `code`, `how_to_solve` guidance and the suggested `seo_words` — plans a concrete fix: a rewritten title, an expanded description, and a sourced replacement image (images are never auto-generated). It runs POOR before FAIR, defaults to a dry-run that emits the proposed copy as a diff for approval, and — on the built apply endpoint (`POST .../products/{product}/optimize`, with AI-drafted copy from `.../optimize/draft`) — writes the approved title/description/main-image back to the live listing and re-diagnoses to confirm the tier improved. Use it for \"fix our TikTok listing quality\", \"get these POOR listings to GOOD\", or \"why are these listings rated FAIR\".",
+    "version": "1.1.0"
   },
   "servers": [
     {
@@ -236,6 +236,98 @@
             }
           }
         ]
+      }
+    },
+    "/api/tiktok-shop/integration-instances/{tikTokShopIntegrationInstance}/products/{tikTokShopProduct}/optimize/draft": {
+      "post": {
+        "operationId": "draft_listing_optimization",
+        "summary": "AI-draft improved copy for whichever of TITLE/DESCRIPTION the listing was flagged on, grounded in the current copy, TikTok's `how_to_solve` guidance and the suggested `seo_words`. Returns ai_available plus title/description blocks ({current, proposed, issue}) and seo_words. proposed is null when AI is unavailable/disabled (AiSettings.ai_listing_quality_enabled) or the field has no issue — the drawer then prefills the current text for manual editing. The draft is a proposal: the merchant approves before it is sent to apply-listing-optimization.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "tikTokShopIntegrationInstance",
+            "in": "path",
+            "required": true,
+            "description": "The SKU.io TikTok Shop integration instance id.",
+            "schema": {
+              "type": "integer",
+              "description": "The SKU.io TikTok Shop integration instance id."
+            }
+          },
+          {
+            "name": "tikTokShopProduct",
+            "in": "path",
+            "required": true,
+            "description": "The SKU.io TikTok-product row id (the `id` field of a listing-quality row).",
+            "schema": {
+              "type": "integer",
+              "description": "The SKU.io TikTok-product row id (the `id` field of a listing-quality row)."
+            }
+          }
+        ]
+      }
+    },
+    "/api/tiktok-shop/integration-instances/{tikTokShopIntegrationInstance}/products/{tikTokShopProduct}/optimize": {
+      "post": {
+        "operationId": "apply_listing_optimization",
+        "summary": "Apply the merchant-approved fixes to the live TikTok listing via TikTok's Partial Edit Product seam, then re-diagnose. Send any subset of title / description / main_image_url (at least one required). The main_image_url is a public URL to a real sourced photo that the backend fetches, uploads to TikTok as MAIN_IMAGE, and sets while preserving the rest of the gallery — images are never AI-generated. Returns applied[] (which fields changed) and audit.status. 403 if the product isn't on this instance; 422 on validation; the call surfaces a clear error if TikTok rejects the edit or the image can't be used.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "tikTokShopIntegrationInstance",
+            "in": "path",
+            "required": true,
+            "description": "The SKU.io TikTok Shop integration instance id.",
+            "schema": {
+              "type": "integer",
+              "description": "The SKU.io TikTok Shop integration instance id."
+            }
+          },
+          {
+            "name": "tikTokShopProduct",
+            "in": "path",
+            "required": true,
+            "description": "The SKU.io TikTok-product row id (the `id` field of a listing-quality row).",
+            "schema": {
+              "type": "integer",
+              "description": "The SKU.io TikTok-product row id (the `id` field of a listing-quality row)."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Approved new product title, plain text, max 255. Required if description and main_image_url are both omitted.",
+                    "example": "Walbro 400-766 255 LPH High Pressure In-Tank Fuel Pump Kit"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Approved new product description as TikTok HTML. Required if title and main_image_url are both omitted."
+                  },
+                  "main_image_url": {
+                    "type": "string",
+                    "description": "Public URL to a sourced replacement main image (≥600×600). The backend fetches and uploads it to TikTok. Required if title and description are both omitted.",
+                    "example": "https://cdn.example.com/products/walbro-400-766.jpg"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
   },

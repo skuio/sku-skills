@@ -145,5 +145,67 @@
         ]
       }
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "draft_listing_optimization",
+      "description": "AI-draft improved copy for whichever of TITLE/DESCRIPTION the listing was flagged on, grounded in the current copy, TikTok's `how_to_solve` guidance and the suggested `seo_words`. Returns ai_available plus title/description blocks ({current, proposed, issue}) and seo_words. proposed is null when AI is unavailable/disabled (AiSettings.ai_listing_quality_enabled) or the field has no issue — the drawer then prefills the current text for manual editing. The draft is a proposal: the merchant approves before it is sent to apply-listing-optimization. (POST /api/tiktok-shop/integration-instances/{tikTokShopIntegrationInstance}/products/{tikTokShopProduct}/optimize/draft)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "tikTokShopIntegrationInstance": {
+            "type": "integer",
+            "description": "The SKU.io TikTok Shop integration instance id."
+          },
+          "tikTokShopProduct": {
+            "type": "integer",
+            "description": "The SKU.io TikTok-product row id (the `id` field of a listing-quality row)."
+          }
+        },
+        "required": [
+          "tikTokShopIntegrationInstance",
+          "tikTokShopProduct"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "apply_listing_optimization",
+      "description": "Apply the merchant-approved fixes to the live TikTok listing via TikTok's Partial Edit Product seam, then re-diagnose. Send any subset of title / description / main_image_url (at least one required). The main_image_url is a public URL to a real sourced photo that the backend fetches, uploads to TikTok as MAIN_IMAGE, and sets while preserving the rest of the gallery — images are never AI-generated. Returns applied[] (which fields changed) and audit.status. 403 if the product isn't on this instance; 422 on validation; the call surfaces a clear error if TikTok rejects the edit or the image can't be used. (POST /api/tiktok-shop/integration-instances/{tikTokShopIntegrationInstance}/products/{tikTokShopProduct}/optimize)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "tikTokShopIntegrationInstance": {
+            "type": "integer",
+            "description": "The SKU.io TikTok Shop integration instance id."
+          },
+          "tikTokShopProduct": {
+            "type": "integer",
+            "description": "The SKU.io TikTok-product row id (the `id` field of a listing-quality row)."
+          },
+          "title": {
+            "type": "string",
+            "description": "Approved new product title, plain text, max 255. Required if description and main_image_url are both omitted.",
+            "example": "Walbro 400-766 255 LPH High Pressure In-Tank Fuel Pump Kit"
+          },
+          "description": {
+            "type": "string",
+            "description": "Approved new product description as TikTok HTML. Required if title and main_image_url are both omitted."
+          },
+          "main_image_url": {
+            "type": "string",
+            "description": "Public URL to a sourced replacement main image (≥600×600). The backend fetches and uploads it to TikTok. Required if title and description are both omitted.",
+            "example": "https://cdn.example.com/products/walbro-400-766.jpg"
+          }
+        },
+        "required": [
+          "tikTokShopIntegrationInstance",
+          "tikTokShopProduct"
+        ]
+      }
+    }
   }
 ]
