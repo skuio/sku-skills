@@ -107,6 +107,24 @@ for (const skill of skills) {
 // --- catalog + generated index ---------------------------------------------
 writeFile(path.join(DIST_DIR, 'catalog.json'), json({ generatedFrom: 'skills/', count: catalog.length, skills: catalog }));
 
+// --- plugin manifest: how third-party installers find the built skills -------
+// `npx skills add skuio/sku-skills` (skills.sh, and the directories that crawl it) searches
+// `skills/` first — which here holds the SOURCE (skill.yaml), not SKILL.md — and never looks in
+// dist/. So it reported "No valid skills found" even though every skill builds. The manifest
+// declares each built Claude skill directly; it is also a valid Claude Code plugin marketplace,
+// so `/plugin marketplace add skuio/sku-skills` works too. Generated, like everything in dist/.
+writeFile(path.join(ROOT, '.claude-plugin', 'marketplace.json'), json({
+  name: 'sku-skills',
+  owner: { name: 'SKU.io', url: 'https://www.sku.io' },
+  metadata: { description: 'Open-source agent skills for running inventory, orders and purchasing in SKU.io through its API.' },
+  plugins: [{
+    name: 'sku-skills',
+    source: './',
+    description: 'Agent skills for the SKU.io API: products, inventory, orders, purchasing, accounting and settings.',
+    skills: catalog.map((s) => './' + path.posix.dirname(s.outputs.claude)).sort(),
+  }],
+}));
+
 const byDomain = catalog.reduce((acc, s) => {
   (acc[s.domain] ??= []).push(s);
   return acc;
