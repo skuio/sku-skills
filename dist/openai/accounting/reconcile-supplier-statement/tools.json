@@ -228,6 +228,116 @@
   {
     "type": "function",
     "function": {
+      "name": "get_sync_settings",
+      "description": "Which transaction types sync to the accounting system automatically. sync_controls_by_type.purchase_order_invoice.enabled false means bills stay in SKU.io until someone posts them (find-ledger-entry → force-sync-entry). (GET /api/accounting/sync-settings)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_sync_connection",
+      "description": "Whether the accounting connection is active at all (sync_status, is_connection_active, blocker). Inactive means nothing can be posted; stop and report it. (GET /api/accounting/sync-settings/connection)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "find_ledger_entry",
+      "description": "The bill's current ledger entry: id, status, display_status{key, label, reason} (excluded | pending_sync | syncing | synced | failed | needs_attention | …), can_sync_now, sync_override, provider_link. display_status.key \"synced\" means the bill is in the accounting system. (GET /api/ledger/entries/by-source)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "source_type": {
+            "type": "string",
+            "description": "The document's model class.",
+            "example": "App\\Models\\PurchaseInvoice"
+          },
+          "source_id": {
+            "type": "integer",
+            "description": "The purchase invoice id."
+          }
+        },
+        "required": [
+          "source_type",
+          "source_id"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "inspect_entry_sync",
+      "description": "Why an entry is not syncing: eligible, enableable (blocked only by a setting or an override, so force-sync-entry will post it), reasons[] and structural_reasons[] (blocked for a reason an override cannot lift). (GET /api/ledger/entries/{entry}/sync-inspection)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "entry": {
+            "type": "integer",
+            "description": "Ledger entry id (from find-ledger-entry)."
+          }
+        },
+        "required": [
+          "entry"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "force_sync_entry",
+      "description": "Post this one document past a per-type auto-sync opt-out. override \"force_enabled\" marks it to sync and queues the push; null removes the override. Needs the user's accounting.sync permission. (POST /api/ledger/entries/{entry}/sync-override)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "entry": {
+            "type": "integer",
+            "description": "Ledger entry id."
+          },
+          "override": {
+            "type": "string",
+            "description": "force_enabled (or null to clear).",
+            "example": "force_enabled"
+          }
+        },
+        "required": [
+          "entry",
+          "override"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "sync_entry_now",
+      "description": "Push an eligible entry now rather than waiting for the queue. The message says whether it was queued, not eligible, locked, or rejected by the provider. (POST /api/ledger/entries/{entry}/sync)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "entry": {
+            "type": "integer",
+            "description": "Ledger entry id."
+          }
+        },
+        "required": [
+          "entry"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
       "name": "suggest_payment_allocation",
       "description": "The supplier's open bills oldest-due first, with `total` spread across them greedily. A starting point only; it is not how the supplier applied the money. (GET /api/purchase-invoices/supplier-payments/allocation-suggestion)",
       "parameters": {

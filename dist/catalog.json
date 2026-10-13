@@ -17,7 +17,7 @@
         "accounting:write",
         "settings:read"
       ],
-      "operations": 14,
+      "operations": 20,
       "tags": [
         "reconciliation",
         "supplier-statement",

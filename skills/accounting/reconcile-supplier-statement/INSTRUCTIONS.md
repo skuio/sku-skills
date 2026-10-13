@@ -16,6 +16,7 @@ six credit memos applied to the wrong bills. Explain every cause separately, and
 | Reading SKU.io's bills, credits, payments and statement; the SKU.io-side fixes | **This skill**, through the API below |
 | Getting the supplier's statement (email, PDF, portal) | **The caller** |
 | Getting the bank lines paid to the supplier | **The caller.** SKU.io's API exposes no raw bank-statement lines, and neither does Xero's, so they come from the bank, the accounting system's bank screen, or a person |
+| Posting a bill to the accounting system when auto-sync is off | **This skill** (Step 4b) |
 | Reconciling a bank line inside the accounting system (Xero "Find & Match", QuickBooks "Match") | **The caller's** accounting-system access, when the tenant imports its payments from there (Step 4) |
 | Deciding whether a fix may be applied | **The caller's approval policy.** The default is: show the full fix list and ask before applying any of it |
 
@@ -85,6 +86,7 @@ total / paid / credits applied / outstanding, SKU.io link. Then give every row e
 | **Credit applied differently** | A credit the supplier shows **open** is applied to a bill in SKU.io (or the reverse) | SKU.io applied it on its own rule, not the supplier's | Step 6 |
 | **Paid twice in SKU.io** | `total_paid` above the bill total, or two payments with the same amount and date on one bill | A payment imported twice | Step 7 |
 | **Supplier has it, SKU.io doesn't** | A supplier invoice or credit memo with no SKU.io record | Not recorded yet | `record-purchase-invoice` / `record-vendor-credit` |
+| **Not in the accounting system** | Open in SKU.io, but its ledger entry isn't `synced` | Auto-sync is off for bills, or the push failed | Step 4b |
 | **SKU.io has it, supplier doesn't, never paid** | Open in SKU.io, never on any supplier statement, no bank payment | A duplicate or a bill entered against the wrong supplier | Ask |
 
 Reconcile the totals by class: the gap between the two balances must equal the sum of the
@@ -120,6 +122,39 @@ For each group of "settled at supplier, open in SKU.io" bills, find the money.
 4. **No bank line at all?** Then this is not a missing record but an unproven payment. Report it as
    "supplier shows these settled; no payment found", and ask. Never record a payment you cannot
    point to.
+
+## Step 4b: Post the bills the accounting system doesn't have
+
+A payment can only be reconciled against bills the accounting system has. When the tenant keeps
+purchase-invoice auto-sync **off**, a new bill stays in SKU.io until someone posts it. Its bank
+payment then has nothing to match, and the gap looks like a missing payment when it is really a
+missing bill.
+
+1. `GET /api/accounting/sync-settings`. If `sync_controls_by_type.purchase_order_invoice.enabled`
+   is `true`, bills post themselves. Then a bill missing from the accounting system is a sync
+   *failure*: read its `display_status.reason`, report it, and don't force it. Also check
+   `GET /api/accounting/sync-settings/connection`. If `is_connection_active` is false, nothing can
+   be posted, so report the `blocker` and stop this step.
+2. For each bill the reconciliation needs (the bills a bank line pays, and every open bill on the
+   supplier's statement):
+   `GET /api/ledger/entries/by-source?source_type=App%5CModels%5CPurchaseInvoice&source_id=<bill id>`.
+   `display_status.key` `synced` means it is there. `excluded` or `pending_sync` means it hasn't
+   been posted.
+3. **Post a bill only when it is right.** Its total must equal the supplier's invoice (fix it first
+   with Step 5, because a bill posted with a missing freight line has to be corrected in two
+   places). It must be approved (`approval_status` `approved` or `auto_approved`, not
+   `pending_approval`). And it must not be a duplicate of a bill the accounting system already has.
+4. `GET /api/ledger/entries/{entry}/sync-inspection`. If `enableable` is true, it is held only by
+   the opt-out. Then `POST /api/ledger/entries/{entry}/sync-override` with
+   `{"override": "force_enabled"}` queues the push. If it isn't enableable, the
+   `structural_reasons` say why (an open batch, a closed period, an inactive connection): report
+   them, and don't work around them.
+5. Re-read the entry until `display_status.key` is `synced` (it passes through `syncing`). On
+   `failed` or `needs_attention`, the `reason` is the provider's answer: report it.
+
+Posting a bill is internal bookkeeping, but it writes to the accounting system, so it follows the
+caller's approval policy like every other fix here. Posting one bill never changes the tenant's
+sync settings. Leave turning auto-sync on to a person.
 
 ## Step 5: Amount differences: compare line by line
 
@@ -225,8 +260,8 @@ Link bills as `/v2/orders/purchase-invoices/{id}` and credits as `/v2/purchases/
 
 ## Guardrails
 
-- **Read first, fix second.** Steps 1–7 only read. Apply nothing until the full fix list exists and
-  the caller's policy allows it.
+- **Read first, fix second.** Steps 1–7 only read, except Step 4b's posting. Apply nothing until the
+  full fix list exists and the caller's policy allows it.
 - **Every fix needs evidence.** A payment needs a bank line. A credit unapply needs the supplier's
   statement showing it open. A bill correction needs the supplier's invoice. A duplicate removal
   needs proof that only one payment left the bank.
