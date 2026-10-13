@@ -48,6 +48,7 @@ One source of truth, three idiomatic outputs. Fix the knowledge in one place; ev
 <!-- BEGIN:skills-table -->
 | Domain | Skill | What it does |
 | --- | --- | --- |
+| `accounting` | **reconcile-supplier-statement** | Match a supplier's statement and bank payments to SKU.io's payables, and fix the gaps |
 | `accounting` | **record-vendor-credit** | Record a supplier credit memo and apply it to an open bill |
 | `integrations` | **manage-amazon-recovery** | Triage, file and follow up on Amazon reimbursement claims |
 | `inventory` | **adjust-inventory** | Increase / decrease / set on-hand stock at a warehouse |

@@ -1,12 +1,52 @@
 {
   "generatedFrom": "skills/",
-  "count": 19,
+  "count": 20,
   "skills": [
+    {
+      "name": "reconcile-supplier-statement",
+      "domain": "accounting",
+      "title": "Reconcile a Supplier Statement",
+      "version": "1.0.0",
+      "description": "Reconcile what a supplier says you owe them against SKU.io's accounts payable, and trace the bank payments in between. Takes the supplier's statement (an emailed QuickBooks/Xero statement, a PDF, or pasted text) plus the bank lines paid to that supplier, compares them with the supplier's bills, vendor credits and payments in SKU.io, and explains every difference: bills a payment settled but SKU.io still shows open, payments recorded twice, credits applied in SKU.io that the supplier has not applied, bill totals that differ from the supplier's invoice (missing freight, a mis-linked line), and documents one side has that the other lacks. Proposes the fix for each and, under the caller's approval policy, applies the SKU.io side: unapply or apply credits, record a supplier payment, remove a duplicate payment. Use for \"does our statement from X match\", \"why does SKU.io say we owe X more than they do\", or a regular supplier account reconciliation.",
+      "tagline": "Match a supplier's statement and bank payments to SKU.io's payables, and fix the gaps",
+      "scopes": [
+        "suppliers:read",
+        "purchase-orders:read",
+        "purchase-orders:write",
+        "accounting:read",
+        "accounting:write",
+        "settings:read"
+      ],
+      "operations": 14,
+      "tags": [
+        "reconciliation",
+        "supplier-statement",
+        "accounts-payable",
+        "vendor-credits",
+        "supplier-payments",
+        "bank",
+        "audit"
+      ],
+      "composes": [
+        "record-purchase-invoice",
+        "record-vendor-credit"
+      ],
+      "pages": [
+        "/purchases/suppliers",
+        "/orders/purchase-invoices",
+        "/purchases/vendor-credits"
+      ],
+      "outputs": {
+        "claude": "dist/claude/accounting/reconcile-supplier-statement/SKILL.md",
+        "openai": "dist/openai/accounting/reconcile-supplier-statement/",
+        "gemini": "dist/gemini/accounting/reconcile-supplier-statement/"
+      }
+    },
     {
       "name": "record-vendor-credit",
       "domain": "accounting",
       "title": "Record a Vendor Credit",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "description": "Record a supplier's credit memo (vendor credit, credit note) in SKU.io from the memo document — a PDF or email from the supplier — then apply it to the supplier bill(s) it should reduce. Built for non-inventory credits: co-op or advertising credits, marketing allowances, rebates paid as account credit, overbilling and other \"only what we owe changes\" credits. Checks for a duplicate by credit number, follows how the account recorded earlier credits from the same supplier (date, expense account, wording), creates the credit as a draft, previews its accounting impact, authorizes it, allocates it to an open purchase invoice, attaches the source document, and prints direct links. Returned or damaged goods and price corrections against a PO line are flagged and routed rather than forced into a financial-only credit.",
       "tagline": "Record a supplier credit memo and apply it to an open bill",
       "scopes": [

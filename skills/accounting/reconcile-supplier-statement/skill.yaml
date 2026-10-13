@@ -1,0 +1,279 @@
+name: reconcile-supplier-statement
+title: Reconcile a Supplier Statement
+domain: accounting
+version: 1.0.0
+description: >-
+  Reconcile what a supplier says you owe them against SKU.io's accounts payable, and trace the bank
+  payments in between. Takes the supplier's statement (an emailed QuickBooks/Xero statement, a PDF,
+  or pasted text) plus the bank lines paid to that supplier, compares them with the supplier's bills,
+  vendor credits and payments in SKU.io, and explains every difference: bills a payment settled but
+  SKU.io still shows open, payments recorded twice, credits applied in SKU.io that the supplier has
+  not applied, bill totals that differ from the supplier's invoice (missing freight, a mis-linked
+  line), and documents one side has that the other lacks. Proposes the fix for each and, under the
+  caller's approval policy, applies the SKU.io side: unapply or apply credits, record a supplier
+  payment, remove a duplicate payment. Use for "does our statement from X match", "why does SKU.io
+  say we owe X more than they do", or a regular supplier account reconciliation.
+tagline: Match a supplier's statement and bank payments to SKU.io's payables, and fix the gaps
+tags: [reconciliation, supplier-statement, accounts-payable, vendor-credits, supplier-payments, bank, audit]
+maintainers: [kmizzi]
+composes: [record-purchase-invoice, record-vendor-credit]
+pages:
+  - /purchases/suppliers
+  - /orders/purchase-invoices
+  - /purchases/vendor-credits
+auth:
+  scopes: [suppliers:read, purchase-orders:read, purchase-orders:write, accounting:read, accounting:write, settings:read]
+api:
+  base_url: https://{tenant}.sku.io
+  operations:
+    - id: find-supplier
+      method: GET
+      path: /api/v2/suppliers
+      summary: Resolve the supplier named on the statement to its id. (A bare GET /api/suppliers 405s.)
+      parameters:
+        - name: filter[search]
+          in: query
+          type: string
+          required: false
+          description: Supplier name or email from the statement.
+          example: Acme Batteries
+    - id: get-supplier-statement
+      method: GET
+      path: /api/suppliers/{supplier}/statement
+      summary: >-
+        SKU.io's own statement for the supplier, in tenant currency. view=open_item (default) gives
+        open_items[] (doc_type, id, number, supplier_invoice_number, purchase_order, date, due_date,
+        total, total_paid, credits_applied, deposits_applied, outstanding_balance, status), credits[]
+        (open, unapplied credits with `available`), deposits[] and totals{open, credits, deposits,
+        net_payable}. view=activity gives opening/closing balance and lines[] (date, type, reference,
+        debit, credit, running_balance; type invoice | bill | payment | credit_applied |
+        credit_unapplied | deposit_applied | deposit_unapplied) for a date range.
+      parameters:
+        - name: supplier
+          in: path
+          type: integer
+          required: true
+          description: Supplier id.
+        - name: view
+          in: query
+          type: string
+          required: false
+          description: open_item (default) or activity.
+          example: open_item
+        - name: date_from
+          in: query
+          type: string
+          required: false
+          description: ISO date. Required when view=activity.
+        - name: date_to
+          in: query
+          type: string
+          required: false
+          description: ISO date, on or after date_from. Required when view=activity.
+    - id: list-purchase-invoices
+      method: GET
+      path: /api/purchase-invoices
+      summary: >-
+        Every bill for the supplier, paid ones included (the statement only lists open ones). Rows
+        carry supplier_invoice_number, purchase_invoice_date, calculated_total + tax_total (the gross
+        total; there is no single total field), total_paid, outstanding_balance, status, payments[]
+        and applied_vendor_credits[] (each with its allocation id and vendor_credit number).
+      parameters:
+        - name: filter[supplier_id]
+          in: query
+          type: string
+          required: false
+          description: Supplier id. Always send it.
+        - name: filter[status]
+          in: query
+          type: string
+          required: false
+          description: unpaid, partially_paid or paid. Omit for all.
+        - name: filter[purchase_invoice_date.after]
+          in: query
+          type: string
+          required: false
+          description: ISO date, to bound the window.
+        - name: filter[search]
+          in: query
+          type: string
+          required: false
+          description: Supplier invoice number, PO number or total. Pair with search_columns=supplier_invoice_number for an exact number lookup.
+        - name: sort
+          in: query
+          type: string
+          required: false
+          description: purchase_invoice_date for oldest first.
+          example: purchase_invoice_date
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Page size.
+    - id: get-purchase-invoice
+      method: GET
+      path: /api/purchase-invoices/{purchaseInvoice}
+      summary: One bill with its lines, payments and applied credits, to compare with the supplier's invoice line by line.
+      parameters:
+        - name: purchaseInvoice
+          in: path
+          type: integer
+          required: true
+          description: Purchase invoice id (not the supplier's invoice number).
+    - id: list-invoice-payments
+      method: GET
+      path: /api/purchase-invoices/{purchaseInvoiceId}/payments
+      summary: >-
+        Payments recorded on one bill: id, amount, payment_date, payment_type, external_reference.
+        An external_reference with a provider prefix (xero:…, qbo:…) means the payment was imported
+        from the accounting system rather than recorded in SKU.io.
+      parameters:
+        - name: purchaseInvoiceId
+          in: path
+          type: integer
+          required: true
+          description: Purchase invoice id.
+    - id: delete-invoice-payment
+      method: DELETE
+      path: /api/purchase-invoices/{purchaseInvoiceId}/payments/{payment}
+      summary: Remove one payment from a bill. Only for a proven duplicate; see the guardrails.
+      parameters:
+        - name: purchaseInvoiceId
+          in: path
+          type: integer
+          required: true
+          description: Purchase invoice id.
+        - name: payment
+          in: path
+          type: integer
+          required: true
+          description: Payment id (from list-invoice-payments).
+    - id: list-supplier-credits
+      method: GET
+      path: /api/vendor-credits/for-supplier/{supplier}
+      summary: >-
+        The supplier's OPEN vendor credits only (remaining amount above zero). A fully applied credit
+        is not listed; find those through each bill's applied_vendor_credits[].
+      parameters:
+        - name: supplier
+          in: path
+          type: integer
+          required: true
+          description: Supplier id.
+    - id: unapply-vendor-credit
+      method: DELETE
+      path: /api/vendor-credits/{vendor_credit}/allocations/{vendor_credit_allocation}
+      summary: >-
+        Take a credit back off a bill. Reopens the credit, raises the bill's outstanding balance, and
+        shows as credit_unapplied on the activity statement. The allocation id is
+        applied_vendor_credits[].id on the bill.
+      parameters:
+        - name: vendor_credit
+          in: path
+          type: integer
+          required: true
+          description: Vendor credit id.
+        - name: vendor_credit_allocation
+          in: path
+          type: integer
+          required: true
+          description: Allocation id.
+    - id: apply-credits-to-bill
+      method: POST
+      path: /api/vendor-credits/allocate-batch
+      summary: Apply one or more open credits to one bill in a single all-or-nothing call.
+      parameters:
+        - name: purchase_invoice_id
+          in: body
+          type: integer
+          required: true
+          description: The bill the credits reduce.
+        - name: allocations
+          in: body
+          type: array
+          required: true
+          description: Each { vendor_credit_id, amount (min 0.01) }.
+        - name: allocated_at
+          in: body
+          type: string
+          required: false
+          description: ISO date the credit was used, normally the payment date.
+        - name: notes
+          in: body
+          type: string
+          required: false
+          description: Why (max 1000 chars), e.g. the bank reference of the payment that used it.
+    - id: suggest-payment-allocation
+      method: GET
+      path: /api/purchase-invoices/supplier-payments/allocation-suggestion
+      summary: >-
+        The supplier's open bills oldest-due first, with `total` spread across them greedily. A
+        starting point only; it is not how the supplier applied the money.
+      parameters:
+        - name: supplier_id
+          in: query
+          type: integer
+          required: true
+          description: Supplier id.
+        - name: total
+          in: query
+          type: number
+          required: false
+          description: The payment amount to spread.
+    - id: list-supplier-payments
+      method: GET
+      path: /api/purchase-invoices/supplier-payments
+      summary: Supplier payments recorded in SKU.io (one payment across several bills), newest first.
+      parameters:
+        - name: filter[supplier_id]
+          in: query
+          type: string
+          required: false
+          description: Supplier id.
+    - id: list-payment-types
+      method: GET
+      path: /api/v2/payment-types
+      summary: Resolve payment_type_id by name (e.g. "Bank Transfer", "ACH"). Don't invent the id.
+    - id: record-supplier-payment
+      method: POST
+      path: /api/purchase-invoices/supplier-payments
+      summary: >-
+        Record money that already left the bank as one payment across one or more bills. Credits
+        cannot be part of it: apply them to the bills first, then pay the net. Each allocation must
+        not exceed the bill's outstanding balance; all bills must share a currency.
+      parameters:
+        - name: supplier_id
+          in: body
+          type: integer
+          required: true
+          description: Supplier id.
+        - name: payment_date
+          in: body
+          type: string
+          required: true
+          description: The date the bank line cleared, ISO.
+        - name: payment_type_id
+          in: body
+          type: integer
+          required: false
+          description: From list-payment-types. Omitted, it falls back to "Cash".
+        - name: external_reference
+          in: body
+          type: string
+          required: false
+          description: The bank line's own reference (ACH/wire number), so the payment can be traced.
+        - name: allocations
+          in: body
+          type: array
+          required: true
+          description: Each { purchase_invoice_id, amount } (or bill_id for a non-PO bill).
+    - id: delete-supplier-payment
+      method: DELETE
+      path: /api/purchase-invoices/supplier-payments/{supplierPaymentId}
+      summary: Reverse a supplier payment recorded in SKU.io (and its accounting-system batch, if it was pushed).
+      parameters:
+        - name: supplierPaymentId
+          in: path
+          type: integer
+          required: true
+          description: Supplier payment id.
