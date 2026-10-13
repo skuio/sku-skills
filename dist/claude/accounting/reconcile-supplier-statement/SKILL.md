@@ -234,6 +234,24 @@ amount and date, was usually paid once and imported twice. Before removing one:
 Then `DELETE /api/purchase-invoices/{id}/payments/{payment}`. If you can't tell which copy is live,
 report it and stop.
 
+**The common Xero shape: one batch payment, two ids.** When Xero pays several bills in one batch, a
+bill's own record names the payment by the **batch's** id, and Xero's payments list names it by the
+payment's **own** id. A tenant whose payments were imported both ways holds both copies: same bill,
+amount and date, one `external_reference` `xero:<batch id>` (sometimes with a `:<bill id>` suffix),
+the other `xero:<payment id>`. Keep the batch-id copy. It's the form SKU.io's ongoing import writes,
+so it won't be recreated. Remove the payment-id copy.
+
+**Know what a delete reaches.** A payment SKU.io recorded and *pushed* to the accounting system is
+linked to it, and deleting it in SKU.io deletes it there as well. Payments imported *from* the
+accounting system (the `xero:` / `qbo:` references) are not linked that way, so removing a
+duplicate copy changes only SKU.io. Never delete a payment that has no provider-prefixed reference
+as a "duplicate": it may be the real one, pushed out.
+
+**A duplicate can hide a real gap.** After the extra copy goes, re-read the bill. If it still shows
+a balance, the doubled amount was covering something else: a credit the accounting system applied
+that SKU.io doesn't have, a bill total that differs, or a second bill whose payment never came over.
+Classify it again (Step 3) rather than leaving it.
+
 ## Step 8: Record a payment (only where Step 4 says SKU.io is where it belongs)
 
 1. Apply any credits the payment used (Step 6).
