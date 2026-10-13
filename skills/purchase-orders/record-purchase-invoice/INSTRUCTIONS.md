@@ -201,6 +201,44 @@ the user says the invoice was paid (or asks you to log a payment), and confirm t
 
 The invoice's `status` moves to `partial` / `paid` through payments, never by editing the status.
 
+## Correcting an existing bill
+
+Use this when a bill already in SKU.io differs from the supplier's invoice. Compare them line by
+line first and write the difference down ("bill line X: qty a @ p; invoice: qty b @ q"). The fix
+is a `PUT /api/purchase-invoices/{id}`, and three rules make it safe:
+
+- **Product lines are a set.** `purchase_invoice_lines` replaces the bill's lines, keyed by
+  `purchase_order_line_id`, so send **every** line: the unchanged ones exactly as they are, plus
+  the corrected ones. A mis-linked line (the single SKU billed at its pack's price, with the pack's
+  PO line never billed) is fixed by moving quantity to the right PO line, at the price the invoice
+  prints. Check that your payload's total equals the invoice before sending.
+- **Fee lines belong to the PO.** A freight or fee charge is a PO financial line that the bill
+  *takes*: `financial_lines: [{ id, quantity, amount, link_type: "App\\Models\\PurchaseOrder" }]`.
+  The `link_type` is required, and quantity and amount must equal the PO line's. You can't bill
+  part of a line. If the PO line is wrong (a per-unit fee where the supplier charged once), first
+  return it to the PO (`financial_lines: []` on the bill), correct it on the PO
+  (`PUT /api/purchase-orders/{po}`, the full `financial_lines` set), then bill it again. Older
+  bills may carry fee lines attached to the bill itself, and the same three steps handle them.
+- **Header fields go on their own.** `supplier_invoice_number` and `purchase_invoice_date` can be
+  corrected in the same PUT, for example an imported number like `Invoice---0002130`.
+
+After the PUT:
+
+1. Re-read the bill: `calculated_total + tax_total` must equal the invoice.
+2. **Paid status doesn't recalculate on a line edit.** A bill that is now fully covered can still
+   read `partially_paid`. Re-save one of its existing payments unchanged
+   (`PUT /api/purchase-invoices/{id}/payments/{payment}` with its own `amount` and `payment_date`)
+   to refresh it.
+3. **If the bill was already in the accounting system, the correction has to reach it.** The edit
+   rebuilds the bill's ledger entry. A tenant with purchase-invoice auto-sync **off** loses any
+   per-entry override in the rebuild, so the corrected entry sits at `update_pending` and never
+   pushes. Re-apply it (`POST /api/ledger/entries/{entry}/sync-override` with
+   `{"override": "force_enabled"}`, entry from `GET /api/ledger/entries/by-source`) and wait for
+   `synced`. A bill the provider has **locked** (a payment applied there) can't take an amount
+   change. Correct SKU.io to the provider's figure rather than the other way round.
+
+A correction may move the bill to `pending_approval` when its lines change. Say so in the report.
+
 ## Finish: print the links
 
 Always end by printing a per-invoice list of direct links in the terminal — one line per invoice

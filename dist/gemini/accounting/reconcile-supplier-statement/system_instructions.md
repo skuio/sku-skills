@@ -187,8 +187,14 @@ Get the supplier's invoice (the caller's mailbox or the bill's attachment) and t
   case: the single SKU billed at the 4-pack's price, with the 4-pack's PO line left unbilled.
 - **A rounding or unit-price difference.** Compare unit prices.
 
-State the difference in the form "bill line X: qty a at $p; invoice: qty b at $q". The correction is
-`record-purchase-invoice`'s job, through its edit path. Do not offset it with a credit.
+- **A fee line at the wrong quantity.** A per-unit fee on the PO (e.g. 158 × 0.35) where the
+  supplier charged once (1 × 0.35). The accounting system's copy of the bill, if it was paid there,
+  usually shows the true figure.
+
+State the difference in the form "bill line X: qty a at $p; invoice: qty b at $q". Correct it with
+`record-purchase-invoice`'s **Correcting an existing bill** section, which covers the full-set line
+PUT, fee lines that belong to the PO, refreshing paid status, and re-posting a bill that is already in
+the accounting system. Do not offset a wrong bill with a credit.
 
 ## Step 6: Credits: mirror the supplier
 

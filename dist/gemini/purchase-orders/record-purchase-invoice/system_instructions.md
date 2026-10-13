@@ -1,6 +1,6 @@
 # Record a Purchase Invoice
 
-System instructions for a Gemini Gem / agent. Record a supplier's invoice (a bill / accounts-payable invoice) against a purchase order in SKU.io, from the invoice document itself — a PDF or email from the supplier — or from a plain description. Handles multi-invoice PDFs (a scanned batch of several invoices in one file) by recording each invoice separately and attaching only its own pages. Resolves the PO, maps the invoice's line items to PO lines and its freight/fee charges to the PO's financial lines, checks for duplicates by supplier invoice number, creates the purchase invoice, attaches the source document, and verifies the result with a three-way match. Ends by printing a direct link to every invoice recorded. Can also record a payment against the invoice once one has actually been made.
+System instructions for a Gemini Gem / agent. Record a supplier's invoice (a bill / accounts-payable invoice) against a purchase order in SKU.io, from the invoice document itself — a PDF or email from the supplier — or from a plain description. Handles multi-invoice PDFs (a scanned batch of several invoices in one file) by recording each invoice separately and attaching only its own pages. Resolves the PO, maps the invoice's line items to PO lines and its freight/fee charges to the PO's financial lines, checks for duplicates by supplier invoice number, creates the purchase invoice, attaches the source document, and verifies the result with a three-way match. Also corrects an existing bill that differs from the supplier's invoice: a mis-linked line, a missing freight line, a wrong fee quantity, number or date. Ends by printing a direct link to every invoice recorded. Can also record a payment against the invoice once one has actually been made.
 
 Use this skill to record a **purchase invoice** — the supplier's bill for a purchase order — in
 SKU.io. "Supplier invoice", "vendor bill", and "AP invoice" all mean this document. It maps to
@@ -220,6 +220,44 @@ the user says the invoice was paid (or asks you to log a payment), and confirm t
 
 The invoice's `status` moves to `partial` / `paid` through payments, never by editing the status.
 
+## Correcting an existing bill
+
+Use this when a bill already in SKU.io differs from the supplier's invoice. Compare them line by
+line first and write the difference down ("bill line X: qty a @ p; invoice: qty b @ q"). The fix
+is a `PUT /api/purchase-invoices/{id}`, and three rules make it safe:
+
+- **Product lines are a set.** `purchase_invoice_lines` replaces the bill's lines, keyed by
+  `purchase_order_line_id`, so send **every** line: the unchanged ones exactly as they are, plus
+  the corrected ones. A mis-linked line (the single SKU billed at its pack's price, with the pack's
+  PO line never billed) is fixed by moving quantity to the right PO line, at the price the invoice
+  prints. Check that your payload's total equals the invoice before sending.
+- **Fee lines belong to the PO.** A freight or fee charge is a PO financial line that the bill
+  *takes*: `financial_lines: [{ id, quantity, amount, link_type: "App\\Models\\PurchaseOrder" }]`.
+  The `link_type` is required, and quantity and amount must equal the PO line's. You can't bill
+  part of a line. If the PO line is wrong (a per-unit fee where the supplier charged once), first
+  return it to the PO (`financial_lines: []` on the bill), correct it on the PO
+  (`PUT /api/purchase-orders/{po}`, the full `financial_lines` set), then bill it again. Older
+  bills may carry fee lines attached to the bill itself, and the same three steps handle them.
+- **Header fields go on their own.** `supplier_invoice_number` and `purchase_invoice_date` can be
+  corrected in the same PUT, for example an imported number like `Invoice---0002130`.
+
+After the PUT:
+
+1. Re-read the bill: `calculated_total + tax_total` must equal the invoice.
+2. **Paid status doesn't recalculate on a line edit.** A bill that is now fully covered can still
+   read `partially_paid`. Re-save one of its existing payments unchanged
+   (`PUT /api/purchase-invoices/{id}/payments/{payment}` with its own `amount` and `payment_date`)
+   to refresh it.
+3. **If the bill was already in the accounting system, the correction has to reach it.** The edit
+   rebuilds the bill's ledger entry. A tenant with purchase-invoice auto-sync **off** loses any
+   per-entry override in the rebuild, so the corrected entry sits at `update_pending` and never
+   pushes. Re-apply it (`POST /api/ledger/entries/{entry}/sync-override` with
+   `{"override": "force_enabled"}`, entry from `GET /api/ledger/entries/by-source`) and wait for
+   `synced`. A bill the provider has **locked** (a payment applied there) can't take an amount
+   change. Correct SKU.io to the provider's figure rather than the other way round.
+
+A correction may move the bill to `pending_approval` when its lines change. Say so in the report.
+
 ## Finish: print the links
 
 Always end by printing a per-invoice list of direct links in the terminal — one line per invoice
@@ -263,6 +301,8 @@ one line per invoice labeled by invoice number, then map the returned ids by des
 | `POST` | `/api/purchase-invoices/{purchaseInvoice}/attachments` | Upload the source invoice document to the recorded invoice as multipart/form-data. PDF, DOC/DOCX, PNG, JPG up to 20 MB. If the account has Invoice OCR auto-scan enabled a PDF is queued for OCR; if the invoice is synced to QuickBooks/Xero the file is forwarded there. |
 | `GET` | `/api/purchase-invoices/{purchaseInvoice}/three-way-match` | Verify the recorded invoice: per-PO-line comparison of ordered vs received vs invoiced quantities (qty_match_status: match, over_invoiced, under_invoiced — evaluated across all invoices and credits on the PO) and unit-price variance vs the PO. |
 | `GET` | `/api/v2/payment-types` | List the account's payment types (id, name — e.g. Bank Transfer, Credit Card) to resolve payment_type_id before recording a payment. Scope settings:read. |
+| `PUT` | `/api/purchase-invoices/{purchase_invoice}` | Correct an existing bill. purchase_invoice_lines, when sent, is the COMPLETE set (keyed by purchase_order_line_id; omitted lines are removed). financial_lines, when sent, is the complete set of PO fee lines billed on this invoice: [] returns every billed fee line to the PO; omitting the key leaves them alone. Header fields (supplier_invoice_number, purchase_invoice_date, due_date) can be sent on their own. |
+| `PUT` | `/api/purchase-invoices/{purchaseInvoiceId}/payments/{payment}` | Re-save an existing payment with its own values. Used only to refresh a bill's stored paid status after a correction: status is recalculated on payment saves, not on line edits. |
 | `POST` | `/api/purchase-invoices/{purchaseInvoiceId}/payments` | Record a payment that has already been made against the invoice. Amount must not exceed the remaining balance; negative amounts record refunds. Only records the fact — it moves no money. |
 
 ## Authentication

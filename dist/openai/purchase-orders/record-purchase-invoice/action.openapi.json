@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "SKU.io — Record a Purchase Invoice",
-    "description": "Record a supplier's invoice (a bill / accounts-payable invoice) against a purchase order in SKU.io, from the invoice document itself — a PDF or email from the supplier — or from a plain description. Handles multi-invoice PDFs (a scanned batch of several invoices in one file) by recording each invoice separately and attaching only its own pages. Resolves the PO, maps the invoice's line items to PO lines and its freight/fee charges to the PO's financial lines, checks for duplicates by supplier invoice number, creates the purchase invoice, attaches the source document, and verifies the result with a three-way match. Ends by printing a direct link to every invoice recorded. Can also record a payment against the invoice once one has actually been made.",
-    "version": "1.2.1"
+    "description": "Record a supplier's invoice (a bill / accounts-payable invoice) against a purchase order in SKU.io, from the invoice document itself — a PDF or email from the supplier — or from a plain description. Handles multi-invoice PDFs (a scanned batch of several invoices in one file) by recording each invoice separately and attaching only its own pages. Resolves the PO, maps the invoice's line items to PO lines and its freight/fee charges to the PO's financial lines, checks for duplicates by supplier invoice number, creates the purchase invoice, attaches the source document, and verifies the result with a three-way match. Also corrects an existing bill that differs from the supplier's invoice: a mis-linked line, a missing freight line, a wrong fee quantity, number or date. Ends by printing a direct link to every invoice recorded. Can also record a payment against the invoice once one has actually been made.",
+    "version": "1.3.0"
   },
   "servers": [
     {
@@ -391,6 +391,120 @@
         "responses": {
           "200": {
             "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/purchase-invoices/{purchase_invoice}": {
+      "put": {
+        "operationId": "update_purchase_invoice",
+        "summary": "Correct an existing bill. purchase_invoice_lines, when sent, is the COMPLETE set (keyed by purchase_order_line_id; omitted lines are removed). financial_lines, when sent, is the complete set of PO fee lines billed on this invoice: [] returns every billed fee line to the PO; omitting the key leaves them alone. Header fields (supplier_invoice_number, purchase_invoice_date, due_date) can be sent on their own.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "purchase_invoice",
+            "in": "path",
+            "required": true,
+            "description": "Purchase invoice id.",
+            "schema": {
+              "type": "integer",
+              "description": "Purchase invoice id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "purchase_invoice_lines": {
+                    "type": "array",
+                    "description": "Each { purchase_order_line_id, quantity_invoiced, unit_price }. Send every line.",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "financial_lines": {
+                    "type": "array",
+                    "description": "Each { id (a PO financial line), quantity, amount, link_type: \"App\\\\Models\\\\PurchaseOrder\" }. link_type is required, and quantity/amount must equal the PO line's (all-or-nothing).",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "supplier_invoice_number": {
+                    "type": "string",
+                    "description": "The supplier's number exactly as printed."
+                  },
+                  "purchase_invoice_date": {
+                    "type": "string",
+                    "description": "The invoice date, ISO."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchase-invoices/{purchaseInvoiceId}/payments/{payment}": {
+      "put": {
+        "operationId": "refresh_payment",
+        "summary": "Re-save an existing payment with its own values. Used only to refresh a bill's stored paid status after a correction: status is recalculated on payment saves, not on line edits.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "purchaseInvoiceId",
+            "in": "path",
+            "required": true,
+            "description": "Purchase invoice id.",
+            "schema": {
+              "type": "integer",
+              "description": "Purchase invoice id."
+            }
+          },
+          {
+            "name": "payment",
+            "in": "path",
+            "required": true,
+            "description": "Payment id (from GET /api/purchase-invoices/{id}/payments).",
+            "schema": {
+              "type": "integer",
+              "description": "Payment id (from GET /api/purchase-invoices/{id}/payments)."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "description": "The payment's current amount, unchanged."
+                  },
+                  "payment_date": {
+                    "type": "string",
+                    "description": "The payment's current date, unchanged."
+                  }
+                },
+                "required": [
+                  "amount",
+                  "payment_date"
+                ]
+              }
+            }
           }
         }
       }

@@ -227,6 +227,75 @@
       }
     },
     {
+      "name": "update_purchase_invoice",
+      "description": "Correct an existing bill. purchase_invoice_lines, when sent, is the COMPLETE set (keyed by purchase_order_line_id; omitted lines are removed). financial_lines, when sent, is the complete set of PO fee lines billed on this invoice: [] returns every billed fee line to the PO; omitting the key leaves them alone. Header fields (supplier_invoice_number, purchase_invoice_date, due_date) can be sent on their own. (PUT /api/purchase-invoices/{purchase_invoice})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "purchase_invoice": {
+            "type": "INTEGER",
+            "description": "Purchase invoice id."
+          },
+          "purchase_invoice_lines": {
+            "type": "ARRAY",
+            "description": "Each { purchase_order_line_id, quantity_invoiced, unit_price }. Send every line.",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "financial_lines": {
+            "type": "ARRAY",
+            "description": "Each { id (a PO financial line), quantity, amount, link_type: \"App\\\\Models\\\\PurchaseOrder\" }. link_type is required, and quantity/amount must equal the PO line's (all-or-nothing).",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "supplier_invoice_number": {
+            "type": "STRING",
+            "description": "The supplier's number exactly as printed."
+          },
+          "purchase_invoice_date": {
+            "type": "STRING",
+            "description": "The invoice date, ISO."
+          }
+        },
+        "required": [
+          "purchase_invoice"
+        ]
+      }
+    },
+    {
+      "name": "refresh_payment",
+      "description": "Re-save an existing payment with its own values. Used only to refresh a bill's stored paid status after a correction: status is recalculated on payment saves, not on line edits. (PUT /api/purchase-invoices/{purchaseInvoiceId}/payments/{payment})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "purchaseInvoiceId": {
+            "type": "INTEGER",
+            "description": "Purchase invoice id."
+          },
+          "payment": {
+            "type": "INTEGER",
+            "description": "Payment id (from GET /api/purchase-invoices/{id}/payments)."
+          },
+          "amount": {
+            "type": "NUMBER",
+            "description": "The payment's current amount, unchanged."
+          },
+          "payment_date": {
+            "type": "STRING",
+            "description": "The payment's current date, unchanged."
+          }
+        },
+        "required": [
+          "purchaseInvoiceId",
+          "payment",
+          "amount",
+          "payment_date"
+        ]
+      }
+    },
+    {
       "name": "record_payment",
       "description": "Record a payment that has already been made against the invoice. Amount must not exceed the remaining balance; negative amounts record refunds. Only records the fact — it moves no money. (POST /api/purchase-invoices/{purchaseInvoiceId}/payments)",
       "parameters": {
