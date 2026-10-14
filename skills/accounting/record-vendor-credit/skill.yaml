@@ -1,7 +1,7 @@
 name: record-vendor-credit
 title: Record a Vendor Credit
 domain: accounting
-version: 1.0.0
+version: 1.1.0
 description: >-
   Record a supplier's credit memo (vendor credit, credit note) in SKU.io from the memo document —
   a PDF or email from the supplier — then apply it to the supplier bill(s) it should reduce.

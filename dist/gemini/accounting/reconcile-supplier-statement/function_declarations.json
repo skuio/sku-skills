@@ -1,0 +1,384 @@
+{
+  "functionDeclarations": [
+    {
+      "name": "find_supplier",
+      "description": "Resolve the supplier named on the statement to its id. (A bare GET /api/suppliers 405s.) (GET /api/v2/suppliers)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "filter[search]": {
+            "type": "STRING",
+            "description": "Supplier name or email from the statement."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_supplier_statement",
+      "description": "SKU.io's own statement for the supplier, in tenant currency. view=open_item (default) gives open_items[] (doc_type, id, number, supplier_invoice_number, purchase_order, date, due_date, total, total_paid, credits_applied, deposits_applied, outstanding_balance, status), credits[] (open, unapplied credits with `available`), deposits[] and totals{open, credits, deposits, net_payable}. view=activity gives opening/closing balance and lines[] (date, type, reference, debit, credit, running_balance; type invoice | bill | payment | credit_applied | credit_unapplied | deposit_applied | deposit_unapplied) for a date range. (GET /api/suppliers/{supplier}/statement)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "supplier": {
+            "type": "INTEGER",
+            "description": "Supplier id."
+          },
+          "view": {
+            "type": "STRING",
+            "description": "open_item (default) or activity."
+          },
+          "date_from": {
+            "type": "STRING",
+            "description": "ISO date. Required when view=activity."
+          },
+          "date_to": {
+            "type": "STRING",
+            "description": "ISO date, on or after date_from. Required when view=activity."
+          }
+        },
+        "required": [
+          "supplier"
+        ]
+      }
+    },
+    {
+      "name": "list_purchase_invoices",
+      "description": "Every bill for the supplier, paid ones included (the statement only lists open ones). Rows carry supplier_invoice_number, purchase_invoice_date, calculated_total + tax_total (the gross total; there is no single total field), total_paid, outstanding_balance, status, payments[] and applied_vendor_credits[] (each with its allocation id and vendor_credit number). (GET /api/purchase-invoices)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "filter[supplier_id]": {
+            "type": "STRING",
+            "description": "Supplier id. Always send it."
+          },
+          "filter[status]": {
+            "type": "STRING",
+            "description": "unpaid, partially_paid or paid. Omit for all."
+          },
+          "filter[purchase_invoice_date.after]": {
+            "type": "STRING",
+            "description": "ISO date, to bound the window."
+          },
+          "filter[search]": {
+            "type": "STRING",
+            "description": "Supplier invoice number, PO number or total. Pair with search_columns=supplier_invoice_number for an exact number lookup."
+          },
+          "sort": {
+            "type": "STRING",
+            "description": "purchase_invoice_date for oldest first."
+          },
+          "per_page": {
+            "type": "INTEGER",
+            "description": "Page size."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_purchase_invoice",
+      "description": "One bill with its lines, payments and applied credits, to compare with the supplier's invoice line by line. (GET /api/purchase-invoices/{purchaseInvoice})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "purchaseInvoice": {
+            "type": "INTEGER",
+            "description": "Purchase invoice id (not the supplier's invoice number)."
+          }
+        },
+        "required": [
+          "purchaseInvoice"
+        ]
+      }
+    },
+    {
+      "name": "list_invoice_payments",
+      "description": "Payments recorded on one bill: id, amount, payment_date, payment_type, external_reference. An external_reference with a provider prefix (xero:…, qbo:…) means the payment was imported from the accounting system rather than recorded in SKU.io. (GET /api/purchase-invoices/{purchaseInvoiceId}/payments)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "purchaseInvoiceId": {
+            "type": "INTEGER",
+            "description": "Purchase invoice id."
+          }
+        },
+        "required": [
+          "purchaseInvoiceId"
+        ]
+      }
+    },
+    {
+      "name": "delete_invoice_payment",
+      "description": "Remove one payment from a bill. Only for a proven duplicate; see the guardrails. (DELETE /api/purchase-invoices/{purchaseInvoiceId}/payments/{payment})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "purchaseInvoiceId": {
+            "type": "INTEGER",
+            "description": "Purchase invoice id."
+          },
+          "payment": {
+            "type": "INTEGER",
+            "description": "Payment id (from list-invoice-payments)."
+          }
+        },
+        "required": [
+          "purchaseInvoiceId",
+          "payment"
+        ]
+      }
+    },
+    {
+      "name": "list_supplier_credits",
+      "description": "The supplier's OPEN vendor credits only (remaining amount above zero). A fully applied credit is not listed; find those through each bill's applied_vendor_credits[]. (GET /api/vendor-credits/for-supplier/{supplier})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "supplier": {
+            "type": "INTEGER",
+            "description": "Supplier id."
+          }
+        },
+        "required": [
+          "supplier"
+        ]
+      }
+    },
+    {
+      "name": "unapply_vendor_credit",
+      "description": "Take a credit back off a bill. Reopens the credit, raises the bill's outstanding balance, and shows as credit_unapplied on the activity statement. The allocation id is applied_vendor_credits[].id on the bill. (DELETE /api/vendor-credits/{vendor_credit}/allocations/{vendor_credit_allocation})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "vendor_credit": {
+            "type": "INTEGER",
+            "description": "Vendor credit id."
+          },
+          "vendor_credit_allocation": {
+            "type": "INTEGER",
+            "description": "Allocation id."
+          }
+        },
+        "required": [
+          "vendor_credit",
+          "vendor_credit_allocation"
+        ]
+      }
+    },
+    {
+      "name": "apply_credits_to_bill",
+      "description": "Apply one or more open credits to one bill in a single all-or-nothing call. (POST /api/vendor-credits/allocate-batch)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "purchase_invoice_id": {
+            "type": "INTEGER",
+            "description": "The bill the credits reduce."
+          },
+          "allocations": {
+            "type": "ARRAY",
+            "description": "Each { vendor_credit_id, amount (min 0.01) }.",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "allocated_at": {
+            "type": "STRING",
+            "description": "ISO date the credit was used, normally the payment date."
+          },
+          "notes": {
+            "type": "STRING",
+            "description": "Why (max 1000 chars), e.g. the bank reference of the payment that used it."
+          }
+        },
+        "required": [
+          "purchase_invoice_id",
+          "allocations"
+        ]
+      }
+    },
+    {
+      "name": "get_sync_settings",
+      "description": "Which transaction types sync to the accounting system automatically. sync_controls_by_type.purchase_order_invoice.enabled false means bills stay in SKU.io until someone posts them (find-ledger-entry → force-sync-entry). (GET /api/accounting/sync-settings)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_sync_connection",
+      "description": "Whether the accounting connection is active at all (sync_status, is_connection_active, blocker). Inactive means nothing can be posted; stop and report it. (GET /api/accounting/sync-settings/connection)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "find_ledger_entry",
+      "description": "The bill's current ledger entry: id, status, display_status{key, label, reason} (excluded | pending_sync | syncing | synced | failed | needs_attention | …), can_sync_now, sync_override, provider_link. display_status.key \"synced\" means the bill is in the accounting system. (GET /api/ledger/entries/by-source)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "source_type": {
+            "type": "STRING",
+            "description": "The document's model class."
+          },
+          "source_id": {
+            "type": "INTEGER",
+            "description": "The purchase invoice id."
+          }
+        },
+        "required": [
+          "source_type",
+          "source_id"
+        ]
+      }
+    },
+    {
+      "name": "inspect_entry_sync",
+      "description": "Why an entry is not syncing: eligible, enableable (blocked only by a setting or an override, so force-sync-entry will post it), reasons[] and structural_reasons[] (blocked for a reason an override cannot lift). (GET /api/ledger/entries/{entry}/sync-inspection)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "entry": {
+            "type": "INTEGER",
+            "description": "Ledger entry id (from find-ledger-entry)."
+          }
+        },
+        "required": [
+          "entry"
+        ]
+      }
+    },
+    {
+      "name": "force_sync_entry",
+      "description": "Post this one document past a per-type auto-sync opt-out. override \"force_enabled\" marks it to sync and queues the push; null removes the override. Needs the user's accounting.sync permission. (POST /api/ledger/entries/{entry}/sync-override)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "entry": {
+            "type": "INTEGER",
+            "description": "Ledger entry id."
+          },
+          "override": {
+            "type": "STRING",
+            "description": "force_enabled (or null to clear)."
+          }
+        },
+        "required": [
+          "entry",
+          "override"
+        ]
+      }
+    },
+    {
+      "name": "sync_entry_now",
+      "description": "Push an eligible entry now rather than waiting for the queue. The message says whether it was queued, not eligible, locked, or rejected by the provider. (POST /api/ledger/entries/{entry}/sync)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "entry": {
+            "type": "INTEGER",
+            "description": "Ledger entry id."
+          }
+        },
+        "required": [
+          "entry"
+        ]
+      }
+    },
+    {
+      "name": "suggest_payment_allocation",
+      "description": "The supplier's open bills oldest-due first, with `total` spread across them greedily. A starting point only; it is not how the supplier applied the money. (GET /api/purchase-invoices/supplier-payments/allocation-suggestion)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "supplier_id": {
+            "type": "INTEGER",
+            "description": "Supplier id."
+          },
+          "total": {
+            "type": "NUMBER",
+            "description": "The payment amount to spread."
+          }
+        },
+        "required": [
+          "supplier_id"
+        ]
+      }
+    },
+    {
+      "name": "list_supplier_payments",
+      "description": "Supplier payments recorded in SKU.io (one payment across several bills), newest first. (GET /api/purchase-invoices/supplier-payments)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "filter[supplier_id]": {
+            "type": "STRING",
+            "description": "Supplier id."
+          }
+        }
+      }
+    },
+    {
+      "name": "list_payment_types",
+      "description": "Resolve payment_type_id by name (e.g. \"Bank Transfer\", \"ACH\"). Don't invent the id. (GET /api/v2/payment-types)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "record_supplier_payment",
+      "description": "Record money that already left the bank as one payment across one or more bills. Credits cannot be part of it: apply them to the bills first, then pay the net. Each allocation must not exceed the bill's outstanding balance; all bills must share a currency. (POST /api/purchase-invoices/supplier-payments)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "supplier_id": {
+            "type": "INTEGER",
+            "description": "Supplier id."
+          },
+          "payment_date": {
+            "type": "STRING",
+            "description": "The date the bank line cleared, ISO."
+          },
+          "payment_type_id": {
+            "type": "INTEGER",
+            "description": "From list-payment-types. Omitted, it falls back to \"Cash\"."
+          },
+          "external_reference": {
+            "type": "STRING",
+            "description": "The bank line's own reference (ACH/wire number), so the payment can be traced."
+          },
+          "allocations": {
+            "type": "ARRAY",
+            "description": "Each { purchase_invoice_id, amount } (or bill_id for a non-PO bill).",
+            "items": {
+              "type": "STRING"
+            }
+          }
+        },
+        "required": [
+          "supplier_id",
+          "payment_date",
+          "allocations"
+        ]
+      }
+    },
+    {
+      "name": "delete_supplier_payment",
+      "description": "Reverse a supplier payment recorded in SKU.io (and its accounting-system batch, if it was pushed). (DELETE /api/purchase-invoices/supplier-payments/{supplierPaymentId})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "supplierPaymentId": {
+            "type": "INTEGER",
+            "description": "Supplier payment id."
+          }
+        },
+        "required": [
+          "supplierPaymentId"
+        ]
+      }
+    }
+  ]
+}

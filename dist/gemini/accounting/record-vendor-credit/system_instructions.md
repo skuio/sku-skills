@@ -146,16 +146,32 @@ List the supplier's bills that still have a balance:
 GET /api/purchase-invoices?filter[supplier_id]=<id>&filter[status]=unpaid,partially_paid&sort=purchase_invoice_date
 ```
 
-Read `outstanding_balance` on each, not `status`. Choose in this order:
+Read `outstanding_balance` on each, not `status`.
+
+**First, find out whether the supplier applies credits to bills at all.** Many suppliers, especially
+on QuickBooks or Xero, keep credit memos **open** on the account and use them up only when a payment
+arrives. Their statement then lists the credit as its own open line ("Credit Memo … −600.00 /
+−600.00"), not as a reduction of an invoice. For such a supplier, applying the credit to a bill here
+puts it on a bill they still show at full value, and often on one they consider already paid. That
+drifts SKU.io away from their statement by an amount nobody can explain later. The evidence, in
+order: the supplier's latest statement; how their earlier credits appear on it; the account's
+convention, if the caller states one. If the supplier keeps credits open, **leave it open and
+unallocated** (skip to Step 7), and make sure the supplier's `auto_apply_vendor_credits` is `false`
+(`PUT /api/suppliers/{id}`). Otherwise SKU.io applies the credit to their next new bill by itself. It is used when the payment that consumes it is recorded
+(`reconcile-supplier-statement`, Step 6).
+
+Otherwise choose in this order:
 
 1. **The bill the memo names.** If the memo cites one of the supplier's invoice or order numbers,
    apply it there.
-2. **The bill earlier credits from this supplier are going to.** When the account has been working
-   one bill down with credits, continue on it while it has room.
-3. **Otherwise, the oldest open bill** whose `outstanding_balance` covers the credit. That is how
-   the supplier's own statement ages it.
-4. **No single bill covers it.** Split it oldest-first across bills, one `/allocate` call per bill.
-   The amounts must add up to the credit total.
+2. **The bill earlier credits from this supplier are going to**, provided the supplier's statement
+   shows those earlier credits applied there too. When the account has been working one bill down
+   with credits, continue on it while it has room.
+3. **Otherwise, the oldest open bill the supplier also shows open**, whose `outstanding_balance`
+   covers the credit. A bill that is open in SKU.io but missing from the supplier's open items has
+   usually been paid and not yet recorded. Applying a credit there wastes it.
+4. **No single bill covers it.** Split it oldest-first across such bills, one `/allocate` call per
+   bill. The amounts must add up to the credit total.
 
 ```bash
 curl -sS -X POST "https://$SKU_TENANT.sku.io/api/vendor-credits/$CREDIT_ID/allocate" \
