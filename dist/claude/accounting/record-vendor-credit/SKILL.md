@@ -160,7 +160,8 @@ puts it on a bill they still show at full value, and often on one they consider 
 drifts SKU.io away from their statement by an amount nobody can explain later. The evidence, in
 order: the supplier's latest statement; how their earlier credits appear on it; the account's
 convention, if the caller states one. If the supplier keeps credits open, **leave it open and
-unallocated** (skip to Step 7). It is used when the payment that consumes it is recorded
+unallocated** (skip to Step 7), and make sure the supplier's `auto_apply_vendor_credits` is `false`
+(`PUT /api/suppliers/{id}`). Otherwise SKU.io applies the credit to their next new bill by itself. It is used when the payment that consumes it is recorded
 (`reconcile-supplier-statement`, Step 6).
 
 Otherwise choose in this order:

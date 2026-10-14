@@ -218,6 +218,14 @@ explain.
 Pay attention to credits applied to a bill that is already fully paid. That credit is effectively
 lost until it is unapplied.
 
+**Stop it recurring.** SKU.io can apply a supplier's open credits to every *new* bill on its own,
+oldest first: the account setting `vendor_credits_auto_apply_enabled`, overridable per supplier as
+`auto_apply_vendor_credits` (null = inherit). For a supplier who keeps credits open, set the
+supplier's override to `false` (`PUT /api/suppliers/{id}` with `{"auto_apply_vendor_credits": false}`).
+Otherwise the next bill you record consumes the memos you just unapplied. Check every bill you
+create or split during the reconciliation for allocations you didn't make
+(`applied_vendor_credits[]` with no `notes`), and unapply them.
+
 When the tenant syncs with an accounting system, unapplying removes the matching allocation there
 too. If the allocation never reached the accounting system, the push reports "unallocate the credit
 from the bill directly in Xero". The SKU.io side is already correct by then. Mention it, but there is
