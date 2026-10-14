@@ -71,10 +71,18 @@ open-item statement brackets the date the supplier applied a payment to it. Comp
 with the next and note which documents disappeared, between which two dates, and what the dropped
 amounts add up to. A dropped group whose total equals a bank line is that payment.
 
-Normalise document numbers before matching. Suppliers zero-pad (`0002130`); SKU.io records
-sometimes carry prefixes or suffixes that came from an accounting import (`Invoice---0002130`,
-`0002020/R1`, `0001303-2471`, `FBA191S5J85D: 0001303`). Match on the digits of the supplier's number.
-Where that is ambiguous, also require the amount to match.
+Normalise document numbers before matching. Suppliers zero-pad (`0002130`), and SKU.io's numbers
+carry markers of their own: the copy in the accounting system adds the PO and an internal id
+(`FBA191S5J85D: 0001303-2471`), and a corrected bill's accounting reference carries a revision
+marker (`0002020/R1`). Those are the same document, linked between the systems, so they are not
+discrepancies. Match on the digits of the supplier's number, and where the digits are ambiguous,
+also require the amount to match.
+
+One look-alike **is** an error: a number that is a **file name** (`Invoice---0002130`,
+`Inv_5073_from_StainOut_System_LLC_10780`). That's the stand-in a bill created from a PDF carries
+until the OCR reading is applied. Check the PDF and correct the number (`record-purchase-invoice`,
+Correcting an existing bill). If the bill is already in the accounting system, that system kept the
+stand-in as the bill's number, so renumber it there too.
 
 ## Step 2: Pull SKU.io's side
 
