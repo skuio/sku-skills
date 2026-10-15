@@ -184,14 +184,15 @@
       "name": "create-sales-order",
       "domain": "orders",
       "title": "Create a Sales Order",
-      "version": "1.1.0",
-      "description": "Create a new sales order in SKU.io with one or more line items. Use this to place an order for a customer — capturing the order status, order date, optional customer and store, and the SKUs, quantities, and unit prices being sold. Resolve products first with find-product so each line references a real product.",
+      "version": "1.2.0",
+      "description": "Create a new sales order in SKU.io with one or more line items. Use this to place an order for a customer — capturing the order status, order date, currency, optional customer and store, and the SKUs, quantities, and unit prices being sold. Resolve products first with find-product so each line references a real product.",
       "tagline": "Create a sales order with line items",
       "scopes": [
         "orders:write",
-        "products:read"
+        "products:read",
+        "settings:read"
       ],
-      "operations": 1,
+      "operations": 2,
       "tags": [
         "orders",
         "sales-order",

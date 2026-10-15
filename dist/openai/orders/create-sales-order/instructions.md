@@ -1,6 +1,6 @@
 # Create a Sales Order
 
-_Create a new sales order in SKU.io with one or more line items. Use this to place an order for a customer — capturing the order status, order date, optional customer and store, and the SKUs, quantities, and unit prices being sold. Resolve products first with find-product so each line references a real product._
+_Create a new sales order in SKU.io with one or more line items. Use this to place an order for a customer — capturing the order status, order date, currency, optional customer and store, and the SKUs, quantities, and unit prices being sold. Resolve products first with find-product so each line references a real product._
 
 Use this skill to create a sales order — the record of something being sold to a customer, with
 line items. It maps to `POST /api/sales-orders` (scope `orders:write`).
@@ -9,7 +9,7 @@ line items. It maps to `POST /api/sales-orders` (scope `orders:write`).
 
 Every call below authenticates as a SKU.io **Personal Access Token** against one specific
 tenant, so two things have to be true before Step 1: `$SKU_TENANT` and `$SKU_PAT` are set, and
-that token actually carries `orders:write`, `products:read`.
+that token actually carries `orders:write`, `products:read`, `settings:read`.
 
 If you cannot confirm both, **run the `connect-to-sku` skill first** rather than trying a call
 to see what happens. It mints the token, confirms the tenant is the one the user meant, and reads
@@ -30,14 +30,22 @@ the user named. Writing to the wrong account is the one mistake here the API can
    this account uses, create it as a draft first.
 3. **Have the money right.** `amount` on each line is the **unit price**, not the line total.
    `quantity` × `amount` is the line value; SKU.io computes totals.
+4. **Pick the currency.** Every order needs `currency_code` (or `currency_id`) — the API returns
+   `422` without one. `GET /api/currencies` (scope `settings:read`) lists the account's enabled
+   currencies with their `code` and `is_default`; use the default unless the order is priced in
+   another currency. Don't guess a code the account hasn't enabled — that is also a `422`.
 
 ## Required fields
 
-- `order_status` — string (see above).
-- `order_date` — a date; if you omit it the client defaults to now.
+- `order_status` — one of `draft`, `reserved`, `open`, `closed` (see above). `closed` also needs
+  `fulfilled_at`.
+- `order_date` — a date (ISO-8601). The API rejects the request without it; use today's date for
+  a new order.
+- `currency_code` — ISO code of an enabled account currency, e.g. `"USD"` (see step 4). Pass
+  `currency_id` instead if you already hold the id; one of the two is required.
 - `sales_order_lines` — required unless the order is a draft. Each line needs:
   - `description` (required, max 255)
-  - `quantity` (required, ≥ 0)
+  - `quantity` (required, ≥ 0; a `0` line also needs `canceled_quantity`)
   - `amount` (required unit price)
   - `product_id` **or** `sku` to link a catalog product (optional but recommended)
   - `warehouse_id` (optional; required if you set a `warehouse_routing_method` of `warehouse`)
@@ -55,6 +63,7 @@ curl -sS -X POST "https://$SKU_TENANT.sku.io/api/sales-orders" \
   -d '{
     "order_status": "open",
     "order_date": "2026-07-09",
+    "currency_code": "USD",
     "customer_id": 4821,
     "customer_po_number": "PO-99123",
     "sales_order_lines": [
@@ -80,12 +89,13 @@ See [`examples/request.json`](./examples/request.json) for the same body as a fi
 - **`422`** → validation failed. The `errors` map names the offending fields with dot-notation
   for lines, e.g. `sales_order_lines.0.quantity`. Fix those specific fields and resubmit — never
   blind-retry the same body. See [`shared/errors.md`](https://github.com/skuio/sku-skills/blob/main/shared/errors.md).
-- **`403`** → the token lacks `orders:write`. Mint a token with that scope.
+- **`403`** → the token lacks `orders:write` (or `settings:read` for the currency lookup). Mint a
+  token with that scope.
 
 ## Guardrails
 
-- Don't invent `customer_id`, `product_id`, or `store_id` values — resolve them first, or omit
-  the optional ones.
+- Don't invent `customer_id`, `product_id`, `store_id`, or `currency_code` values — resolve them
+  first, or omit the optional ones.
 - Creating an order is **not idempotent**: a retry after an ambiguous timeout can create a
   duplicate. On timeout, list recent orders (or search by `customer_po_number`) before re-posting.
 
@@ -93,6 +103,7 @@ See [`examples/request.json`](./examples/request.json) for the same body as a fi
 
 | Method | Path | What it does |
 | --- | --- | --- |
+| `GET` | `/api/currencies` | List the account's enabled currencies (id, code, conversion rate, is_default) to resolve or verify currency_code / currency_id. |
 | `POST` | `/api/sales-orders` | Create a sales order with header fields and an array of line items. |
 
 ## Authentication
@@ -106,7 +117,7 @@ Authorization: Bearer <YOUR_SKU_PAT>
 - **Base URL:** `https://{tenant}.sku.io` — replace `{tenant}` with your account subdomain.
   The subdomain may itself contain a dot (beta and staging accounts often do), so take
   **everything** before `.sku.io` in the URL you sign in at, not just the first label.
-- **Required scopes:** `orders:write`, `products:read`
+- **Required scopes:** `orders:write`, `products:read`, `settings:read`
 
 Mint a token under **Settings → Developer → Personal Access Tokens** in the SKU.io web app.
 See [`shared/authentication.md`](https://github.com/skuio/sku-skills/blob/main/shared/authentication.md) for the full flow.
