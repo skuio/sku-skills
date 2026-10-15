@@ -12,7 +12,7 @@ tags: [orders, sales-order, create, checkout, fulfilment]
 maintainers: [kmizzi]
 composes: [find-product]
 auth:
-  scopes: [orders:write, products:read, settings:read]
+  scopes: [orders:read, orders:write, products:read, settings:read]
 api:
   base_url: https://{tenant}.sku.io
   operations:

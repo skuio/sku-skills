@@ -1,5 +1,7 @@
 Use this skill to create a sales order — the record of something being sold to a customer, with
-line items. It maps to `POST /api/sales-orders` (scope `orders:write`).
+line items. It maps to `POST /api/sales-orders` (scope `orders:write`). The token also needs
+`orders:read` (to check for an existing order after a timeout — `orders:write` does not imply it),
+`products:read`, and `settings:read`.
 
 ## Before you post
 
@@ -75,12 +77,13 @@ See [`examples/request.json`](./examples/request.json) for the same body as a fi
   blind-retry the same body. See [`shared/errors.md`](../../../shared/errors.md).
   - A 422 naming **both** `currency_id` and `currency_code`, each "required when the other is not
     present", is **one** problem, not two: you sent neither. Add `currency_code` (step 4).
-- **`403`** → the token lacks `orders:write` (or `settings:read` for the currency lookup). Mint a
-  token with that scope.
+- **`403`** → the token lacks `orders:write` (or `orders:read` for listing orders, `settings:read`
+  for the currency lookup). Mint a token with that scope.
 
 ## Guardrails
 
 - Don't invent `customer_id`, `product_id`, `store_id`, or `currency_code` values — resolve them
   first, or omit the optional ones.
 - Creating an order is **not idempotent**: a retry after an ambiguous timeout can create a
-  duplicate. On timeout, list recent orders (or search by `customer_po_number`) before re-posting.
+  duplicate. On timeout, list recent orders with `GET /api/sales-orders/list` (scope `orders:read`)
+  — or search by `customer_po_number` — before re-posting.
