@@ -48,7 +48,10 @@ the user named. Writing to the wrong account is the one mistake here the API can
   - `quantity` (required, ≥ 0; a `0` line also needs `canceled_quantity`)
   - `amount` (required unit price)
   - `product_id` **or** `sku` to link a catalog product (optional but recommended)
-  - `warehouse_id` (optional; required if you set a `warehouse_routing_method` of `warehouse`)
+  - `warehouse_id` — optional (required if you set a `warehouse_routing_method` of `warehouse`),
+    but worth setting when you know where the stock is. Leave it out and the line takes a default
+    warehouse that may hold no stock: the order is still created, and the problem only surfaces at
+    fulfilment as "insufficient allocation" against a warehouse nobody chose.
 
 Useful optional header fields: `customer_id`, `store_id`, `sales_channel_id`,
 `customer_po_number`, `shipping_method_id`, `shipping_address_id`, `billing_address_id`,
@@ -89,6 +92,8 @@ See [`examples/request.json`](./examples/request.json) for the same body as a fi
 - **`422`** → validation failed. The `errors` map names the offending fields with dot-notation
   for lines, e.g. `sales_order_lines.0.quantity`. Fix those specific fields and resubmit — never
   blind-retry the same body. See [`shared/errors.md`](https://github.com/skuio/sku-skills/blob/main/shared/errors.md).
+  - A 422 naming **both** `currency_id` and `currency_code`, each "required when the other is not
+    present", is **one** problem, not two: you sent neither. Add `currency_code` (step 4).
 - **`403`** → the token lacks `orders:write` (or `settings:read` for the currency lookup). Mint a
   token with that scope.
 
