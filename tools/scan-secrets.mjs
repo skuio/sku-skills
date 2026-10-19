@@ -84,8 +84,14 @@ for (const file of trackedFiles()) {
     if (aws) record(file, lineNo, 'aws-access-key', mask(aws[0]));
 
     for (const m of line.matchAll(SKU_HOST)) {
-      const sub = m[1].toLowerCase();
-      const before = line[m.index - 1];
+      let sub = m[1].toLowerCase();
+      let before = line[m.index - 1];
+      // Inside JSON (dist/mcp/manifest.json carries INSTRUCTIONS.md as one string) a line break
+      // is the two characters `\n`, so "\ndeveloper.sku.io" must be read as "developer.sku.io".
+      if (before === '\\' && /^[nrt]/.test(sub)) {
+        sub = sub.slice(1);
+        before = line[m.index];
+      }
       if (before === '{' || before === '$' || before === '_') continue; // {tenant}, $SKU_TENANT placeholders
       // Multi-level hosts (beta.rouge.sku.io) are never public — always flag. Single labels: allowlist.
       if (!sub.includes('.') && ALLOWED_SUBDOMAINS.has(sub)) continue;

@@ -36,6 +36,11 @@
         "/orders/purchase-invoices",
         "/purchases/vendor-credits"
       ],
+      "icon": "mdi-scale-balance",
+      "mcp": {
+        "tools": [],
+        "prompt": true
+      },
       "outputs": {
         "claude": "dist/claude/accounting/reconcile-supplier-statement/SKILL.md",
         "openai": "dist/openai/accounting/reconcile-supplier-statement/",
@@ -74,6 +79,13 @@
         "/purchases/vendor-credits",
         "/orders/purchase-invoices"
       ],
+      "icon": "mdi-credit-card-refund-outline",
+      "mcp": {
+        "tools": [
+          "record_vendor_credit"
+        ],
+        "prompt": true
+      },
       "outputs": {
         "claude": "dist/claude/accounting/record-vendor-credit/SKILL.md",
         "openai": "dist/openai/accounting/record-vendor-credit/",
@@ -105,6 +117,13 @@
       "pages": [
         "/integrations/amazon/fba/recovery"
       ],
+      "icon": "mdi-cash-refund",
+      "mcp": {
+        "tools": [
+          "get_reimbursement_cases"
+        ],
+        "prompt": true
+      },
       "outputs": {
         "claude": "dist/claude/integrations/manage-amazon-recovery/SKILL.md",
         "openai": "dist/openai/integrations/manage-amazon-recovery/",
@@ -141,6 +160,13 @@
       "pages": [
         "/integrations/tiktok-shop"
       ],
+      "icon": "mdi-star-check-outline",
+      "mcp": {
+        "tools": [
+          "diagnose_tiktok_listing"
+        ],
+        "prompt": true
+      },
       "outputs": {
         "claude": "dist/claude/integrations/optimize-tiktok-listing-quality/SKILL.md",
         "openai": "dist/openai/integrations/optimize-tiktok-listing-quality/",
@@ -169,7 +195,19 @@
       "composes": [
         "find-product"
       ],
-      "pages": [],
+      "pages": [
+        "/inventory/inventory-adjustments",
+        "/inventory/inventory-movements",
+        "/inventory/stock-takes",
+        "/products/*/inventory"
+      ],
+      "icon": "mdi-package-variant",
+      "mcp": {
+        "tools": [
+          "adjust_inventory"
+        ],
+        "prompt": false
+      },
       "outputs": {
         "claude": "dist/claude/inventory/adjust-inventory/SKILL.md",
         "openai": "dist/openai/inventory/adjust-inventory/",
@@ -210,6 +248,11 @@
         "/crm/warehouses/*/initial-inventory",
         "/settings/inventory/inventory-start-date"
       ],
+      "icon": "mdi-clipboard-list-outline",
+      "mcp": {
+        "tools": [],
+        "prompt": true
+      },
       "outputs": {
         "claude": "dist/claude/inventory/set-initial-inventory/SKILL.md",
         "openai": "dist/openai/inventory/set-initial-inventory/",
@@ -240,7 +283,16 @@
       "composes": [
         "find-product"
       ],
-      "pages": [],
+      "pages": [
+        "/orders/sales-orders"
+      ],
+      "icon": "mdi-cart-plus",
+      "mcp": {
+        "tools": [
+          "create_sales_order"
+        ],
+        "prompt": false
+      },
       "outputs": {
         "claude": "dist/claude/orders/create-sales-order/SKILL.md",
         "openai": "dist/openai/orders/create-sales-order/",
@@ -267,8 +319,16 @@
       ],
       "composes": [],
       "pages": [
-        "/settings/developer/personal-access-tokens"
+        "/settings/developer/personal-access-tokens",
+        "/settings/developer"
       ],
+      "icon": "mdi-key-outline",
+      "mcp": {
+        "tools": [
+          "whoami"
+        ],
+        "prompt": false
+      },
       "outputs": {
         "claude": "dist/claude/platform/connect-to-sku/SKILL.md",
         "openai": "dist/openai/platform/connect-to-sku/",
@@ -295,7 +355,19 @@
         "review"
       ],
       "composes": [],
-      "pages": [],
+      "pages": [
+        "/products$",
+        "/orders/sales-orders$",
+        "/orders/purchase-orders$",
+        "/inventory/inventory-adjustments$"
+      ],
+      "icon": "mdi-bookmark-plus-outline",
+      "mcp": {
+        "tools": [
+          "create_saved_view"
+        ],
+        "prompt": false
+      },
       "outputs": {
         "claude": "dist/claude/platform/create-saved-view/SKILL.md",
         "openai": "dist/openai/platform/create-saved-view/",
@@ -327,6 +399,13 @@
       "pages": [
         "/automation/workflows"
       ],
+      "icon": "mdi-sitemap-outline",
+      "mcp": {
+        "tools": [
+          "create_workflow_draft"
+        ],
+        "prompt": true
+      },
       "outputs": {
         "claude": "dist/claude/platform/create-workflow/SKILL.md",
         "openai": "dist/openai/platform/create-workflow/",
@@ -355,7 +434,14 @@
         "create-saved-view",
         "find-product"
       ],
-      "pages": [],
+      "pages": [
+        "/settings/developer"
+      ],
+      "icon": "mdi-file-sync-outline",
+      "mcp": {
+        "tools": [],
+        "prompt": true
+      },
       "outputs": {
         "claude": "dist/claude/platform/sync-sops/SKILL.md",
         "openai": "dist/openai/platform/sync-sops/",
@@ -389,7 +475,16 @@
         "create-saved-view",
         "find-product"
       ],
-      "pages": [],
+      "pages": [
+        "/products$"
+      ],
+      "icon": "mdi-file-import-outline",
+      "mcp": {
+        "tools": [
+          "create_product"
+        ],
+        "prompt": true
+      },
       "outputs": {
         "claude": "dist/claude/products/build-product-catalog/SKILL.md",
         "openai": "dist/openai/products/build-product-catalog/",
@@ -429,6 +524,11 @@
         "/listings/templates",
         "/products"
       ],
+      "icon": "mdi-text-box-edit-outline",
+      "mcp": {
+        "tools": [],
+        "prompt": true
+      },
       "outputs": {
         "claude": "dist/claude/products/enrich-channel-content/SKILL.md",
         "openai": "dist/openai/products/enrich-channel-content/",
@@ -467,6 +567,11 @@
       "pages": [
         "/products"
       ],
+      "icon": "mdi-view-grid-plus-outline",
+      "mcp": {
+        "tools": [],
+        "prompt": true
+      },
       "outputs": {
         "claude": "dist/claude/products/find-matrix-opportunities/SKILL.md",
         "openai": "dist/openai/products/find-matrix-opportunities/",
@@ -493,7 +598,16 @@
         "barcode"
       ],
       "composes": [],
-      "pages": [],
+      "pages": [
+        "/products"
+      ],
+      "icon": "mdi-barcode-scan",
+      "mcp": {
+        "tools": [
+          "find_product"
+        ],
+        "prompt": false
+      },
       "outputs": {
         "claude": "dist/claude/products/find-product/SKILL.md",
         "openai": "dist/openai/products/find-product/",
@@ -530,6 +644,11 @@
         "/listings",
         "/products"
       ],
+      "icon": "mdi-publish",
+      "mcp": {
+        "tools": [],
+        "prompt": true
+      },
       "outputs": {
         "claude": "dist/claude/products/publish-listing/SKILL.md",
         "openai": "dist/openai/products/publish-listing/",
@@ -566,6 +685,13 @@
       "pages": [
         "/products"
       ],
+      "icon": "mdi-tag-outline",
+      "mcp": {
+        "tools": [
+          "update_product_pricing"
+        ],
+        "prompt": true
+      },
       "outputs": {
         "claude": "dist/claude/products/update-catalog-pricing/SKILL.md",
         "openai": "dist/openai/products/update-catalog-pricing/",
@@ -576,7 +702,7 @@
       "name": "create-purchase-order",
       "domain": "purchase-orders",
       "title": "Create a Purchase Order",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "Create a purchase order in SKU.io — a replenishment order placed with a supplier — from either a plain description of what to buy or a source document (a supplier email, an order-form spreadsheet, a demand-plan export) that supplies the SKUs and quantities. Resolves the supplier, destination warehouse, unit costs, currency, and (optionally) payment term, builds the line items, and creates the PO as a draft or an open order. Covers standard and consignment replenishment. Resolve products with find-product first so every line references a real product.",
       "tagline": "Create a replenishment PO for a supplier from a description or document",
       "scopes": [
@@ -586,7 +712,7 @@
         "products:read",
         "settings:read"
       ],
-      "operations": 7,
+      "operations": 8,
       "tags": [
         "purchase-orders",
         "purchasing",
@@ -599,7 +725,17 @@
         "build-product-catalog",
         "find-product"
       ],
-      "pages": [],
+      "pages": [
+        "/orders/purchase-orders"
+      ],
+      "icon": "mdi-clipboard-plus-outline",
+      "mcp": {
+        "tools": [
+          "create_purchase_order",
+          "submit_purchase_order"
+        ],
+        "prompt": true
+      },
       "outputs": {
         "claude": "dist/claude/purchase-orders/create-purchase-order/SKILL.md",
         "openai": "dist/openai/purchase-orders/create-purchase-order/",
@@ -635,6 +771,13 @@
         "/orders/purchase-invoices",
         "/orders/purchase-orders"
       ],
+      "icon": "mdi-receipt-text-outline",
+      "mcp": {
+        "tools": [
+          "record_purchase_invoice"
+        ],
+        "prompt": true
+      },
       "outputs": {
         "claude": "dist/claude/purchase-orders/record-purchase-invoice/SKILL.md",
         "openai": "dist/openai/purchase-orders/record-purchase-invoice/",
@@ -668,6 +811,11 @@
       "pages": [
         "/settings/pdf-templates/packing"
       ],
+      "icon": "mdi-package-variant-closed",
+      "mcp": {
+        "tools": [],
+        "prompt": true
+      },
       "outputs": {
         "claude": "dist/claude/settings/edit-packing-slip-template/SKILL.md",
         "openai": "dist/openai/settings/edit-packing-slip-template/",
@@ -699,6 +847,11 @@
       "pages": [
         "/settings/pdf-templates"
       ],
+      "icon": "mdi-file-document-edit-outline",
+      "mcp": {
+        "tools": [],
+        "prompt": true
+      },
       "outputs": {
         "claude": "dist/claude/settings/edit-pdf-template/SKILL.md",
         "openai": "dist/openai/settings/edit-pdf-template/",

@@ -22,6 +22,7 @@ pages:
   - /inventory/stock-takes
   - /crm/warehouses/*/initial-inventory
   - /settings/inventory/inventory-start-date
+icon: mdi-clipboard-list-outline
 auth:
   scopes: [inventory:read, inventory:write, warehouses:read, settings:write, products:read]
 api:
@@ -461,3 +462,7 @@ api:
           type: integer
           required: true
           description: The document id. Must belong to this stock take, or the call 404s.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt_only: true

@@ -1,7 +1,7 @@
 name: create-purchase-order
 title: Create a Purchase Order
 domain: purchase-orders
-version: 1.1.0
+version: 1.2.0
 description: >-
   Create a purchase order in SKU.io — a replenishment order placed with a supplier — from either a
   plain description of what to buy or a source document (a supplier email, an order-form
@@ -13,6 +13,9 @@ tagline: Create a replenishment PO for a supplier from a description or document
 tags: [purchase-orders, purchasing, replenishment, consignment, supplier, create]
 maintainers: [kmizzi]
 composes: [build-product-catalog, find-product]
+pages:
+  - /orders/purchase-orders
+icon: mdi-clipboard-plus-outline
 auth:
   scopes: [purchase-orders:write, suppliers:read, warehouses:read, products:read, settings:read]
 api:
@@ -194,3 +197,63 @@ api:
           required: true
           description: Array of purchase-order ids to submit to their suppliers.
           example: [102]
+    - id: submit-one-purchase-order
+      method: PUT
+      path: /api/purchase-orders/{purchase_order}/submit
+      summary: Submit one PO to its supplier. A draft is approved and opened first (approval policies apply); bulk submit only takes open POs.
+      parameters:
+        - name: purchase_order
+          in: path
+          type: integer
+          required: true
+          description: The purchase order id.
+          example: 102
+        - name: supplier_message
+          in: body
+          type: string
+          required: false
+          description: Optional note to the supplier, printed on the PO. Replaces the PO's supplier notes.
+        - name: notify_supplier
+          in: body
+          type: boolean
+          required: false
+          description: false marks the PO submitted without emailing the supplier (for suppliers with no PO email). Defaults to true.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt: true
+  tools:
+    - tool: create_purchase_order
+      operation: create-purchase-order
+      title: Create a draft purchase order
+      description: >-
+        Creates a draft purchase order with its supplier, receiving warehouse, lines and charges.
+        Nothing is sent to the supplier. Returns the PO id, number and sku_url.
+      scope: purchase-orders:write
+      exclude_params: [order_status, approval_status, submission_format, store_id, tags]
+      params:
+        purchase_order_date: ISO date.
+        supplier_name: ""
+        currency_code: ISO currency code, e.g. USD.
+        currency_id: ""
+        payment_term_id: ""
+        estimated_delivery_date: ISO date.
+        purchase_order_number: ""
+        supplier_notes: ""
+        supplier_id: The supplier id. Alternatively give supplier_name.
+        destination_warehouse_id: Receiving warehouse id; omit only for a dropship PO.
+        purchase_order_lines: "Lines: [{product_id or sku, quantity, amount (unit cost), description}]."
+        financial_lines: "Charges: [{description, quantity, amount, financial_line_type_id}]."
+      annotations: { read_only: false, destructive: false, idempotent: false, open_world: false }
+    - tool: submit_purchase_order
+      operation: submit-one-purchase-order
+      title: Submit a purchase order to its supplier
+      description: >-
+        Submits one purchase order to its supplier (e.g. by email), approving and opening a draft
+        first. This sends documents to a third party and cannot be recalled.
+      scope: purchase-orders:write
+      params:
+        purchase_order: The purchase order id.
+        supplier_message: Note printed on the PO.
+        notify_supplier: false skips the supplier email.
+      annotations: { read_only: false, destructive: true, idempotent: false, open_world: true }

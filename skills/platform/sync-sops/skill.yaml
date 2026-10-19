@@ -13,6 +13,9 @@ tagline: Reconcile your internal SOPs against what changed in SKU.io — automat
 tags: [sops, documentation, changelog, change-management, onboarding]
 maintainers: [kmizzi]
 composes: [create-saved-view, find-product]
+pages:
+  - /settings/developer
+icon: mdi-file-sync-outline
 auth:
   scopes: [settings:read]
 api:
@@ -27,3 +30,7 @@ api:
         scopes. Do not use /api/auth/profile: it is session-only and returns 403 "This endpoint is
         not available to API tokens." for every PAT. OPTIONAL — reading the public documentation
         and changelog (docs.sku.io) needs no token; only account-specific grounding does.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt_only: true

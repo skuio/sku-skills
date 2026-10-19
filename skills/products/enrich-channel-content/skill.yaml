@@ -22,6 +22,7 @@ pages:
   - /listings/profiles
   - /listings/templates
   - /products
+icon: mdi-text-box-edit-outline
 auth:
   scopes: [products:read, products:write, suppliers:read]
 api:
@@ -337,3 +338,7 @@ api:
           type: array
           required: true
           description: 'Complete set of {channel_field_name, source_type, source_value}. For the description: {"channel_field_name":"Description","source_type":"product_attribute","source_value":"<attribute id>"}'
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt_only: true

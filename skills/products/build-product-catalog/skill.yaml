@@ -12,6 +12,9 @@ tagline: Import products from a spreadsheet, price list, web page, or pasted tex
 tags: [products, catalog, import, onboarding, etl, spreadsheet, csv, google-sheets, scraping]
 maintainers: [kmizzi]
 composes: [create-saved-view, find-product]
+pages:
+  - /products$
+icon: mdi-file-import-outline
 auth:
   scopes: [products:write, products:read]
 api:
@@ -155,3 +158,31 @@ api:
             information that has no standard field of its own (carton pack, cubic feet, size,
             material, country of origin, …) here instead of dropping it. Unknown attribute names
             are created automatically.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt: true
+  tools:
+    - tool: create_product
+      operation: create-product
+      title: Create a product
+      description: >-
+        Creates one catalog product with its SKU, name, barcode, cost, price, weight and supplier
+        links. Returns the product id, SKU and sku_url.
+      scope: products:write
+      exclude_params: [length, width, height, dimension_unit]
+      params:
+        sku: ""
+        name: ""
+        barcode: UPC, EAN or GTIN.
+        brand_name: ""
+        unit_cost: ""
+        default_price: Default selling price.
+        default_supplier_price: ""
+        weight: ""
+        weight_unit: lb, g, kg or oz.
+        type: standard, bundle, kit, matrix, blemished or manufactured.
+        images: "[{url, download: true}]."
+        suppliers: "[{supplier_id or supplier_name, supplier_sku, is_default}]."
+        attributes: "Attribute values: [{name, value}]."
+      annotations: { read_only: false, destructive: false, idempotent: false, open_world: false }

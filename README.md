@@ -16,6 +16,7 @@ native shape:
 | **Claude** | An [Agent Skill](https://docs.claude.com/en/docs/agents-and-tools/agent-skills) folder (`SKILL.md`) | `dist/claude/…` |
 | **OpenAI** | GPT/Assistant instructions + an importable Action (OpenAPI) + function-calling `tools.json` | `dist/openai/…` |
 | **Gemini** | Gem system instructions + `function_declarations.json` | `dist/gemini/…` |
+| **SKU.io MCP server** | The hand-picked tools and skill prompts the hosted SKU.io MCP server serves, from each skill's `mcp:` block | `dist/mcp/manifest.json` |
 
 > **Community-owned & self-evolving.** These are meant to be used, forked, and improved. If a
 > skill is wrong or missing, open a PR — your agent can too. See

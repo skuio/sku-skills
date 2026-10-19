@@ -20,6 +20,7 @@ maintainers: [kmizzi]
 composes: [enrich-channel-content]
 pages:
   - /integrations/tiktok-shop
+icon: mdi-star-check-outline
 auth:
   scopes: [integrations:read, integrations:write]
 api:
@@ -222,3 +223,24 @@ api:
             Public URL to a sourced replacement main image (≥600×600). The backend fetches and uploads
             it to TikTok. Required if title and description are both omitted.
           example: https://cdn.example.com/products/walbro-400-766.jpg
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt: true
+  tools:
+    - tool: diagnose_tiktok_listing
+      operation: list-listing-quality
+      title: Diagnose TikTok Shop listing quality
+      exclude_params: [sort]
+      description: >-
+        Lists one TikTok Shop integration's listings with their quality tier (POOR, FAIR, GOOD)
+        and the diagnosis codes holding each back. Read-only; runs no new diagnosis.
+      scope: integrations:read
+      params:
+        tikTokShopIntegrationInstance: The TikTok Shop integration instance id.
+        filter[search]: Search title or TikTok product id.
+        filter[undiagnosed]: ""
+        per_page: ""
+        page: ""
+        filter[tier]: Only listings in this tier (POOR, FAIR or GOOD).
+      annotations: { read_only: true, destructive: false, idempotent: true, open_world: false }

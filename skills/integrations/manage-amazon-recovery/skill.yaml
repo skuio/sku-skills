@@ -16,6 +16,7 @@ tags: [amazon, fba, reimbursements, recovery, claims, seller-central, cases]
 maintainers: [kmizzi]
 pages:
   - /integrations/amazon/fba/recovery
+icon: mdi-cash-refund
 auth:
   scopes: [recovery:read, recovery:write]
 api:
@@ -282,3 +283,26 @@ api:
           type: string
           required: true
           description: The note text.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt: true
+  tools:
+    - tool: get_reimbursement_cases
+      operation: list-recovery-cases
+      also_operations: [get-recovery-case]
+      title: Get Amazon reimbursement cases
+      exclude_params: [sort]
+      description: >-
+        Lists Amazon FBA reimbursement cases with status, category, amount and filing deadline, or
+        returns one case in full when id is given.
+      scope: recovery:read
+      params:
+        id: One case's id, to return that case in full instead of a list.
+        filter[ui_group]: "Comma-separated stages: found, ready, waiting, paid, auto_paid, closed."
+        filter[category]: Comma-separated categories, e.g. warehouse_lost.
+        filter[due_within_days]: Claim window closes within N days.
+        filter[search]: Case id, SKU, ASIN, order, shipment or Amazon case id.
+        page: ""
+        per_page: Page size (default 10, max 100).
+      annotations: { read_only: true, destructive: false, idempotent: true, open_world: false }

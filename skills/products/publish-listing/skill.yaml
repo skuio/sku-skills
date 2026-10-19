@@ -16,6 +16,7 @@ composes: [find-product]
 pages:
   - /listings
   - /products
+icon: mdi-publish
 auth:
   scopes: [products:read, products:write]
 api:
@@ -465,3 +466,7 @@ api:
           description: >-
             Per-listing inventory rule overrides (masterOfStock, selectedWarehouses,
             inventoryModificationRules, fbmBackup…). Sent whole — the API does not merge sub-keys.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt_only: true

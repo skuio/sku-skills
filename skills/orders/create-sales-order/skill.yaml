@@ -11,6 +11,9 @@ tagline: Create a sales order with line items
 tags: [orders, sales-order, create, checkout, fulfilment]
 maintainers: [kmizzi]
 composes: [find-product]
+pages:
+  - /orders/sales-orders
+icon: mdi-cart-plus
 auth:
   scopes: [orders:read, orders:write, products:read, settings:read]
 api:
@@ -82,3 +85,24 @@ api:
             { description (required), quantity (required), amount (required unit price),
             product_id or sku (to link a catalog product), warehouse_id (optional) }. A line with
             quantity 0 also needs canceled_quantity.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  tools:
+    - tool: create_sales_order
+      operation: create-sales-order
+      title: Create a sales order
+      description: >-
+        Creates a sales order, as a draft or with line items. Returns the order id, number, status
+        and sku_url.
+      scope: orders:write
+      params:
+        order_date: ISO date.
+        currency_id: ""
+        customer_id: ""
+        store_id: ""
+        customer_po_number: ""
+        order_status: draft, reserved, open or closed. A draft needs no lines; closed also needs fulfilled_at.
+        currency_code: ISO currency code enabled on the account, e.g. USD.
+        sales_order_lines: "Lines: [{description, quantity, amount (unit price), product_id or sku, warehouse_id}]."
+      annotations: { read_only: false, destructive: false, idempotent: false, open_world: false }
