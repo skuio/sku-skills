@@ -77,6 +77,11 @@
       "uniqueItems": true,
       "description": "App route patterns where this skill is contextually relevant. The SKU.io web app matches the active page's path against these to surface the skill's action (the contextual skill icon on a page). Each entry begins with '/', is written WITHOUT the app's '/v2' base prefix, and is matched segment-by-segment: a bare path is a prefix match (it also matches pages nested under it), '*' matches any single segment, and a trailing '$' requires an exact segment-count match (no deeper nesting). Example: '/settings/pdf-templates' covers the list page and every template editor under it; '/products$' matches only the products list, not detail pages. Optional — omit for skills with no natural home page."
     },
+    "icon": {
+      "type": "string",
+      "pattern": "^mdi-[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Optional Material Design Icon name (e.g. 'mdi-cart-plus') the SKU.io web app shows next to this skill in its contextual skills menu. Ends up in dist/catalog.json; it does not change the model outputs."
+    },
     "auth": {
       "type": "object",
       "additionalProperties": false,
@@ -92,10 +97,7 @@
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": {
-            "type": "string",
-            "pattern": "^[a-z-]+:(read|write)$"
-          },
+          "items": { "type": "string", "pattern": "^[a-z-]+:(read|write)$" },
           "description": "Required PAT scopes in '{resource}:{read|write}' form, e.g. 'products:read', 'orders:write'."
         }
       }
@@ -115,6 +117,10 @@
           "items": { "$ref": "#/definitions/operation" }
         }
       }
+    },
+    "mcp": {
+      "$ref": "#/definitions/mcp",
+      "description": "Optional. How this skill is exposed by the SKU.io MCP server (dist/mcp/manifest.json): as one or more hand-picked tools, or as a prompt only. Skills without an `mcp` block are left out of the MCP manifest."
     }
   },
   "definitions": {
@@ -137,10 +143,7 @@
           "pattern": "^/",
           "description": "Path relative to base_url, e.g. '/api/products/search'. Path params in {braces}."
         },
-        "summary": {
-          "type": "string",
-          "minLength": 5
-        },
+        "summary": { "type": "string", "minLength": 5 },
         "parameters": {
           "type": "array",
           "items": { "$ref": "#/definitions/parameter" }
@@ -165,6 +168,104 @@
         "description": { "type": "string" },
         "example": {}
       }
+    },
+    "annotations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["read_only", "destructive", "idempotent", "open_world"],
+      "description": "MCP tool annotations. All four are required so no hint is left to a client's default. destructive is true when the call overwrites data, sends something to a third party, or changes inventory valuation, even if it can be undone.",
+      "properties": {
+        "read_only": { "type": "boolean" },
+        "destructive": { "type": "boolean" },
+        "idempotent": { "type": "boolean" },
+        "open_world": { "type": "boolean" }
+      }
+    },
+    "mcpTool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "operation", "scope", "description", "annotations"],
+      "properties": {
+        "tool": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+          "maxLength": 64,
+          "description": "MCP tool name: snake_case, at most 64 characters, unique across the repo."
+        },
+        "operation": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "The id of the operation in api.operations this tool calls."
+        },
+        "also_operations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+          "description": "Further operation ids the same tool may call (e.g. a lookup by SKU next to a search). Their parameters are merged into the input schema as optional."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 60,
+          "description": "Human-readable tool title. Defaults to the skill title."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 40,
+          "maxLength": 600,
+          "description": "Model-facing tool description: what the tool does and when it fits. Describe; never instruct the model to call other tools."
+        },
+        "scope": {
+          "type": "string",
+          "pattern": "^([a-z-]+:(read|write)|mcp:access)$",
+          "description": "The exact token scope the tool requires. 'mcp:access' marks a tool any MCP token may call."
+        },
+        "exclude_params": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string" },
+          "description": "Operation parameters the tool does not expose (e.g. a status the tool always forces)."
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "maxLength": 300 },
+          "description": "Shorter model-facing descriptions for parameters, keyed by parameter name. Overrides the operation's own description in the MCP input schema."
+        },
+        "annotations": { "$ref": "#/definitions/annotations" }
+      }
+    },
+    "mcp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "prompt_only": {
+          "type": "boolean",
+          "description": "true: the skill is published as an MCP prompt (its INSTRUCTIONS.md), not as a tool. Use for multi-step, high-judgement skills."
+        },
+        "prompt": {
+          "type": "boolean",
+          "description": "Also publish the skill's INSTRUCTIONS.md as an MCP prompt next to its tools. Implied by prompt_only."
+        },
+        "tools": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/mcpTool" }
+        }
+      },
+      "oneOf": [
+        {
+          "required": ["prompt_only"],
+          "not": {
+            "required": ["tools"]
+          }
+        },
+        {
+          "required": ["tools"],
+          "not": {
+            "required": ["prompt_only"]
+          }
+        }
+      ]
     }
   }
 }

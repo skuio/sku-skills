@@ -9,6 +9,9 @@ description: >-
 tagline: Resolve a product by SKU, barcode, or fuzzy search
 tags: [products, catalog, lookup, search, sku, barcode]
 maintainers: [kmizzi]
+pages:
+  - /products
+icon: mdi-barcode-scan
 auth:
   scopes: [products:read]
 api:
@@ -70,3 +73,22 @@ api:
           type: integer
           required: true
           description: The product id.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  tools:
+    - tool: find_product
+      operation: search-products
+      also_operations: [get-product-by-sku, barcode-lookup, get-product]
+      title: Find a product
+      description: >-
+        Finds a product by exact SKU (sku), barcode (code), product id (id) or fuzzy text search
+        (q). Give one of them. Returns each match's id, SKU, name and sku_url.
+      scope: products:read
+      params:
+        q: ""
+        limit: Max matches for q (default 10).
+        sku: ""
+        code: A barcode (UPC, EAN or GTIN).
+        id: ""
+      annotations: { read_only: true, destructive: false, idempotent: true, open_world: false }

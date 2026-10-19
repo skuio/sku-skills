@@ -292,3 +292,199 @@ export function renderGeminiFunctions(skill) {
     })),
   };
 }
+
+// ---------------------------------------------------------------------------
+// MCP — the manifest the SKU.io MCP server builds its hand-picked tools and
+// skill prompts from (dist/mcp/manifest.json)
+// ---------------------------------------------------------------------------
+
+const SHARED_URL = 'https://github.com/skuio/sku-skills/blob/main/shared/';
+
+/**
+ * First sentence of a parameter description, capped. Every MCP client loads every tool schema
+ * into context on connect, so the manifest keeps parameter text short; a skill sets `mcp.tools[].params`
+ * when the first sentence is not enough.
+ */
+function shortDescription(text = '', max = 90) {
+  // Pointers at other skill operations ("(from find-supplier)") mean nothing to an MCP client.
+  const line = singleLine(text).replace(/\s*\((from|see|via) [^)]*\)/gi, '');
+  const first = line.split(/(?<!\b(?:e\.g|i\.e|etc|vs)\.)(?<=[.!?])\s/)[0] ?? line;
+  return first.length > max ? `${first.slice(0, max - 1).trimEnd()}…` : first;
+}
+
+/**
+ * skill.yaml does not declare array item types, so infer them from the example: objects stay
+ * objects, scalars keep their type. Some clients (OpenAI's among them) reject an array schema
+ * without `items`.
+ */
+function mcpItemsFor(param) {
+  const first = Array.isArray(param.example) ? param.example[0] : undefined;
+  if (first !== undefined && first !== null && typeof first === 'object') {
+    return { type: 'object' };
+  }
+  if (typeof first === 'number') {
+    return { type: Number.isInteger(first) ? 'integer' : 'number' };
+  }
+  if (typeof first === 'string') {
+    return { type: 'string' };
+  }
+  if (/(^|_)ids?$/.test(param.name)) {
+    return { type: 'integer' };
+  }
+  return /(^|_)(tags|skus|codes|names)$/.test(param.name) ? { type: 'string' } : { type: 'object' };
+}
+
+function mcpSchemaFor(param, override) {
+  const node = { type: param.type };
+  // An empty override drops the description: the parameter's name already says it all.
+  const description = override !== undefined ? singleLine(override) : shortDescription(param.description);
+  if (description) {
+    node.description = description;
+  }
+  if (param.type === 'array') {
+    node.items = mcpItemsFor(param);
+  }
+  return node;
+}
+
+/** Every write tool takes these two, so a retry never writes twice and a model can check first. */
+export const MCP_WRITE_PARAMS = {
+  idempotency_key: {
+    type: 'string',
+    maxLength: 128,
+    description: 'A repeat with this key replays the first result.',
+  },
+  dry_run: {
+    type: 'boolean',
+    description: 'Validate only; saves nothing.',
+  },
+};
+
+export const isMcpWriteTool = (tool) => tool.scope.endsWith(':write');
+
+/** The MCP view of one `mcp.tools[]` entry. Throws when it references an operation the skill lacks. */
+export function renderMcpTool(skill, tool) {
+  const ops = skill.meta.api.operations;
+  const opIds = [tool.operation, ...(tool.also_operations ?? [])];
+  const resolved = opIds.map((id) => {
+    const op = ops.find((o) => o.id === id);
+    if (!op) {
+      throw new Error(`${skill.domain}/${skill.name}: mcp tool "${tool.tool}" references unknown operation "${id}"`);
+    }
+    return op;
+  });
+
+  const exclude = new Set(tool.exclude_params ?? []);
+  const properties = {};
+  const required = [];
+  resolved.forEach((op, index) => {
+    for (const param of op.parameters ?? []) {
+      if (exclude.has(param.name) || properties[param.name]) {
+        continue;
+      }
+      properties[param.name] = mcpSchemaFor(param, tool.params?.[param.name]);
+      // Only the primary operation sets what is required; the others are alternate ways in.
+      if (index === 0 && (param.required || param.in === 'path')) {
+        required.push(param.name);
+      }
+    }
+  });
+  if (isMcpWriteTool(tool)) {
+    Object.assign(properties, MCP_WRITE_PARAMS);
+  }
+
+  const inputSchema = { type: 'object', properties };
+  if (required.length) {
+    inputSchema.required = required;
+  }
+
+  return {
+    name: tool.tool,
+    title: tool.title ?? skill.meta.title,
+    description: singleLine(tool.description),
+    inputSchema,
+    annotations: {
+      readOnlyHint: tool.annotations.read_only,
+      destructiveHint: tool.annotations.destructive,
+      idempotentHint: tool.annotations.idempotent,
+      openWorldHint: tool.annotations.open_world,
+    },
+    operation: { method: resolved[0].method, path: resolved[0].path },
+    operations: resolved.map((op) => ({
+      id: op.id,
+      method: op.method,
+      path: op.path,
+      // Where each exposed argument goes on the request, so the server can build it without guessing.
+      params: Object.fromEntries((op.parameters ?? []).filter((p) => !exclude.has(p.name)).map((p) => [p.name, p.in])),
+    })),
+    scope: tool.scope,
+    skill: `${skill.domain}/${skill.name}`,
+    skill_version: skill.meta.version,
+  };
+}
+
+/**
+ * The prompt body: the skill's own INSTRUCTIONS.md under an MCP preamble. The preamble replaces
+ * the generated PAT-oriented "Step 0 — Connect first" (an MCP session is already connected), and
+ * shared/ links point at GitHub because there is no folder to bundle them into.
+ */
+export function renderMcpPrompt(skill) {
+  const { meta } = skill;
+  const preamble = [
+    `# ${meta.title}`,
+    '',
+    'You are running this skill through the SKU.io MCP server, which is already connected to one',
+    'tenant with the access the user granted. Where the steps below show a `curl` call, make the same',
+    'request through the server instead: a hand-picked tool when one covers the operation, otherwise',
+    'the gateway (`describe_endpoint`, then `api_read` for GET or `api_write` for POST/PUT/PATCH).',
+    'Skip any step about minting or pasting a Personal Access Token. A `scope_required` error means the',
+    'connection lacks that access: tell the user to reconnect and grant it, rather than working around it.',
+    '',
+    `Scopes this skill uses: ${meta.auth.scopes.map((s) => `\`${s}\``).join(', ')}.`,
+  ].join('\n');
+
+  return {
+    name: snake(skill.name),
+    title: meta.title,
+    description: singleLine(meta.description),
+    arguments: [
+      {
+        name: 'request',
+        description: 'Optional. What the user wants done, in their own words (the PO, file or SKUs involved).',
+        required: false,
+      },
+    ],
+    text: `${preamble}\n\n${skill.instructions.replaceAll('../../../shared/', SHARED_URL)}\n`,
+    skill: `${skill.domain}/${skill.name}`,
+    skill_version: meta.version,
+    scopes: meta.auth.scopes,
+  };
+}
+
+/** dist/mcp/manifest.json: every skill's `mcp:` block, resolved against its operations. */
+export function renderMcpManifest(skills, version) {
+  const tools = [];
+  const prompts = [];
+  for (const skill of skills) {
+    const mcp = skill.meta.mcp;
+    if (!mcp) {
+      continue;
+    }
+    for (const tool of mcp.tools ?? []) {
+      tools.push(renderMcpTool(skill, tool));
+    }
+    if (mcp.prompt_only || mcp.prompt) {
+      prompts.push(renderMcpPrompt(skill));
+    }
+  }
+  tools.sort((a, b) => a.name.localeCompare(b.name));
+  prompts.sort((a, b) => a.name.localeCompare(b.name));
+
+  return {
+    $comment: 'Generated by `npm run build` from the `mcp:` blocks in skills/*/skill.yaml. Do not edit.',
+    version,
+    source: 'https://github.com/skuio/sku-skills',
+    tools,
+    prompts,
+  };
+}

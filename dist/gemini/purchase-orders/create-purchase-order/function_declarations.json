@@ -169,6 +169,30 @@
           "ids"
         ]
       }
+    },
+    {
+      "name": "submit_one_purchase_order",
+      "description": "Submit one PO to its supplier. A draft is approved and opened first (approval policies apply); bulk submit only takes open POs. (PUT /api/purchase-orders/{purchase_order}/submit)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "purchase_order": {
+            "type": "INTEGER",
+            "description": "The purchase order id."
+          },
+          "supplier_message": {
+            "type": "STRING",
+            "description": "Optional note to the supplier, printed on the PO. Replaces the PO's supplier notes."
+          },
+          "notify_supplier": {
+            "type": "BOOLEAN",
+            "description": "false marks the PO submitted without emailing the supplier (for suppliers with no PO email). Defaults to true."
+          }
+        },
+        "required": [
+          "purchase_order"
+        ]
+      }
     }
   ]
 }

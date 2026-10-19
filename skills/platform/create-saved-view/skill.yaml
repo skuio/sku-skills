@@ -11,6 +11,12 @@ description: >-
 tagline: Create and favorite a saved view — columns, filters, sort — on any data table
 tags: [saved-views, datatable, favorite, views, ui, review]
 maintainers: [kmizzi]
+pages:
+  - /products$
+  - /orders/sales-orders$
+  - /orders/purchase-orders$
+  - /inventory/inventory-adjustments$
+icon: mdi-bookmark-plus-outline
 auth:
   scopes: [settings:write]
 api:
@@ -117,3 +123,23 @@ api:
           type: integer
           required: true
           description: The saved view id.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  tools:
+    - tool: create_saved_view
+      operation: create-saved-view
+      title: Create a saved view
+      description: >-
+        Saves a named view (columns, filters, sort) on one data table, optionally as the user's
+        favorite or default. Returns the view id.
+      scope: settings:write
+      exclude_params: [color, description]
+      params:
+        name: ""
+        is_user_favorite: ""
+        is_user_default: ""
+        is_shared: ""
+        model: The table's model class, e.g. App\Models\Product.
+        query_data: "A JSON string: {columns: {visible: [...]}, search, filterGroups (base64), sortBy, pagination}."
+      annotations: { read_only: false, destructive: true, idempotent: false, open_world: false }

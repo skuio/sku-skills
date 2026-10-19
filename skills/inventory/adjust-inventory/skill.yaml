@@ -11,6 +11,12 @@ tagline: Increase / decrease / set on-hand stock at a warehouse
 tags: [inventory, stock, adjustment, stock-take, shrinkage]
 maintainers: [kmizzi]
 composes: [find-product]
+pages:
+  - /inventory/inventory-adjustments
+  - /inventory/inventory-movements
+  - /inventory/stock-takes
+  - /products/*/inventory
+icon: mdi-package-variant
 auth:
   scopes: [inventory:write, products:read]
 api:
@@ -68,3 +74,24 @@ api:
           type: string
           required: false
           description: Free-text reason for the adjustment (recommended for audit).
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  tools:
+    - tool: adjust_inventory
+      operation: create-inventory-adjustment
+      title: Adjust inventory
+      description: >-
+        Increases, decreases or sets one product's on-hand quantity at one warehouse. Posts an
+        inventory movement, which changes stock valuation and COGS. Returns the adjustment id.
+      scope: inventory:write
+      params:
+        adjustment_date: ISO date.
+        product_id: ""
+        warehouse_id: ""
+        warehouse_location_id: ""
+        notes: ""
+        quantity: Units to add or remove, or the new on-hand total when adjustment_type is set. Non-zero.
+        adjustment_type: increase, decrease or set.
+        unit_cost: Unit cost of added stock; needed for an increase when the product has no average cost yet.
+      annotations: { read_only: false, destructive: true, idempotent: false, open_world: false }

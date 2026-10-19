@@ -17,6 +17,7 @@ tags: [automation, workflow, workflow-builder, triggers, notifications, no-code,
 maintainers: [kmizzi]
 pages:
   - /automation/workflows
+icon: mdi-sitemap-outline
 auth:
   scopes: [settings:read, settings:write]
 api:
@@ -404,3 +405,25 @@ api:
           type: integer
           required: true
           description: The workflow id.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt: true
+  tools:
+    - tool: create_workflow_draft
+      operation: create-workflow
+      also_operations: [validate-workflow]
+      title: Create a draft automation workflow
+      description: >-
+        Validates an automation workflow graph (nodes, edges) and saves it as an unpublished draft.
+        It never publishes, enables or runs it. Returns the workflow id, validation and sku_url.
+      scope: settings:write
+      exclude_params: [viewport]
+      params:
+        name: ""
+        description: ""
+        category: Free-text grouping, e.g. orders.
+        nodes: "Nodes: [{id, type (from the node catalog), position {x, y}, data}]."
+        edges: "Edges: [{id, source, target, sourceHandle?}]."
+        preview_mode: true makes runs skip every state-changing step once published.
+      annotations: { read_only: false, destructive: true, idempotent: false, open_world: false }

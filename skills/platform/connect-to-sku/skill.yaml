@@ -14,6 +14,8 @@ tags: [auth, setup, getting-started, personal-access-token]
 maintainers: [kmizzi]
 pages:
   - /settings/developer/personal-access-tokens
+  - /settings/developer
+icon: mdi-key-outline
 auth:
   scopes: [settings:read, warehouses:read]
 api:
@@ -47,3 +49,15 @@ api:
         List warehouses (needs warehouses:read). Real warehouse names are the practical way to
         confirm you are on the account the user meant, which no settings or identity call can tell
         you. Worth a per_page=5 call before any write.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  tools:
+    - tool: whoami
+      operation: verify-connection
+      title: Who am I connected as
+      description: >-
+        Returns the SKU.io user, tenant and token behind this connection, with the scopes the
+        token holds.
+      scope: mcp:access
+      annotations: { read_only: true, destructive: false, idempotent: true, open_world: false }

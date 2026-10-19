@@ -13,6 +13,26 @@ const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const SEMVER = /^\d+\.\d+\.\d+$/;
 const SCOPE = /^[a-z-]+:(read|write)$/;
+const MCP_TOOL_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
+const MCP_SCOPE = /^([a-z-]+:(read|write)|mcp:access)$/;
+const MCP_ANNOTATIONS = ['read_only', 'destructive', 'idempotent', 'open_world'];
+const ICON = /^mdi-[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/**
+ * Directory reviewers (Anthropic's and OpenAI's) reject tool descriptions that order the model
+ * to call other tools — that is the shape of a prompt-injection, even when well meant. A
+ * description may say what a tool is for and what it pairs with; it may not issue the order.
+ */
+const CROSS_TOOL_IMPERATIVES = [
+  /\balways\s+(call|use|invoke|run)\b/i,
+  /\b(you\s+)?must\s+(first\s+)?(call|use|invoke|run)\b/i,
+  /\b(call|invoke|run|use)\s+(the\s+)?(?!this\b)`?[a-z0-9_]+`?\s+tool\b/i,
+  /\b(never|don't|do not)\s+(call|use|invoke)\b/i,
+  /\bbefore\s+(calling|invoking|using)\b/i,
+  /\b(call|invoke)\s+[a-z0-9_`]+\s+first\b/i,
+];
+const imperativeIn = (text = '') => CROSS_TOOL_IMPERATIVES.find((re) => re.test(String(text)));
+const seenMcpTools = new Map();
 
 const entries = findSkillEntries();
 const errors = [];
@@ -143,10 +163,156 @@ for (const entry of entries) {
     }
   }
 
+  if (m.icon !== undefined && !ICON.test(String(m.icon))) {
+    fail(`icon "${m.icon}" must be a Material Design Icon name like "mdi-cart-plus"`);
+  }
+
+  if (m.mcp !== undefined) {
+    validateMcp(m, id, fail);
+  }
+
   const instructionsPath = path.join(entry.dir, 'INSTRUCTIONS.md');
   if (!fs.existsSync(instructionsPath) || fs.readFileSync(instructionsPath, 'utf8').trim().length < 200) {
     fail('INSTRUCTIONS.md is required and must be substantive (min 200 chars)');
   }
+}
+
+/** The `mcp:` block: tools resolve to real operations, names fit MCP clients, hints are explicit. */
+function validateMcp(m, id, fail) {
+  const mcp = m.mcp;
+  if (typeof mcp !== 'object' || mcp === null || Array.isArray(mcp)) {
+    fail('mcp must be an object');
+    return;
+  }
+  for (const key of Object.keys(mcp)) {
+    if (!['prompt_only', 'prompt', 'tools'].includes(key)) {
+      fail(`mcp has unknown key "${key}"`);
+    }
+  }
+  const hasTools = mcp.tools !== undefined;
+  if (mcp.prompt_only === true && hasTools) {
+    fail('mcp: a prompt_only skill must not also declare tools');
+  }
+  if (mcp.prompt_only !== true && !hasTools) {
+    fail('mcp must declare tools, or set prompt_only: true');
+  }
+  if (mcp.prompt_only !== undefined && typeof mcp.prompt_only !== 'boolean') {
+    fail('mcp.prompt_only must be a boolean');
+  }
+  if (mcp.prompt !== undefined && typeof mcp.prompt !== 'boolean') {
+    fail('mcp.prompt must be a boolean');
+  }
+  if (!hasTools) {
+    return;
+  }
+  if (!Array.isArray(mcp.tools) || mcp.tools.length === 0) {
+    fail('mcp.tools must be a non-empty array');
+    return;
+  }
+
+  const ops = new Map((m.api?.operations ?? []).map((op) => [op.id, op]));
+  const allowed = new Set(['tool', 'operation', 'also_operations', 'title', 'description', 'scope', 'exclude_params', 'params', 'annotations']);
+  for (const tool of mcp.tools) {
+    const name = tool?.tool ?? '';
+    const where = `mcp tool "${name}"`;
+    for (const key of Object.keys(tool ?? {})) {
+      if (!allowed.has(key)) {
+        fail(`${where} has unknown key "${key}"`);
+      }
+    }
+    if (!MCP_TOOL_NAME.test(name)) {
+      fail(`${where}: name must be snake_case (lowercase letters, digits, single underscores)`);
+    }
+    if (name.length > 64) {
+      fail(`${where}: name must be at most 64 characters (got ${name.length})`);
+    }
+    if (seenMcpTools.has(name)) {
+      fail(`${where}: name is already used by ${seenMcpTools.get(name)}`);
+    }
+    seenMcpTools.set(name, id);
+
+    const opIds = [tool.operation, ...(tool.also_operations ?? [])];
+    const resolved = [];
+    for (const opId of opIds) {
+      const op = ops.get(opId);
+      if (!op) {
+        fail(`${where}: operation "${opId}" is not in api.operations`);
+      } else {
+        resolved.push(op);
+      }
+    }
+
+    if (!MCP_SCOPE.test(tool.scope ?? '')) {
+      fail(`${where}: scope "${tool.scope}" must be "{resource}:read", "{resource}:write" or "mcp:access"`);
+    } else if (tool.scope !== 'mcp:access' && !(m.auth?.scopes ?? []).includes(tool.scope)) {
+      fail(`${where}: scope "${tool.scope}" must also be listed in auth.scopes`);
+    }
+
+    const desc = singleLineOf(tool.description);
+    if (desc.length < 40 || desc.length > 600) {
+      fail(`${where}: description must be 40–600 chars (got ${desc.length})`);
+    }
+    const hit = imperativeIn(desc);
+    if (hit) {
+      fail(`${where}: description gives the model a cross-tool instruction (${hit}); describe the tool instead`);
+    }
+    if (tool.title !== undefined && (String(tool.title).length < 3 || String(tool.title).length > 60)) {
+      fail(`${where}: title must be 3–60 chars`);
+    }
+
+    const paramNames = new Set(resolved.flatMap((op) => (op.parameters ?? []).map((p) => p.name)));
+    for (const p of tool.exclude_params ?? []) {
+      if (!paramNames.has(p)) {
+        fail(`${where}: exclude_params names "${p}", which none of its operations take`);
+      }
+    }
+    for (const [p, text] of Object.entries(tool.params ?? {})) {
+      if (!paramNames.has(p)) {
+        fail(`${where}: params describes "${p}", which none of its operations take`);
+      }
+      const paramHit = imperativeIn(text);
+      if (paramHit) {
+        fail(`${where}: the description of "${p}" gives a cross-tool instruction (${paramHit})`);
+      }
+    }
+    for (const p of ['idempotency_key', 'dry_run']) {
+      if (paramNames.has(p)) {
+        fail(`${where}: an operation parameter is named "${p}", which the MCP server reserves`);
+      }
+    }
+
+    const ann = tool.annotations ?? {};
+    for (const key of MCP_ANNOTATIONS) {
+      if (typeof ann[key] !== 'boolean') {
+        fail(`${where}: annotations.${key} must be set explicitly to true or false`);
+      }
+    }
+    for (const key of Object.keys(ann)) {
+      if (!MCP_ANNOTATIONS.includes(key)) {
+        fail(`${where}: annotations has unknown key "${key}"`);
+      }
+    }
+    const writes = resolved.some((op) => op.method !== 'GET');
+    if (ann.read_only === true && writes) {
+      fail(`${where}: read_only is true but it calls a ${resolved.find((op) => op.method !== 'GET').method} operation`);
+    }
+    if (ann.read_only === true && ann.destructive === true) {
+      fail(`${where}: a read_only tool cannot be destructive`);
+    }
+    if (resolved.some((op) => op.method === 'DELETE')) {
+      fail(`${where}: MCP tools never wrap a DELETE operation`);
+    }
+    if (writes && String(tool.scope).endsWith(':read')) {
+      fail(`${where}: it writes, so its scope must be a :write scope`);
+    }
+    if (!writes && String(tool.scope).endsWith(':write')) {
+      fail(`${where}: it only reads, so its scope must not be a :write scope`);
+    }
+  }
+}
+
+function singleLineOf(s = '') {
+  return String(s).replace(/\s+/g, ' ').trim();
 }
 
 for (const { id, ref } of composeRefs) {

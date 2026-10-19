@@ -152,8 +152,10 @@ See [`examples/request.json`](./examples/request.json) for the same body as a fi
 
 ## Optionally: submit it to the supplier
 
-Creating a PO does **not** send it. To send it, `POST /api/purchase-orders/submit` with
-`{ "ids": [<po_id>] }`. **Submitting emails the supplier** — a real, outward-facing action. Only
+Creating a PO does **not** send it. To send one PO — a draft included — `PUT
+/api/purchase-orders/<po_id>/submit` (it approves and opens a draft first, under the account's
+approval policies). To send several POs that are already open, `POST /api/purchase-orders/submit`
+with `{ "ids": [<po_id>, …] }`; that bulk route refuses drafts as "not open". **Submitting emails the supplier** — a real, outward-facing action. Only
 submit when the user explicitly asks, and confirm first; default to leaving the new PO unsent for
 review. (Approval is separate: create with `approval_status: "approved"`, or approve later.)
 

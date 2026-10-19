@@ -47,6 +47,17 @@ api:
           required: true
           description: Order status (e.g. draft, open).
           example: draft
+
+mcp:                             # optional; how the SKU.io MCP server exposes the skill
+  tools:
+    - tool: create_sales_order        # snake_case, ≤ 64 chars, unique across the repo
+      operation: create-sales-order   # an api.operations id
+      scope: orders:write             # the exact scope the tool needs (or mcp:access)
+      description: >-                 # 40–600 chars; describes, never orders other tool calls
+        Creates a sales order, as a draft or with line items. Returns the order id and sku_url.
+      params:                         # optional shorter parameter text for the MCP schema
+        order_status: draft, reserved, open or closed.
+      annotations: { read_only: false, destructive: false, idempotent: false, open_world: false }
 ```
 
 ### Field notes
@@ -72,6 +83,30 @@ api:
   matches only the products list. These end up in `dist/catalog.json` (the machine-readable index the
   app reads); they don't change the model outputs. Omit for skills with no natural home page
   (auth/meta skills like `connect-to-sku`).
+- **`icon`** (optional) — the Material Design Icon (`mdi-…`) the SKU.io web app shows beside the
+  skill in its contextual skills menu. Like `pages`, it lands in `dist/catalog.json` only.
+- **`mcp`** (optional) — how the hosted SKU.io MCP server exposes the skill. The build
+  renders every block into `dist/mcp/manifest.json`, which the app copies in with
+  `php artisan mcp:sync-skills`. A skill without the block is left out of the MCP server.
+  - **`prompt_only: true`** — publish the skill's `INSTRUCTIONS.md` as an MCP prompt and no tool.
+    Use it for multi-step, high-judgement skills (opening stock, listing publication, template
+    edits): the model follows the prompt and makes the calls through the server's gateway tools.
+  - **`tools: [...]`** — one entry per hand-picked tool. A skill may define several (e.g. create a
+    draft PO, and separately submit it). Each entry names its `operation`, optional
+    `also_operations` (alternate lookups whose parameters merge in as optional), the exact `scope`,
+    a `description`, and **all four** `annotations` — `read_only`, `destructive`, `idempotent`,
+    `open_world` — set explicitly. Set `destructive: true` when the call overwrites data, sends
+    something to a third party, or changes inventory valuation, even when it can be undone.
+    `exclude_params` hides parameters the tool forces itself (a draft-only status), and `params`
+    gives shorter schema text per parameter (an empty string drops it). Every client loads every
+    tool schema into context on connect, so keep both short.
+  - **`prompt: true`** — also publish the instructions as a prompt next to the tools.
+  - `validate` rejects tool names over 64 characters or not `snake_case`, a read-only tool that
+    calls a write operation, a write tool without a `:write` scope, a DELETE operation, and
+    descriptions that order the model to call other tools ("always call…", "you must use…",
+    "invoke the … tool"). Directory reviewers treat that wording as prompt injection.
+  - The manifest's `version` is `package.json`'s. The app refuses to sync a manifest older than
+    the one it has, so bump the package version when tool text or shape changes.
 - **`parameters`** — mark `required: true` only when the API rejects the request without it. Path
   params are always required. Body params become the request JSON; query/path/header map to the
   URL and headers.

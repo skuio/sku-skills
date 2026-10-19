@@ -17,6 +17,7 @@ maintainers: [kmizzi]
 composes: [find-product, build-product-catalog, publish-listing]
 pages:
   - /products
+icon: mdi-view-grid-plus-outline
 auth:
   scopes: [products:read, products:write, integrations:read]
 api:
@@ -267,3 +268,7 @@ api:
           type: string
           required: false
           description: Image URL for a print or pattern option, where a flat colour cannot represent it.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt_only: true

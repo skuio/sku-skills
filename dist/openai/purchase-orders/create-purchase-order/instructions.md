@@ -171,8 +171,10 @@ See [`examples/request.json`](./examples/request.json) for the same body as a fi
 
 ## Optionally: submit it to the supplier
 
-Creating a PO does **not** send it. To send it, `POST /api/purchase-orders/submit` with
-`{ "ids": [<po_id>] }`. **Submitting emails the supplier** — a real, outward-facing action. Only
+Creating a PO does **not** send it. To send one PO — a draft included — `PUT
+/api/purchase-orders/<po_id>/submit` (it approves and opens a draft first, under the account's
+approval policies). To send several POs that are already open, `POST /api/purchase-orders/submit`
+with `{ "ids": [<po_id>, …] }`; that bulk route refuses drafts as "not open". **Submitting emails the supplier** — a real, outward-facing action. Only
 submit when the user explicitly asks, and confirm first; default to leaving the new PO unsent for
 review. (Approval is separate: create with `approval_status: "approved"`, or approve later.)
 
@@ -201,6 +203,7 @@ review. (Approval is separate: create with `approval_status: "approved"`, or app
 | `GET` | `/api/products/{product}/last-purchase-price` | Most recent unit cost paid for a product on a non-draft PO — fills a line's amount when the source has no cost. |
 | `POST` | `/api/purchase-orders` | Create a purchase order with header fields and an array of line items. |
 | `POST` | `/api/purchase-orders/submit` | Submit (send to the supplier) one or more created POs. Sends the PO out — confirm first. |
+| `PUT` | `/api/purchase-orders/{purchase_order}/submit` | Submit one PO to its supplier. A draft is approved and opened first (approval policies apply); bulk submit only takes open POs. |
 
 ## Authentication
 

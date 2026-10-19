@@ -15,6 +15,7 @@ tags: [pdf-templates, documents, packing-slip, branding, preview, settings, temp
 maintainers: [kmizzi]
 pages:
   - /settings/pdf-templates
+icon: mdi-file-document-edit-outline
 auth:
   scopes: [settings:read, settings:write]
 api:
@@ -244,3 +245,7 @@ api:
           type: string
           required: false
           description: Display name (max 120 chars); the slug is derived from it.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt_only: true

@@ -21,6 +21,7 @@ pages:
   - /purchases/suppliers
   - /orders/purchase-invoices
   - /purchases/vendor-credits
+icon: mdi-scale-balance
 auth:
   scopes: [suppliers:read, purchase-orders:read, purchase-orders:write, accounting:read, accounting:write, settings:read]
 api:
@@ -352,3 +353,7 @@ api:
           type: integer
           required: true
           description: Supplier payment id.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt_only: true

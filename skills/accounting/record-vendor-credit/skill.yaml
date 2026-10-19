@@ -19,6 +19,7 @@ composes: [record-purchase-invoice]
 pages:
   - /purchases/vendor-credits
   - /orders/purchase-invoices
+icon: mdi-credit-card-refund-outline
 auth:
   scopes: [accounting:read, accounting:write, purchase-orders:read, suppliers:read, settings:read]
 api:
@@ -252,3 +253,26 @@ api:
           type: string
           required: true
           description: The memo file (multipart form field).
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt: true
+  tools:
+    - tool: record_vendor_credit
+      operation: create-vendor-credit
+      title: Record a vendor credit (draft)
+      description: >-
+        Records a supplier credit memo as a draft vendor credit for review; it is not authorized or
+        applied to a bill. Returns its id, number and sku_url.
+      scope: accounting:write
+      exclude_params: [credit_status]
+      params:
+        supplier_id: ""
+        credit_date: ISO date.
+        supplier_reference: ""
+        currency_code: Omit for the account currency.
+        vendor_credit_note: ""
+        vendor_credit_number: The supplier's credit memo number exactly as printed; unique per account.
+        credit_reason: A vendor-credit reason; sets each line's default cost impact.
+        lines: "Lines: [{description, quantity, amount, nominal_code_id, is_product: false, cost_impact}]."
+      annotations: { read_only: false, destructive: true, idempotent: false, open_world: false }

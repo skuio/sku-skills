@@ -15,6 +15,7 @@ maintainers: [kmizzi]
 composes: [find-product, create-saved-view]
 pages:
   - /products
+icon: mdi-tag-outline
 auth:
   scopes: [products:read, products:write, suppliers:read]
 api:
@@ -115,3 +116,20 @@ api:
             price }] }. Set operation "updateOrCreate" on every entry — when any entry omits
             operation the array is treated as the complete list and absent suppliers are UNLINKED.
             Tier price is required, numeric, >= 0 and < 100000; price null returns 422.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt: true
+  tools:
+    - tool: update_product_pricing
+      operation: update-product-pricing
+      title: Update product pricing
+      description: >-
+        Overwrites one product's sell-price tiers and/or supplier costs. Only price fields are sent.
+        Returns the product id, SKU and sku_url.
+      scope: products:write
+      params:
+        id: The product id.
+        pricing: "Sell-price tiers: [{product_pricing_tier_name, price}]. Omit to leave sell prices alone."
+        suppliers: "Supplier costs: [{supplier_id, operation: updateOrCreate, pricing: [{supplier_pricing_tier_name, price}]}]."
+      annotations: { read_only: false, destructive: true, idempotent: true, open_world: false }

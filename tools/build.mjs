@@ -10,6 +10,7 @@ import {
   renderOpenAiTools,
   renderGeminiInstructions,
   renderGeminiFunctions,
+  renderMcpManifest,
 } from './lib/render.mjs';
 
 const skills = loadAllSkills();
@@ -96,6 +97,12 @@ for (const skill of skills) {
     composes: meta.composes ?? [],
     // App route globs where the SKU.io web app surfaces this skill's contextual icon.
     pages: meta.pages ?? [],
+    // Material Design Icon the web app shows beside the skill; null when the skill sets none.
+    icon: meta.icon ?? null,
+    // How the SKU.io MCP server exposes the skill: its hand-picked tool names, and whether it is a prompt.
+    mcp: meta.mcp
+      ? { tools: (meta.mcp.tools ?? []).map((t) => t.tool), prompt: Boolean(meta.mcp.prompt_only || meta.mcp.prompt) }
+      : null,
     outputs: {
       claude: `dist/claude/${slug}/SKILL.md`,
       openai: `dist/openai/${slug}/`,
@@ -106,6 +113,13 @@ for (const skill of skills) {
 
 // --- catalog + generated index ---------------------------------------------
 writeFile(path.join(DIST_DIR, 'catalog.json'), json({ generatedFrom: 'skills/', count: catalog.length, skills: catalog }));
+
+// --- MCP manifest: the SKU.io MCP server's hand-picked tools and skill prompts ------------
+// The app copies this file in with `php artisan mcp:sync-skills`, which refuses a manifest whose
+// version is older than the one it already has, so bump package.json's version when tools change.
+const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+const mcpManifest = renderMcpManifest(skills, pkg.version);
+writeFile(path.join(DIST_DIR, 'mcp', 'manifest.json'), json(mcpManifest));
 
 // --- plugin manifest: how third-party installers find the built skills -------
 // `npx skills add skuio/sku-skills` (skills.sh, and the directories that crawl it) searches
@@ -170,6 +184,7 @@ if (updatedReadme !== readme) {
 
 const rel = (p) => path.relative(ROOT, p);
 console.log(`Built ${skills.length} skill(s) → ${rel(DIST_DIR)}/{claude,openai,gemini}`);
+console.log(`MCP manifest v${mcpManifest.version}: ${mcpManifest.tools.length} tool(s), ${mcpManifest.prompts.length} prompt(s) → ${rel(DIST_DIR)}/mcp/manifest.json`);
 for (const s of catalog) {
   console.log(`  • ${s.domain}/${s.name}  (${s.operations} op${s.operations === 1 ? '' : 's'}, scopes: ${s.scopes.join(', ')})`);
 }
