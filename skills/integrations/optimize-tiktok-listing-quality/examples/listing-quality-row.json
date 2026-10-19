@@ -1,0 +1,60 @@
+{
+  "_comment": "One element of the `data[]` array from GET /api/tiktok-shop/integration-instances/{id}/listing-quality. This is the exact resource shape the skill reads: the TikTok product plus its latest cached diagnosis. `id` is the row id the diagnose-one path takes; `tiktok_product_id` is the remote id the Edit Product write would take. `diagnoses[].seo_words` is already flattened to a string list (from TikTok's suggestion.seo_words[].text).",
+  "id": 8821,
+  "tiktok_product_id": "1729592969712203232",
+  "title": "Cotton Dress",
+  "main_image_url": "https://p16-oec-sg.tiktokcdn.com/example/main.jpeg",
+  "status": "ACTIVATE",
+  "category_name": "Women's Dresses",
+  "current_tier": "POOR",
+  "remaining_recommendations": 3,
+  "total_issues": 3,
+  "field_summary": [
+    { "field": "TITLE", "issue_count": 1, "quality_tier": "FAIR" },
+    { "field": "DESCRIPTION", "issue_count": 1, "quality_tier": "POOR" },
+    { "field": "IMAGE", "issue_count": 1, "quality_tier": "POOR" }
+  ],
+  "diagnoses": [
+    {
+      "field": "TITLE",
+      "diagnosis_results": [
+        {
+          "code": "TITLE_LESS_THAN_40_CHARACTERS",
+          "how_to_solve": "Names must be at least 40 characters long.",
+          "quality_tier": "FAIR"
+        }
+      ],
+      "seo_words": ["dress", "cotton", "summer", "midi", "women"]
+    },
+    {
+      "field": "DESCRIPTION",
+      "diagnosis_results": [
+        {
+          "code": "DESCRIPTION_TOO_SHORT",
+          "how_to_solve": "Add a detailed description of at least 300 characters covering materials, fit and care.",
+          "quality_tier": "POOR"
+        }
+      ],
+      "seo_words": ["breathable", "machine washable", "a-line"]
+    },
+    {
+      "field": "IMAGE",
+      "diagnosis_results": [
+        {
+          "code": "IMAGE_COUNT_LOW_AND_FIRST_NOT_WHITE",
+          "how_to_solve": "Add more images and make the first image a product shot on a plain white background.",
+          "quality_tier": "POOR"
+        }
+      ],
+      "seo_words": []
+    }
+  ],
+  "diagnosed_at": "2026-10-07T04:12:00+00:00",
+  "is_diagnosed": true,
+  "mapped_product": {
+    "id": 51234,
+    "sku": "DRS-COT-MIDI-BLU-M",
+    "name": "Cotton Midi Dress",
+    "route": "/products/51234"
+  }
+}

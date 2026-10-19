@@ -51,6 +51,7 @@ One source of truth, three idiomatic outputs. Fix the knowledge in one place; ev
 | `accounting` | **reconcile-supplier-statement** | Match a supplier's statement and bank payments to SKU.io's payables, and fix the gaps |
 | `accounting` | **record-vendor-credit** | Record a supplier credit memo and apply it to an open bill |
 | `integrations` | **manage-amazon-recovery** | Triage, file and follow up on Amazon reimbursement claims |
+| `integrations` | **optimize-tiktok-listing-quality** | Diagnose and fix POOR/FAIR TikTok Shop listings toward GOOD, reviewed before it lands |
 | `inventory` | **adjust-inventory** | Increase / decrease / set on-hand stock at a warehouse |
 | `inventory` | **set-initial-inventory** | Load opening stock per warehouse as an initial count on the inventory start date |
 | `orders` | **create-sales-order** | Create a sales order with line items |
