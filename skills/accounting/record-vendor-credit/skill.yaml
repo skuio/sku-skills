@@ -275,4 +275,4 @@ mcp:
         vendor_credit_number: The supplier's credit memo number exactly as printed; unique per account.
         credit_reason: A vendor-credit reason; sets each line's default cost impact.
         lines: "Lines: [{description, quantity, amount, nominal_code_id, is_product: false, cost_impact}]."
-      annotations: { read_only: false, destructive: false, idempotent: false, open_world: false }
+      annotations: { read_only: false, destructive: true, idempotent: false, open_world: false }

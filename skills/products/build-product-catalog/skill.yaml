@@ -185,4 +185,4 @@ mcp:
         images: "[{url, download: true}]."
         suppliers: "[{supplier_id or supplier_name, supplier_sku, is_default}]."
         attributes: "Attribute values: [{name, value}]."
-      annotations: { read_only: false, destructive: false, idempotent: false, open_world: false }
+      annotations: { read_only: false, destructive: true, idempotent: false, open_world: false }

@@ -244,7 +244,7 @@ mcp:
         destination_warehouse_id: Receiving warehouse id; omit only for a dropship PO.
         purchase_order_lines: "Lines: [{product_id or sku, quantity, amount (unit cost), description}]."
         financial_lines: "Charges: [{description, quantity, amount, financial_line_type_id}]."
-      annotations: { read_only: false, destructive: false, idempotent: false, open_world: false }
+      annotations: { read_only: false, destructive: true, idempotent: false, open_world: false }
     - tool: submit_purchase_order
       operation: submit-one-purchase-order
       title: Submit a purchase order to its supplier

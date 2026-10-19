@@ -142,4 +142,4 @@ mcp:
         is_shared: ""
         model: The table's model class, e.g. App\Models\Product.
         query_data: "A JSON string: {columns: {visible: [...]}, search, filterGroups (base64), sortBy, pagination}."
-      annotations: { read_only: false, destructive: false, idempotent: false, open_world: false }
+      annotations: { read_only: false, destructive: true, idempotent: false, open_world: false }

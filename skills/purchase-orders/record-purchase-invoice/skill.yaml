@@ -398,4 +398,4 @@ mcp:
         currency_id: ""
         purchase_invoice_lines: "Lines: [{purchase_order_line_id, quantity_invoiced, unit_price (gross)}]."
         financial_lines: "PO charges: [{id, quantity, amount, link_type: App\\Models\\PurchaseOrder}]."
-      annotations: { read_only: false, destructive: false, idempotent: false, open_world: false }
+      annotations: { read_only: false, destructive: true, idempotent: false, open_world: false }

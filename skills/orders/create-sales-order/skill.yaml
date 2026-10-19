@@ -105,4 +105,4 @@ mcp:
         order_status: draft, reserved, open or closed. A draft needs no lines; closed also needs fulfilled_at.
         currency_code: ISO currency code enabled on the account, e.g. USD.
         sales_order_lines: "Lines: [{description, quantity, amount (unit price), product_id or sku, warehouse_id}]."
-      annotations: { read_only: false, destructive: false, idempotent: false, open_world: false }
+      annotations: { read_only: false, destructive: true, idempotent: false, open_world: false }
