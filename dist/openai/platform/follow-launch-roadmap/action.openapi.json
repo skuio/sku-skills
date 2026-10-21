@@ -1,0 +1,226 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SKU.io — Follow the Launch Roadmap",
+    "description": "Work through an account's SKU.io Launch Roadmap with the user: read their launch plan, pick the steps that are theirs and unblocked, explain each one (what it is, why it matters, how SKU.io will know it's done), hand off to the matching skill to do the work together — catalog import, bundles, BOMs, supplier costs, opening stock, GL mapping and more — then post a progress comment on the step and re-check it. Use it when the user asks \"what's next on our launch?\", \"help me with my onboarding steps\", or names a roadmap step. SKU.io's own data checks decide when a step is done; this skill never signs off checkpoints or unblocks steps (people do that in the app), ticks a manual step only when the user confirms it, and marks a stuck step blocked with the reason.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{tenant}.sku.io",
+      "variables": {
+        "tenant": {
+          "default": "app",
+          "description": "Your SKU.io account subdomain."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/launch-plan/summary": {
+      "get": {
+        "operationId": "get_launch_plan_summary",
+        "summary": "Cheap check (cached five minutes): { exists, roadmap_available, health, reason, target_launch_on, forecast_launch_on, open_for_me }. open_for_me counts the viewer's open steps.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/launch-plan": {
+      "get": {
+        "operationId": "get_launch_plan",
+        "summary": "The whole roadmap: status, health, target and forecast launch dates, waiting_on, critical_path, next_steps_for_me and next_steps (step keys), blocked_summary, mcp {url, skills_url}, milestones, and steps[] (id, key, title, completion, manual_allowed, state, progress, evidence, done_when, skill, owner, default_owner_role, size, due_on, health, health_reason, blocked_by, blocked, lanes {manual, import, ai}, locked, signed_off, not_applicable, comment_count). With no plan it still returns 200 with data null and exists false.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/launch-plan/steps/{step}/events": {
+      "get": {
+        "operationId": "get_step_events",
+        "summary": "A step's comments and activity, newest first: { id, kind, user, body, data, created_at }. Read it before starting so you know what teammates already tried.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "step",
+            "in": "path",
+            "required": true,
+            "description": "The step id (steps[].id, not its key).",
+            "schema": {
+              "type": "integer",
+              "description": "The step id (steps[].id, not its key)."
+            }
+          }
+        ]
+      }
+    },
+    "/api/launch-plan/steps/{step}/comments": {
+      "post": {
+        "operationId": "comment_on_step",
+        "summary": "Post a comment on a step — the progress note after a work session, or what is blocking it. Returns the created event (201). Needs the launch_plan.manage permission.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "step",
+            "in": "path",
+            "required": true,
+            "description": "The step id.",
+            "schema": {
+              "type": "integer",
+              "description": "The step id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "body": {
+                    "type": "string",
+                    "description": "The comment, up to 5000 characters.",
+                    "example": "AI session 2026-10-21: configured 31 of 43 bundles from the Kits tab of Catalog.xlsx; 12 held out (components not in the catalog, list below)."
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/launch-plan/steps/{step}/block": {
+      "post": {
+        "operationId": "block_step",
+        "summary": "Mark an open step blocked, with why and who it waits on. Returns the updated plan. Refused (422) on a done step or one marked not needed. Clearing the mark is a person's job in the app.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "step",
+            "in": "path",
+            "required": true,
+            "description": "The step id.",
+            "schema": {
+              "type": "integer",
+              "description": "The step id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "What is missing, up to 300 characters.",
+                    "example": "Waiting on the bookkeeper to approve the GL mapping table sent 2026-10-21."
+                  },
+                  "on": {
+                    "type": "string",
+                    "description": "Who it waits on — sku, customer or third_party.",
+                    "example": "customer"
+                  }
+                },
+                "required": [
+                  "reason",
+                  "on"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/launch-plan/steps/{step}": {
+      "patch": {
+        "operationId": "tick_manual_step",
+        "summary": "Tick a manual step (manual_allowed true) once the user confirms it. Send manual_state and nothing else. Returns the updated plan; a step that completes from data or a sign-off returns 422.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "step",
+            "in": "path",
+            "required": true,
+            "description": "The step id.",
+            "schema": {
+              "type": "integer",
+              "description": "The step id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "manual_state": {
+                    "type": "string",
+                    "description": "not_started, in_progress or done.",
+                    "example": "done"
+                  }
+                },
+                "required": [
+                  "manual_state"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/launch-plan/refresh": {
+      "post": {
+        "operationId": "refresh_launch_plan",
+        "summary": "Re-run the roadmap's data checks now instead of waiting for the next scheduled run, and return the updated plan. At most once a minute (otherwise 429 with Retry-After). A paused or archived plan is not re-evaluated. Personal Access Token only; the MCP server refuses it.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "SKU.io Personal Access Token."
+      }
+    }
+  }
+}

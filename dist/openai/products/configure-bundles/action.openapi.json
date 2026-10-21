@@ -1,0 +1,389 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SKU.io — Configure Bundles and Kits",
+    "description": "Give every bundle and kit in SKU.io its components. Finds bundle/kit products that have no components yet (and standard products whose names look like packs or sets), proposes each recipe from a component list the user supplies (a sheet or file in their Drive or email) or from its channel listing titles, gets the user's approval, then saves the components in batches of at most 25 and reports what changed. Use it for the Launch Roadmap's \"Configure kits & bundles\" step, after importing channel listings that turned out to be multi-packs or sets, or whenever the Product Data Health report shows kits or bundles without components. It never replaces a recipe that already has components and never deletes anything.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{tenant}.sku.io",
+      "variables": {
+        "tenant": {
+          "default": "app",
+          "description": "Your SKU.io account subdomain."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/product-data-health/metrics": {
+      "get": {
+        "operationId": "get_product_data_health",
+        "summary": "Account-wide catalog health counts. kits_without_components and bundles_without_components are the numbers this skill drives to zero.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v2/products/bundle-workshop": {
+      "get": {
+        "operationId": "list_workshop_products",
+        "summary": "List active (non-archived) bundle and kit products with components_count and is_configured. filter[status]=unconfigured returns only the ones with no components.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter[status]",
+            "in": "query",
+            "required": false,
+            "description": "configured or unconfigured. Omit for both.",
+            "schema": {
+              "type": "string",
+              "description": "configured or unconfigured. Omit for both.",
+              "example": "unconfigured"
+            }
+          },
+          {
+            "name": "filter[type]",
+            "in": "query",
+            "required": false,
+            "description": "bundle or kit.",
+            "schema": {
+              "type": "string",
+              "description": "bundle or kit.",
+              "example": "kit"
+            }
+          },
+          {
+            "name": "filter[search]",
+            "in": "query",
+            "required": false,
+            "description": "Substring match on SKU or name.",
+            "schema": {
+              "type": "string",
+              "description": "Substring match on SKU or name."
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Page size (default 15). Iterate page until last_page.",
+            "schema": {
+              "type": "integer",
+              "description": "Page size (default 15). Iterate page until last_page.",
+              "example": 100
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer",
+              "description": "Page number."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/products/bundle-workshop/auto-detect": {
+      "get": {
+        "operationId": "auto_detect_candidates",
+        "summary": "Standard products whose SKU or name matches a pack/set pattern (\"2-pack\", \"set of 3\", \"bundle\", \"kit\", ...), each with detected_pattern, suggested_type (bundle or kit), confidence, components_count and has_inventory_movements.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter[confidence]",
+            "in": "query",
+            "required": false,
+            "description": "all (default), high or medium.",
+            "schema": {
+              "type": "string",
+              "description": "all (default), high or medium.",
+              "example": "high"
+            }
+          },
+          {
+            "name": "filter[mode]",
+            "in": "query",
+            "required": false,
+            "description": "suggestions (default, pattern matches only) or all (every standard product).",
+            "schema": {
+              "type": "string",
+              "description": "suggestions (default, pattern matches only) or all (every standard product).",
+              "example": "suggestions"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Page size (default 15).",
+            "schema": {
+              "type": "integer",
+              "description": "Page size (default 15)."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/products/{product}/listings": {
+      "get": {
+        "operationId": "get_product_listings",
+        "summary": "The product's sales-channel listings, each with its channel title, seller SKU and sales_channel. Read the titles to propose components when the user has no component list.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "product",
+            "in": "path",
+            "required": true,
+            "description": "The product id.",
+            "schema": {
+              "type": "integer",
+              "description": "The product id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/products/bundle-workshop/{product}/components": {
+      "get": {
+        "operationId": "get_workshop_components",
+        "summary": "A bundle or kit's current components (id, sku, name, quantity, type, available_stock, unit_cost) with buildable_quantity and total_unit_cost. Use it to confirm a product is still empty right before writing, and to verify afterwards.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "product",
+            "in": "path",
+            "required": true,
+            "description": "The bundle or kit product id.",
+            "schema": {
+              "type": "integer",
+              "description": "The bundle or kit product id."
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "save_components",
+        "summary": "Set a bundle or kit's components. The list REPLACES the current recipe and records a new component revision dated today. Only call it on products with zero components.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "product",
+            "in": "path",
+            "required": true,
+            "description": "The bundle or kit product id.",
+            "schema": {
+              "type": "integer",
+              "description": "The bundle or kit product id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "components": {
+                    "type": "array",
+                    "description": "At least one { id, quantity }. id is the component product id (must be a standard or kit product, not the parent itself, and listed once); quantity is numeric, at least 1.",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "change_summary": {
+                    "type": "string",
+                    "description": "Up to 1000 characters saying where the recipe came from.",
+                    "example": "Initial recipe from the user's component sheet 'Kits 2026-10.xlsx', row 14."
+                  }
+                },
+                "required": [
+                  "components"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products/by-sku": {
+      "get": {
+        "operationId": "find_product_by_sku",
+        "summary": "Resolve a component SKU from the user's list to its product id.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "sku",
+            "in": "query",
+            "required": true,
+            "description": "The exact SKU.",
+            "schema": {
+              "type": "string",
+              "description": "The exact SKU.",
+              "example": "WIDGET-BLUE-01"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/products": {
+      "get": {
+        "operationId": "search_products",
+        "summary": "Search the catalog when a component is named rather than given by SKU. Rows carry id, sku, name, type and barcode.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter[search]",
+            "in": "query",
+            "required": false,
+            "description": "Free-text search across SKU, name, barcode, MPN and brand.",
+            "schema": {
+              "type": "string",
+              "description": "Free-text search across SKU, name, barcode, MPN and brand."
+            }
+          },
+          {
+            "name": "filter[type]",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated product types. Components must be standard or kit.",
+            "schema": {
+              "type": "string",
+              "description": "Comma-separated product types. Components must be standard or kit.",
+              "example": "standard,kit"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Page size (default 10).",
+            "schema": {
+              "type": "integer",
+              "description": "Page size (default 10)."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/products/bundle-workshop/check-restrictions": {
+      "post": {
+        "operationId": "check_restrictions",
+        "summary": "For standard products you plan to convert, report which have sales or assembly inventory movements (true = restricted). A product with history cannot become a bundle.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "product_ids": {
+                    "type": "array",
+                    "description": "Product ids to check.",
+                    "example": [
+                      101,
+                      102
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "product_ids"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/products/bundle-workshop/batch-convert": {
+      "post": {
+        "operationId": "batch_convert",
+        "summary": "Convert standard products to bundle or kit, setting their components in the same call. Converting to bundle also splits any open sales order lines for that product into its components. Returns converted_count and skipped[] with a reason per product.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "products": {
+                    "type": "array",
+                    "description": "Each { id, type (bundle or kit), components: [{ id, quantity }] }. Quantity is numeric, at least 1. A conversion with no components is skipped.",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "products"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "SKU.io Personal Access Token."
+      }
+    }
+  }
+}

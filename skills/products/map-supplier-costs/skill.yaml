@@ -1,0 +1,148 @@
+name: map-supplier-costs
+title: Map Supplier Costs onto Reorderable Products
+domain: products
+version: 1.0.0
+description: >-
+  Fill in what the business pays its suppliers for every product it reorders, until at least 95%
+  of active reorderable products (standard, kit, manufactured, blemished) carry a non-zero supplier
+  price. Finds the products with no supplier pricing, sources each cost from the user's supplier
+  price lists (files in their Drive or email) or, failing that, from the last price paid on a past
+  purchase order, proposes a cost table for approval, then writes the supplier tier prices in
+  batches of at most 25 and reports what changed. Use it for the Launch Roadmap's "Supplier costs"
+  step or when the Product Data Health report shows products without supplier pricing. It fills
+  gaps; it never unlinks suppliers or deletes prices. To apply a supplier's new price file to
+  products that already have costs, use update-catalog-pricing.
+tagline: Fill missing supplier costs from price lists or past purchase orders
+tags: [products, suppliers, supplier-pricing, costs, wholesale, onboarding, launch-roadmap]
+maintainers: [kmizzi]
+composes: [update-catalog-pricing, find-product]
+pages:
+  - /reports/product-data-health
+icon: mdi-cash-multiple
+auth:
+  scopes: [products:read, products:write, suppliers:read, purchase-orders:read]
+api:
+  base_url: https://{tenant}.sku.io
+  operations:
+    - id: get-product-data-health
+      method: GET
+      path: /api/product-data-health/metrics
+      summary: >-
+        Catalog health counts, including products_with_supplier, products_without_supplier,
+        products_with_non_zero_supplier_price and products_with_zero_supplier_price.
+    - id: list-products
+      method: GET
+      path: /api/v2/products
+      summary: >-
+        Bulk-read the catalog. Rows include sku, name, type, archived_at, unit_cost,
+        default_supplier_id, default_supplier_name, default_supplier_sku and
+        default_supplier_price. filter[supplier_price.is_empty]=1 narrows to products whose default
+        supplier link has no price (or that have no default supplier at all).
+      parameters:
+        - name: filter[type]
+          in: query
+          type: string
+          required: false
+          description: Comma-separated types. The roadmap counts standard,kit,manufactured,blemished.
+          example: standard,kit,manufactured,blemished
+        - name: filter[supplier_price.is_empty]
+          in: query
+          type: string
+          required: false
+          description: Send 1 to keep only products with no default supplier price.
+          example: "1"
+        - name: filter[default_supplier_id]
+          in: query
+          type: string
+          required: false
+          description: Comma-separated supplier ids — products whose default supplier is one of them.
+        - name: filter[search]
+          in: query
+          type: string
+          required: false
+          description: Free-text search across SKU, name, barcode, MPN and brand.
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Page size (default 10). Iterate page until last_page.
+          example: 100
+        - name: page
+          in: query
+          type: integer
+          required: false
+          description: Page number.
+    - id: get-product-suppliers
+      method: GET
+      path: /api/products/{productId}/suppliers
+      summary: >-
+        A product's supplier links, each with supplier_sku, is_default and its pricing tiers
+        (tier name and price). This is where the account's real tier name comes from, and it shows
+        prices on non-default suppliers that the list filter can't see.
+      parameters:
+        - name: productId
+          in: path
+          type: integer
+          required: true
+          description: The product id.
+    - id: find-supplier
+      method: GET
+      path: /api/v2/suppliers
+      summary: Resolve a supplier named on a price list to its supplier id.
+      parameters:
+        - name: search
+          in: query
+          type: string
+          required: false
+          description: Free-text search over supplier name, company and email.
+          example: Acme Wholesale
+    - id: get-last-purchase-price
+      method: GET
+      path: /api/products/{product}/last-purchase-price
+      summary: >-
+        The most recent non-draft purchase order line for the product with a price above zero:
+        { amount, purchase_order_id, purchase_order_date }, or data null when it was never bought.
+      parameters:
+        - name: product
+          in: path
+          type: integer
+          required: true
+          description: The product id.
+    - id: get-purchase-order
+      method: GET
+      path: /api/purchase-orders/{purchase_order}
+      summary: >-
+        Read the purchase order behind a last purchase price, to learn which supplier it was
+        bought from and in what currency before proposing it as that supplier's cost.
+      parameters:
+        - name: purchase_order
+          in: path
+          type: integer
+          required: true
+          description: The purchase order id.
+    - id: set-supplier-price
+      method: PUT
+      path: /api/products/{id}
+      summary: >-
+        Write a supplier cost onto one product. Send only suppliers[], with operation
+        "updateOrCreate" on every entry so no other supplier link is touched. Creates the
+        supplier link when the product has none for that supplier.
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+          description: The product id.
+        - name: suppliers
+          in: body
+          type: array
+          required: true
+          description: >-
+            Each { supplier_id, operation: "updateOrCreate", pricing: [{ supplier_pricing_tier_name,
+            price }], supplier_sku (optional), is_default (optional, only for a product with no
+            default supplier) }. price is numeric, >= 0 and < 100000. An unknown tier name CREATES a
+            new tier, so use a name read from get-product-suppliers.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt_only: true

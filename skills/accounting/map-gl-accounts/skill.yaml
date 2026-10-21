@@ -1,0 +1,120 @@
+name: map-gl-accounts
+title: Map GL Accounts to the Chart of Accounts
+domain: accounting
+version: 1.0.0
+description: >-
+  Map SKU.io's accounting roles (sales, shipping revenue, COGS, inventory control, purchase
+  clearing, accounts receivable, accounts payable, sales tax, and the optional ones) to the
+  customer's own chart of accounts — the QuickBooks Online or Xero accounts that SKU.io holds as
+  nominal codes. Reads the current mapping and the available accounts, proposes a full mapping
+  table with the reasoning for each choice, waits for the user's explicit approval (ideally their
+  bookkeeper's), then saves only the approved keys and reports what changed. Use it for the
+  Launch Roadmap's "Map GL accounts" step or whenever journals fail for a missing nominal code
+  mapping. Finance-sensitive: a wrong mapping posts every future journal to the wrong account.
+tagline: Map SKU.io's GL roles onto the customer's QuickBooks or Xero accounts, with sign-off
+tags: [accounting, gl, nominal-codes, chart-of-accounts, quickbooks, xero, mapping, onboarding, launch-roadmap]
+maintainers: [kmizzi]
+pages:
+  - /ledger
+icon: mdi-book-account-outline
+auth:
+  scopes: [accounting:read, settings:read, settings:write]
+api:
+  base_url: https://{tenant}.sku.io
+  operations:
+    - id: get-nominal-code-mapping
+      method: GET
+      path: /api/v2/settings/nominal-code-mapping
+      summary: >-
+        The current mapping: one key per accounting role (sales_orders, cogs, inventory_control,
+        ...), each holding a nominal code id as a string, or null when unmapped.
+    - id: list-nominal-codes
+      method: GET
+      path: /api/v2/nominal-codes
+      summary: >-
+        The chart of accounts as SKU.io holds it: { id, code, name, type, archived_at } per
+        nominal code, mirrored from QuickBooks Online or Xero when connected. Archived codes are
+        excluded unless filter[archived]=all.
+      parameters:
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Page size (default 10). Iterate page until last_page.
+          example: 100
+        - name: page
+          in: query
+          type: integer
+          required: false
+          description: Page number.
+        - name: filter[search]
+          in: query
+          type: string
+          required: false
+          description: Matches id, name or code.
+        - name: sort
+          in: query
+          type: string
+          required: false
+          description: id, name, code or type (prefix - for descending). Default -id.
+          example: code
+    - id: lookup-nominal-codes
+      method: GET
+      path: /api/sub-sales-channels/lookup/nominal-codes
+      summary: >-
+        Fallback when the token has no accounting:read — every nominal code as { id, name, code }
+        only (no type), ordered by code. Needs settings:read and the sales_channels.show permission.
+    - id: update-nominal-code-mapping
+      method: PUT
+      path: /api/v2/settings/nominal-code-mapping
+      summary: >-
+        Save mapping keys. Only the keys in the body are written; send nothing but the approved
+        keys. Values are nominal code ids (from list-nominal-codes); an id with no account behind it
+        is refused with 422, per key. Returns the whole mapping. Needs the settings.update
+        permission.
+      parameters:
+        - name: sales_orders
+          in: body
+          type: string
+          required: false
+          description: Nominal code id for sales income.
+          example: "41"
+        - name: shipping_sales_orders
+          in: body
+          type: string
+          required: false
+          description: Nominal code id for shipping charged to customers.
+        - name: cogs
+          in: body
+          type: string
+          required: false
+          description: Nominal code id for cost of goods sold.
+        - name: inventory_control
+          in: body
+          type: string
+          required: false
+          description: Nominal code id for the inventory asset (a current asset).
+        - name: accrued_purchases
+          in: body
+          type: string
+          required: false
+          description: Nominal code id for purchase clearing (accrued / prepaid purchases).
+        - name: accounts_receivable
+          in: body
+          type: string
+          required: false
+          description: Nominal code id for accounts receivable.
+        - name: accounts_payable
+          in: body
+          type: string
+          required: false
+          description: Nominal code id for accounts payable.
+        - name: sales_tax
+          in: body
+          type: string
+          required: false
+          description: Nominal code id for the sales tax liability.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt_only: true

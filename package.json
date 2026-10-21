@@ -1,6 +1,6 @@
 {
   "name": "sku-skills",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": false,
   "description": "Open-source e-commerce agent skills for the SKU.io API — authored once, generated for Claude, OpenAI, and Gemini.",
   "type": "module",

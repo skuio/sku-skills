@@ -1,0 +1,310 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SKU.io — Build Bills of Materials from a Recipe Sheet",
+    "description": "Create bills of materials (BOMs, recipes) in SKU.io for manufactured products from a recipe sheet the user already keeps — a spreadsheet or file in their Drive or email listing each finished product's ingredients or parts and quantities. Finds manufactured products with no BOM, maps the sheet's rows to products and units of measure, proposes each BOM for approval, creates them as drafts in batches of at most 25, and reports what changed. Use it for the Launch Roadmap's \"Bills of materials\" step, when onboarding a manufacturer, or whenever a manufactured product has no recipe. It never edits, archives or deletes an existing BOM.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{tenant}.sku.io",
+      "variables": {
+        "tenant": {
+          "default": "app",
+          "description": "Your SKU.io account subdomain."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v2/products": {
+      "get": {
+        "operationId": "list_products",
+        "summary": "List or search products. With filter[type]=manufactured it returns the population the Launch Roadmap checks (skip rows with a non-null archived_at). With filter[search] it finds an ingredient the sheet names instead of giving its SKU. BOM lines accept only products that carry stock (standard, kit, blemished, manufactured).",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter[type]",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated product types, e.g. manufactured, or standard,manufactured.",
+            "schema": {
+              "type": "string",
+              "description": "Comma-separated product types, e.g. manufactured, or standard,manufactured.",
+              "example": "manufactured"
+            }
+          },
+          {
+            "name": "filter[search]",
+            "in": "query",
+            "required": false,
+            "description": "Free-text search across SKU, name, barcode, MPN and brand.",
+            "schema": {
+              "type": "string",
+              "description": "Free-text search across SKU, name, barcode, MPN and brand."
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Page size (default 10). Iterate page until last_page.",
+            "schema": {
+              "type": "integer",
+              "description": "Page size (default 10). Iterate page until last_page.",
+              "example": 100
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer",
+              "description": "Page number."
+            }
+          }
+        ]
+      }
+    },
+    "/api/manufacturing/boms": {
+      "get": {
+        "operationId": "list_boms",
+        "summary": "List BOMs with product_id, status, version_number, component_lines_count and archived_at. Archived BOMs are excluded unless filter[archived]=all.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter[product_id]",
+            "in": "query",
+            "required": false,
+            "description": "Only BOMs for this product.",
+            "schema": {
+              "type": "integer",
+              "description": "Only BOMs for this product."
+            }
+          },
+          {
+            "name": "filter[search]",
+            "in": "query",
+            "required": false,
+            "description": "Matches BOM id, BOM name, or the product's name or SKU.",
+            "schema": {
+              "type": "string",
+              "description": "Matches BOM id, BOM name, or the product's name or SKU."
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Page size (default 10).",
+            "schema": {
+              "type": "integer",
+              "description": "Page size (default 10).",
+              "example": 100
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer",
+              "description": "Page number."
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "create_bom",
+        "summary": "Create one BOM with its component lines. product_id, name and effective_from are required; the primary output line (product_id x 1) is added for you when output_lines is omitted. Returns the BOM with its id and lines.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "product_id": {
+                    "type": "integer",
+                    "description": "The manufactured product this recipe makes.",
+                    "example": 900
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "BOM name, up to 255 characters.",
+                    "example": "Sourdough Loaf 800g — recipe v1"
+                  },
+                  "effective_from": {
+                    "type": "string",
+                    "description": "Date the recipe applies from (Y-m-d).",
+                    "example": "2026-10-21"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "BomStatus: draft, active or archived. Send draft; a person activates it after review. Over the MCP server leave it out (sending it is refused; MCP BOMs are always drafts).",
+                    "example": "draft"
+                  },
+                  "version_notes": {
+                    "type": "string",
+                    "description": "Free text — record the source sheet and row here."
+                  },
+                  "expected_yield_percent": {
+                    "type": "number",
+                    "description": "0–100. Only when the sheet states a yield."
+                  },
+                  "default_consumption_method": {
+                    "type": "string",
+                    "description": "forward_flush or backflush. Omit unless the user says how they issue materials."
+                  },
+                  "output_lines": {
+                    "type": "array",
+                    "description": "Omit for a single finished product. Each { product_id, role (primary, coproduct, byproduct, scrap), quantity, uom_id }. Use it when one batch yields more than one unit (product_id, role primary, quantity 12) so component quantities are per batch.",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "component_lines": {
+                    "type": "array",
+                    "description": "The recipe. Each { product_id (required), quantity (required, >= 0), uom_id (optional — defaults to the product's stock unit; must be enabled on the product), expected_scrap_percent (0–100), consumption_method, is_optional, notes, sort_order }. The roadmap counts a BOM only when it has at least one component line.",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "product_id",
+                  "name",
+                  "effective_from"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products/by-sku": {
+      "get": {
+        "operationId": "find_product_by_sku",
+        "summary": "Resolve an ingredient or part SKU from the recipe sheet to its product id and type.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "sku",
+            "in": "query",
+            "required": true,
+            "description": "The exact SKU.",
+            "schema": {
+              "type": "string",
+              "description": "The exact SKU.",
+              "example": "RAW-FLOUR-25KG"
+            }
+          }
+        ]
+      }
+    },
+    "/api/manufacturing/units-of-measure": {
+      "get": {
+        "operationId": "list_units_of_measure",
+        "summary": "The account's units of measure (id, name, code, type). Use to map the sheet's units (\"kg\", \"ea\", \"ml\") to uom ids.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "uom_type",
+            "in": "query",
+            "required": false,
+            "description": "Optional filter by unit type, e.g. weight.",
+            "schema": {
+              "type": "string",
+              "description": "Optional filter by unit type, e.g. weight.",
+              "example": "weight"
+            }
+          }
+        ]
+      }
+    },
+    "/api/manufacturing/products/{product}/units-of-measure": {
+      "get": {
+        "operationId": "get_product_units",
+        "summary": "The units of measure enabled for one product (its stock unit plus alternates). A BOM line's uom_id must be one of these.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "product",
+            "in": "path",
+            "required": true,
+            "description": "The product id.",
+            "schema": {
+              "type": "integer",
+              "description": "The product id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/manufacturing/boms/{bom}": {
+      "get": {
+        "operationId": "get_bom",
+        "summary": "Fetch one BOM with its component and output lines, to verify after creating it.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "bom",
+            "in": "path",
+            "required": true,
+            "description": "The BOM id.",
+            "schema": {
+              "type": "integer",
+              "description": "The BOM id."
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "SKU.io Personal Access Token."
+      }
+    }
+  }
+}

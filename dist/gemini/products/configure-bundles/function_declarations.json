@@ -1,0 +1,197 @@
+{
+  "functionDeclarations": [
+    {
+      "name": "get_product_data_health",
+      "description": "Account-wide catalog health counts. kits_without_components and bundles_without_components are the numbers this skill drives to zero. (GET /api/product-data-health/metrics)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "list_workshop_products",
+      "description": "List active (non-archived) bundle and kit products with components_count and is_configured. filter[status]=unconfigured returns only the ones with no components. (GET /api/v2/products/bundle-workshop)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "filter[status]": {
+            "type": "STRING",
+            "description": "configured or unconfigured. Omit for both."
+          },
+          "filter[type]": {
+            "type": "STRING",
+            "description": "bundle or kit."
+          },
+          "filter[search]": {
+            "type": "STRING",
+            "description": "Substring match on SKU or name."
+          },
+          "per_page": {
+            "type": "INTEGER",
+            "description": "Page size (default 15). Iterate page until last_page."
+          },
+          "page": {
+            "type": "INTEGER",
+            "description": "Page number."
+          }
+        }
+      }
+    },
+    {
+      "name": "auto_detect_candidates",
+      "description": "Standard products whose SKU or name matches a pack/set pattern (\"2-pack\", \"set of 3\", \"bundle\", \"kit\", ...), each with detected_pattern, suggested_type (bundle or kit), confidence, components_count and has_inventory_movements. (GET /api/v2/products/bundle-workshop/auto-detect)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "filter[confidence]": {
+            "type": "STRING",
+            "description": "all (default), high or medium."
+          },
+          "filter[mode]": {
+            "type": "STRING",
+            "description": "suggestions (default, pattern matches only) or all (every standard product)."
+          },
+          "per_page": {
+            "type": "INTEGER",
+            "description": "Page size (default 15)."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_product_listings",
+      "description": "The product's sales-channel listings, each with its channel title, seller SKU and sales_channel. Read the titles to propose components when the user has no component list. (GET /api/v2/products/{product}/listings)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "product": {
+            "type": "INTEGER",
+            "description": "The product id."
+          }
+        },
+        "required": [
+          "product"
+        ]
+      }
+    },
+    {
+      "name": "get_workshop_components",
+      "description": "A bundle or kit's current components (id, sku, name, quantity, type, available_stock, unit_cost) with buildable_quantity and total_unit_cost. Use it to confirm a product is still empty right before writing, and to verify afterwards. (GET /api/v2/products/bundle-workshop/{product}/components)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "product": {
+            "type": "INTEGER",
+            "description": "The bundle or kit product id."
+          }
+        },
+        "required": [
+          "product"
+        ]
+      }
+    },
+    {
+      "name": "find_product_by_sku",
+      "description": "Resolve a component SKU from the user's list to its product id. (GET /api/products/by-sku)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "sku": {
+            "type": "STRING",
+            "description": "The exact SKU."
+          }
+        },
+        "required": [
+          "sku"
+        ]
+      }
+    },
+    {
+      "name": "search_products",
+      "description": "Search the catalog when a component is named rather than given by SKU. Rows carry id, sku, name, type and barcode. (GET /api/v2/products)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "filter[search]": {
+            "type": "STRING",
+            "description": "Free-text search across SKU, name, barcode, MPN and brand."
+          },
+          "filter[type]": {
+            "type": "STRING",
+            "description": "Comma-separated product types. Components must be standard or kit."
+          },
+          "per_page": {
+            "type": "INTEGER",
+            "description": "Page size (default 10)."
+          }
+        }
+      }
+    },
+    {
+      "name": "check_restrictions",
+      "description": "For standard products you plan to convert, report which have sales or assembly inventory movements (true = restricted). A product with history cannot become a bundle. (POST /api/v2/products/bundle-workshop/check-restrictions)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "product_ids": {
+            "type": "ARRAY",
+            "description": "Product ids to check.",
+            "items": {
+              "type": "STRING"
+            }
+          }
+        },
+        "required": [
+          "product_ids"
+        ]
+      }
+    },
+    {
+      "name": "batch_convert",
+      "description": "Convert standard products to bundle or kit, setting their components in the same call. Converting to bundle also splits any open sales order lines for that product into its components. Returns converted_count and skipped[] with a reason per product. (POST /api/v2/products/bundle-workshop/batch-convert)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "products": {
+            "type": "ARRAY",
+            "description": "Each { id, type (bundle or kit), components: [{ id, quantity }] }. Quantity is numeric, at least 1. A conversion with no components is skipped.",
+            "items": {
+              "type": "STRING"
+            }
+          }
+        },
+        "required": [
+          "products"
+        ]
+      }
+    },
+    {
+      "name": "save_components",
+      "description": "Set a bundle or kit's components. The list REPLACES the current recipe and records a new component revision dated today. Only call it on products with zero components. (POST /api/v2/products/bundle-workshop/{product}/components)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "product": {
+            "type": "INTEGER",
+            "description": "The bundle or kit product id."
+          },
+          "components": {
+            "type": "ARRAY",
+            "description": "At least one { id, quantity }. id is the component product id (must be a standard or kit product, not the parent itself, and listed once); quantity is numeric, at least 1.",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "change_summary": {
+            "type": "STRING",
+            "description": "Up to 1000 characters saying where the recipe came from."
+          }
+        },
+        "required": [
+          "product",
+          "components"
+        ]
+      }
+    }
+  ]
+}

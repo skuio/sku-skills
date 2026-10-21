@@ -1,0 +1,135 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "get_launch_plan_summary",
+      "description": "Cheap check (cached five minutes): { exists, roadmap_available, health, reason, target_launch_on, forecast_launch_on, open_for_me }. open_for_me counts the viewer's open steps. (GET /api/launch-plan/summary)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_launch_plan",
+      "description": "The whole roadmap: status, health, target and forecast launch dates, waiting_on, critical_path, next_steps_for_me and next_steps (step keys), blocked_summary, mcp {url, skills_url}, milestones, and steps[] (id, key, title, completion, manual_allowed, state, progress, evidence, done_when, skill, owner, default_owner_role, size, due_on, health, health_reason, blocked_by, blocked, lanes {manual, import, ai}, locked, signed_off, not_applicable, comment_count). With no plan it still returns 200 with data null and exists false. (GET /api/launch-plan)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_step_events",
+      "description": "A step's comments and activity, newest first: { id, kind, user, body, data, created_at }. Read it before starting so you know what teammates already tried. (GET /api/launch-plan/steps/{step}/events)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "integer",
+            "description": "The step id (steps[].id, not its key)."
+          }
+        },
+        "required": [
+          "step"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "comment_on_step",
+      "description": "Post a comment on a step — the progress note after a work session, or what is blocking it. Returns the created event (201). Needs the launch_plan.manage permission. (POST /api/launch-plan/steps/{step}/comments)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "integer",
+            "description": "The step id."
+          },
+          "body": {
+            "type": "string",
+            "description": "The comment, up to 5000 characters.",
+            "example": "AI session 2026-10-21: configured 31 of 43 bundles from the Kits tab of Catalog.xlsx; 12 held out (components not in the catalog, list below)."
+          }
+        },
+        "required": [
+          "step",
+          "body"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "block_step",
+      "description": "Mark an open step blocked, with why and who it waits on. Returns the updated plan. Refused (422) on a done step or one marked not needed. Clearing the mark is a person's job in the app. (POST /api/launch-plan/steps/{step}/block)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "integer",
+            "description": "The step id."
+          },
+          "reason": {
+            "type": "string",
+            "description": "What is missing, up to 300 characters.",
+            "example": "Waiting on the bookkeeper to approve the GL mapping table sent 2026-10-21."
+          },
+          "on": {
+            "type": "string",
+            "description": "Who it waits on — sku, customer or third_party.",
+            "example": "customer"
+          }
+        },
+        "required": [
+          "step",
+          "reason",
+          "on"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "tick_manual_step",
+      "description": "Tick a manual step (manual_allowed true) once the user confirms it. Send manual_state and nothing else. Returns the updated plan; a step that completes from data or a sign-off returns 422. (PATCH /api/launch-plan/steps/{step})",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "integer",
+            "description": "The step id."
+          },
+          "manual_state": {
+            "type": "string",
+            "description": "not_started, in_progress or done.",
+            "example": "done"
+          }
+        },
+        "required": [
+          "step",
+          "manual_state"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "refresh_launch_plan",
+      "description": "Re-run the roadmap's data checks now instead of waiting for the next scheduled run, and return the updated plan. At most once a minute (otherwise 429 with Retry-After). A paused or archived plan is not re-evaluated. Personal Access Token only; the MCP server refuses it. (POST /api/launch-plan/refresh)",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  }
+]

@@ -1,0 +1,208 @@
+name: configure-bundles
+title: Configure Bundles and Kits
+domain: products
+version: 1.0.0
+description: >-
+  Give every bundle and kit in SKU.io its components. Finds bundle/kit products that have no
+  components yet (and standard products whose names look like packs or sets), proposes each
+  recipe from a component list the user supplies (a sheet or file in their Drive or email) or from
+  its channel listing titles, gets the user's approval, then saves the components in
+  batches of at most 25 and reports what changed. Use it for the Launch Roadmap's "Configure kits &
+  bundles" step, after importing channel listings that turned out to be multi-packs or sets, or
+  whenever the Product Data Health report shows kits or bundles without components. It never
+  replaces a recipe that already has components and never deletes anything.
+tagline: Turn bundle and kit listings into products with real components
+tags: [products, bundles, kits, components, recipes, onboarding, launch-roadmap, catalog]
+maintainers: [kmizzi]
+composes: [find-product, build-product-catalog]
+pages:
+  - /products/bundle-workshop
+  - /reports/product-data-health
+icon: mdi-package-variant-closed
+auth:
+  scopes: [products:read, products:write]
+api:
+  base_url: https://{tenant}.sku.io
+  operations:
+    - id: get-product-data-health
+      method: GET
+      path: /api/product-data-health/metrics
+      summary: >-
+        Account-wide catalog health counts. kits_without_components and
+        bundles_without_components are the numbers this skill drives to zero.
+    - id: list-workshop-products
+      method: GET
+      path: /api/v2/products/bundle-workshop
+      summary: >-
+        List active (non-archived) bundle and kit products with components_count and
+        is_configured. filter[status]=unconfigured returns only the ones with no components.
+      parameters:
+        - name: filter[status]
+          in: query
+          type: string
+          required: false
+          description: configured or unconfigured. Omit for both.
+          example: unconfigured
+        - name: filter[type]
+          in: query
+          type: string
+          required: false
+          description: bundle or kit.
+          example: kit
+        - name: filter[search]
+          in: query
+          type: string
+          required: false
+          description: Substring match on SKU or name.
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Page size (default 15). Iterate page until last_page.
+          example: 100
+        - name: page
+          in: query
+          type: integer
+          required: false
+          description: Page number.
+    - id: auto-detect-candidates
+      method: GET
+      path: /api/v2/products/bundle-workshop/auto-detect
+      summary: >-
+        Standard products whose SKU or name matches a pack/set pattern ("2-pack", "set of 3",
+        "bundle", "kit", ...), each with detected_pattern, suggested_type (bundle or kit),
+        confidence, components_count and has_inventory_movements.
+      parameters:
+        - name: filter[confidence]
+          in: query
+          type: string
+          required: false
+          description: all (default), high or medium.
+          example: high
+        - name: filter[mode]
+          in: query
+          type: string
+          required: false
+          description: suggestions (default, pattern matches only) or all (every standard product).
+          example: suggestions
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Page size (default 15).
+    - id: get-product-listings
+      method: GET
+      path: /api/v2/products/{product}/listings
+      summary: >-
+        The product's sales-channel listings, each with its channel title, seller SKU and
+        sales_channel. Read the titles to propose components when the user has no component list.
+      parameters:
+        - name: product
+          in: path
+          type: integer
+          required: true
+          description: The product id.
+    - id: get-workshop-components
+      method: GET
+      path: /api/v2/products/bundle-workshop/{product}/components
+      summary: >-
+        A bundle or kit's current components (id, sku, name, quantity, type, available_stock,
+        unit_cost) with buildable_quantity and total_unit_cost. Use it to confirm a product is
+        still empty right before writing, and to verify afterwards.
+      parameters:
+        - name: product
+          in: path
+          type: integer
+          required: true
+          description: The bundle or kit product id.
+    - id: find-product-by-sku
+      method: GET
+      path: /api/products/by-sku
+      summary: Resolve a component SKU from the user's list to its product id.
+      parameters:
+        - name: sku
+          in: query
+          type: string
+          required: true
+          description: The exact SKU.
+          example: WIDGET-BLUE-01
+    - id: search-products
+      method: GET
+      path: /api/v2/products
+      summary: >-
+        Search the catalog when a component is named rather than given by SKU. Rows carry id, sku,
+        name, type and barcode.
+      parameters:
+        - name: filter[search]
+          in: query
+          type: string
+          required: false
+          description: Free-text search across SKU, name, barcode, MPN and brand.
+        - name: filter[type]
+          in: query
+          type: string
+          required: false
+          description: Comma-separated product types. Components must be standard or kit.
+          example: standard,kit
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Page size (default 10).
+    - id: check-restrictions
+      method: POST
+      path: /api/v2/products/bundle-workshop/check-restrictions
+      summary: >-
+        For standard products you plan to convert, report which have sales or assembly inventory
+        movements (true = restricted). A product with history cannot become a bundle.
+      parameters:
+        - name: product_ids
+          in: body
+          type: array
+          required: true
+          description: Product ids to check.
+          example: [101, 102]
+    - id: batch-convert
+      method: POST
+      path: /api/v2/products/bundle-workshop/batch-convert
+      summary: >-
+        Convert standard products to bundle or kit, setting their components in the same call.
+        Converting to bundle also splits any open sales order lines for that product into its
+        components. Returns converted_count and skipped[] with a reason per product.
+      parameters:
+        - name: products
+          in: body
+          type: array
+          required: true
+          description: >-
+            Each { id, type (bundle or kit), components: [{ id, quantity }] }. Quantity is numeric,
+            at least 1. A conversion with no components is skipped.
+    - id: save-components
+      method: POST
+      path: /api/v2/products/bundle-workshop/{product}/components
+      summary: >-
+        Set a bundle or kit's components. The list REPLACES the current recipe and records a
+        new component revision dated today. Only call it on products with zero components.
+      parameters:
+        - name: product
+          in: path
+          type: integer
+          required: true
+          description: The bundle or kit product id.
+        - name: components
+          in: body
+          type: array
+          required: true
+          description: >-
+            At least one { id, quantity }. id is the component product id (must be a standard or
+            kit product, not the parent itself, and listed once); quantity is numeric, at least 1.
+        - name: change_summary
+          in: body
+          type: string
+          required: false
+          description: Up to 1000 characters saying where the recipe came from.
+          example: "Initial recipe from the user's component sheet 'Kits 2026-10.xlsx', row 14."
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt_only: true

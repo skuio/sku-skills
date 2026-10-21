@@ -1,7 +1,46 @@
 {
   "generatedFrom": "skills/",
-  "count": 21,
+  "count": 26,
   "skills": [
+    {
+      "name": "map-gl-accounts",
+      "domain": "accounting",
+      "title": "Map GL Accounts to the Chart of Accounts",
+      "version": "1.0.0",
+      "description": "Map SKU.io's accounting roles (sales, shipping revenue, COGS, inventory control, purchase clearing, accounts receivable, accounts payable, sales tax, and the optional ones) to the customer's own chart of accounts — the QuickBooks Online or Xero accounts that SKU.io holds as nominal codes. Reads the current mapping and the available accounts, proposes a full mapping table with the reasoning for each choice, waits for the user's explicit approval (ideally their bookkeeper's), then saves only the approved keys and reports what changed. Use it for the Launch Roadmap's \"Map GL accounts\" step or whenever journals fail for a missing nominal code mapping. Finance-sensitive: a wrong mapping posts every future journal to the wrong account.",
+      "tagline": "Map SKU.io's GL roles onto the customer's QuickBooks or Xero accounts, with sign-off",
+      "scopes": [
+        "accounting:read",
+        "settings:read",
+        "settings:write"
+      ],
+      "operations": 4,
+      "tags": [
+        "accounting",
+        "gl",
+        "nominal-codes",
+        "chart-of-accounts",
+        "quickbooks",
+        "xero",
+        "mapping",
+        "onboarding",
+        "launch-roadmap"
+      ],
+      "composes": [],
+      "pages": [
+        "/ledger"
+      ],
+      "icon": "mdi-book-account-outline",
+      "mcp": {
+        "tools": [],
+        "prompt": true
+      },
+      "outputs": {
+        "claude": "dist/claude/accounting/map-gl-accounts/SKILL.md",
+        "openai": "dist/openai/accounting/map-gl-accounts/",
+        "gemini": "dist/gemini/accounting/map-gl-accounts/"
+      }
+    },
     {
       "name": "reconcile-supplier-statement",
       "domain": "accounting",
@@ -260,6 +299,46 @@
       }
     },
     {
+      "name": "build-boms",
+      "domain": "manufacturing",
+      "title": "Build Bills of Materials from a Recipe Sheet",
+      "version": "1.0.0",
+      "description": "Create bills of materials (BOMs, recipes) in SKU.io for manufactured products from a recipe sheet the user already keeps — a spreadsheet or file in their Drive or email listing each finished product's ingredients or parts and quantities. Finds manufactured products with no BOM, maps the sheet's rows to products and units of measure, proposes each BOM for approval, creates them as drafts in batches of at most 25, and reports what changed. Use it for the Launch Roadmap's \"Bills of materials\" step, when onboarding a manufacturer, or whenever a manufactured product has no recipe. It never edits, archives or deletes an existing BOM.",
+      "tagline": "Create BOMs for manufactured products from the user's recipe sheet",
+      "scopes": [
+        "products:read",
+        "manufacturing:read",
+        "manufacturing:write"
+      ],
+      "operations": 7,
+      "tags": [
+        "manufacturing",
+        "bom",
+        "recipes",
+        "bill-of-materials",
+        "components",
+        "onboarding",
+        "launch-roadmap"
+      ],
+      "composes": [
+        "find-product",
+        "build-product-catalog"
+      ],
+      "pages": [
+        "/manufacturing/boms"
+      ],
+      "icon": "mdi-factory",
+      "mcp": {
+        "tools": [],
+        "prompt": true
+      },
+      "outputs": {
+        "claude": "dist/claude/manufacturing/build-boms/SKILL.md",
+        "openai": "dist/openai/manufacturing/build-boms/",
+        "gemini": "dist/gemini/manufacturing/build-boms/"
+      }
+    },
+    {
       "name": "create-sales-order",
       "domain": "orders",
       "title": "Create a Sales Order",
@@ -413,6 +492,52 @@
       }
     },
     {
+      "name": "follow-launch-roadmap",
+      "domain": "platform",
+      "title": "Follow the Launch Roadmap",
+      "version": "1.0.0",
+      "description": "Work through an account's SKU.io Launch Roadmap with the user: read their launch plan, pick the steps that are theirs and unblocked, explain each one (what it is, why it matters, how SKU.io will know it's done), hand off to the matching skill to do the work together — catalog import, bundles, BOMs, supplier costs, opening stock, GL mapping and more — then post a progress comment on the step and re-check it. Use it when the user asks \"what's next on our launch?\", \"help me with my onboarding steps\", or names a roadmap step. SKU.io's own data checks decide when a step is done; this skill never signs off checkpoints or unblocks steps (people do that in the app), ticks a manual step only when the user confirms it, and marks a stuck step blocked with the reason.",
+      "tagline": "Pick your next Launch Roadmap steps and work them with the matching skill",
+      "scopes": [
+        "launch_plan:read",
+        "launch_plan:write"
+      ],
+      "operations": 7,
+      "tags": [
+        "platform",
+        "onboarding",
+        "launch-roadmap",
+        "implementation",
+        "go-live",
+        "getting-started",
+        "coaching"
+      ],
+      "composes": [
+        "build-product-catalog",
+        "configure-bundles",
+        "build-boms",
+        "map-supplier-costs",
+        "set-initial-inventory",
+        "create-purchase-order",
+        "create-saved-view",
+        "map-gl-accounts",
+        "sync-sops"
+      ],
+      "pages": [
+        "/getting-started"
+      ],
+      "icon": "mdi-rocket-launch-outline",
+      "mcp": {
+        "tools": [],
+        "prompt": true
+      },
+      "outputs": {
+        "claude": "dist/claude/platform/follow-launch-roadmap/SKILL.md",
+        "openai": "dist/openai/platform/follow-launch-roadmap/",
+        "gemini": "dist/gemini/platform/follow-launch-roadmap/"
+      }
+    },
+    {
       "name": "sync-sops",
       "domain": "platform",
       "title": "Sync your SOPs with SKU.io changes",
@@ -489,6 +614,47 @@
         "claude": "dist/claude/products/build-product-catalog/SKILL.md",
         "openai": "dist/openai/products/build-product-catalog/",
         "gemini": "dist/gemini/products/build-product-catalog/"
+      }
+    },
+    {
+      "name": "configure-bundles",
+      "domain": "products",
+      "title": "Configure Bundles and Kits",
+      "version": "1.0.0",
+      "description": "Give every bundle and kit in SKU.io its components. Finds bundle/kit products that have no components yet (and standard products whose names look like packs or sets), proposes each recipe from a component list the user supplies (a sheet or file in their Drive or email) or from its channel listing titles, gets the user's approval, then saves the components in batches of at most 25 and reports what changed. Use it for the Launch Roadmap's \"Configure kits & bundles\" step, after importing channel listings that turned out to be multi-packs or sets, or whenever the Product Data Health report shows kits or bundles without components. It never replaces a recipe that already has components and never deletes anything.",
+      "tagline": "Turn bundle and kit listings into products with real components",
+      "scopes": [
+        "products:read",
+        "products:write"
+      ],
+      "operations": 10,
+      "tags": [
+        "products",
+        "bundles",
+        "kits",
+        "components",
+        "recipes",
+        "onboarding",
+        "launch-roadmap",
+        "catalog"
+      ],
+      "composes": [
+        "find-product",
+        "build-product-catalog"
+      ],
+      "pages": [
+        "/products/bundle-workshop",
+        "/reports/product-data-health"
+      ],
+      "icon": "mdi-package-variant-closed",
+      "mcp": {
+        "tools": [],
+        "prompt": true
+      },
+      "outputs": {
+        "claude": "dist/claude/products/configure-bundles/SKILL.md",
+        "openai": "dist/openai/products/configure-bundles/",
+        "gemini": "dist/gemini/products/configure-bundles/"
       }
     },
     {
@@ -612,6 +778,47 @@
         "claude": "dist/claude/products/find-product/SKILL.md",
         "openai": "dist/openai/products/find-product/",
         "gemini": "dist/gemini/products/find-product/"
+      }
+    },
+    {
+      "name": "map-supplier-costs",
+      "domain": "products",
+      "title": "Map Supplier Costs onto Reorderable Products",
+      "version": "1.0.0",
+      "description": "Fill in what the business pays its suppliers for every product it reorders, until at least 95% of active reorderable products (standard, kit, manufactured, blemished) carry a non-zero supplier price. Finds the products with no supplier pricing, sources each cost from the user's supplier price lists (files in their Drive or email) or, failing that, from the last price paid on a past purchase order, proposes a cost table for approval, then writes the supplier tier prices in batches of at most 25 and reports what changed. Use it for the Launch Roadmap's \"Supplier costs\" step or when the Product Data Health report shows products without supplier pricing. It fills gaps; it never unlinks suppliers or deletes prices. To apply a supplier's new price file to products that already have costs, use update-catalog-pricing.",
+      "tagline": "Fill missing supplier costs from price lists or past purchase orders",
+      "scopes": [
+        "products:read",
+        "products:write",
+        "suppliers:read",
+        "purchase-orders:read"
+      ],
+      "operations": 7,
+      "tags": [
+        "products",
+        "suppliers",
+        "supplier-pricing",
+        "costs",
+        "wholesale",
+        "onboarding",
+        "launch-roadmap"
+      ],
+      "composes": [
+        "update-catalog-pricing",
+        "find-product"
+      ],
+      "pages": [
+        "/reports/product-data-health"
+      ],
+      "icon": "mdi-cash-multiple",
+      "mcp": {
+        "tools": [],
+        "prompt": true
+      },
+      "outputs": {
+        "claude": "dist/claude/products/map-supplier-costs/SKILL.md",
+        "openai": "dist/openai/products/map-supplier-costs/",
+        "gemini": "dist/gemini/products/map-supplier-costs/"
       }
     },
     {

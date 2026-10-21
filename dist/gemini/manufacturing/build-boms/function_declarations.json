@@ -1,0 +1,171 @@
+{
+  "functionDeclarations": [
+    {
+      "name": "list_products",
+      "description": "List or search products. With filter[type]=manufactured it returns the population the Launch Roadmap checks (skip rows with a non-null archived_at). With filter[search] it finds an ingredient the sheet names instead of giving its SKU. BOM lines accept only products that carry stock (standard, kit, blemished, manufactured). (GET /api/v2/products)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "filter[type]": {
+            "type": "STRING",
+            "description": "Comma-separated product types, e.g. manufactured, or standard,manufactured."
+          },
+          "filter[search]": {
+            "type": "STRING",
+            "description": "Free-text search across SKU, name, barcode, MPN and brand."
+          },
+          "per_page": {
+            "type": "INTEGER",
+            "description": "Page size (default 10). Iterate page until last_page."
+          },
+          "page": {
+            "type": "INTEGER",
+            "description": "Page number."
+          }
+        }
+      }
+    },
+    {
+      "name": "list_boms",
+      "description": "List BOMs with product_id, status, version_number, component_lines_count and archived_at. Archived BOMs are excluded unless filter[archived]=all. (GET /api/manufacturing/boms)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "filter[product_id]": {
+            "type": "INTEGER",
+            "description": "Only BOMs for this product."
+          },
+          "filter[search]": {
+            "type": "STRING",
+            "description": "Matches BOM id, BOM name, or the product's name or SKU."
+          },
+          "per_page": {
+            "type": "INTEGER",
+            "description": "Page size (default 10)."
+          },
+          "page": {
+            "type": "INTEGER",
+            "description": "Page number."
+          }
+        }
+      }
+    },
+    {
+      "name": "find_product_by_sku",
+      "description": "Resolve an ingredient or part SKU from the recipe sheet to its product id and type. (GET /api/products/by-sku)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "sku": {
+            "type": "STRING",
+            "description": "The exact SKU."
+          }
+        },
+        "required": [
+          "sku"
+        ]
+      }
+    },
+    {
+      "name": "list_units_of_measure",
+      "description": "The account's units of measure (id, name, code, type). Use to map the sheet's units (\"kg\", \"ea\", \"ml\") to uom ids. (GET /api/manufacturing/units-of-measure)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "uom_type": {
+            "type": "STRING",
+            "description": "Optional filter by unit type, e.g. weight."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_product_units",
+      "description": "The units of measure enabled for one product (its stock unit plus alternates). A BOM line's uom_id must be one of these. (GET /api/manufacturing/products/{product}/units-of-measure)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "product": {
+            "type": "INTEGER",
+            "description": "The product id."
+          }
+        },
+        "required": [
+          "product"
+        ]
+      }
+    },
+    {
+      "name": "create_bom",
+      "description": "Create one BOM with its component lines. product_id, name and effective_from are required; the primary output line (product_id x 1) is added for you when output_lines is omitted. Returns the BOM with its id and lines. (POST /api/manufacturing/boms)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "product_id": {
+            "type": "INTEGER",
+            "description": "The manufactured product this recipe makes."
+          },
+          "name": {
+            "type": "STRING",
+            "description": "BOM name, up to 255 characters."
+          },
+          "effective_from": {
+            "type": "STRING",
+            "description": "Date the recipe applies from (Y-m-d)."
+          },
+          "status": {
+            "type": "STRING",
+            "description": "BomStatus: draft, active or archived. Send draft; a person activates it after review. Over the MCP server leave it out (sending it is refused; MCP BOMs are always drafts)."
+          },
+          "version_notes": {
+            "type": "STRING",
+            "description": "Free text — record the source sheet and row here."
+          },
+          "expected_yield_percent": {
+            "type": "NUMBER",
+            "description": "0–100. Only when the sheet states a yield."
+          },
+          "default_consumption_method": {
+            "type": "STRING",
+            "description": "forward_flush or backflush. Omit unless the user says how they issue materials."
+          },
+          "output_lines": {
+            "type": "ARRAY",
+            "description": "Omit for a single finished product. Each { product_id, role (primary, coproduct, byproduct, scrap), quantity, uom_id }. Use it when one batch yields more than one unit (product_id, role primary, quantity 12) so component quantities are per batch.",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "component_lines": {
+            "type": "ARRAY",
+            "description": "The recipe. Each { product_id (required), quantity (required, >= 0), uom_id (optional — defaults to the product's stock unit; must be enabled on the product), expected_scrap_percent (0–100), consumption_method, is_optional, notes, sort_order }. The roadmap counts a BOM only when it has at least one component line.",
+            "items": {
+              "type": "STRING"
+            }
+          }
+        },
+        "required": [
+          "product_id",
+          "name",
+          "effective_from"
+        ]
+      }
+    },
+    {
+      "name": "get_bom",
+      "description": "Fetch one BOM with its component and output lines, to verify after creating it. (GET /api/manufacturing/boms/{bom})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "bom": {
+            "type": "INTEGER",
+            "description": "The BOM id."
+          }
+        },
+        "required": [
+          "bom"
+        ]
+      }
+    }
+  ]
+}

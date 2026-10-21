@@ -12,9 +12,9 @@ const DOMAINS = [
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const SEMVER = /^\d+\.\d+\.\d+$/;
-const SCOPE = /^[a-z-]+:(read|write)$/;
+const SCOPE = /^[a-z_-]+:(read|write)$/;
 const MCP_TOOL_NAME = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
-const MCP_SCOPE = /^([a-z-]+:(read|write)|mcp:access)$/;
+const MCP_SCOPE = /^([a-z_-]+:(read|write)|mcp:access)$/;
 const MCP_ANNOTATIONS = ['read_only', 'destructive', 'idempotent', 'open_world'];
 const ICON = /^mdi-[a-z0-9]+(-[a-z0-9]+)*$/;
 

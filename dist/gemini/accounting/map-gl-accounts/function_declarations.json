@@ -1,0 +1,86 @@
+{
+  "functionDeclarations": [
+    {
+      "name": "get_nominal_code_mapping",
+      "description": "The current mapping: one key per accounting role (sales_orders, cogs, inventory_control, ...), each holding a nominal code id as a string, or null when unmapped. (GET /api/v2/settings/nominal-code-mapping)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "list_nominal_codes",
+      "description": "The chart of accounts as SKU.io holds it: { id, code, name, type, archived_at } per nominal code, mirrored from QuickBooks Online or Xero when connected. Archived codes are excluded unless filter[archived]=all. (GET /api/v2/nominal-codes)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "per_page": {
+            "type": "INTEGER",
+            "description": "Page size (default 10). Iterate page until last_page."
+          },
+          "page": {
+            "type": "INTEGER",
+            "description": "Page number."
+          },
+          "filter[search]": {
+            "type": "STRING",
+            "description": "Matches id, name or code."
+          },
+          "sort": {
+            "type": "STRING",
+            "description": "id, name, code or type (prefix - for descending). Default -id."
+          }
+        }
+      }
+    },
+    {
+      "name": "lookup_nominal_codes",
+      "description": "Fallback when the token has no accounting:read — every nominal code as { id, name, code } only (no type), ordered by code. Needs settings:read and the sales_channels.show permission. (GET /api/sub-sales-channels/lookup/nominal-codes)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "update_nominal_code_mapping",
+      "description": "Save mapping keys. Only the keys in the body are written; send nothing but the approved keys. Values are nominal code ids (from list-nominal-codes); an id with no account behind it is refused with 422, per key. Returns the whole mapping. Needs the settings.update permission. (PUT /api/v2/settings/nominal-code-mapping)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "sales_orders": {
+            "type": "STRING",
+            "description": "Nominal code id for sales income."
+          },
+          "shipping_sales_orders": {
+            "type": "STRING",
+            "description": "Nominal code id for shipping charged to customers."
+          },
+          "cogs": {
+            "type": "STRING",
+            "description": "Nominal code id for cost of goods sold."
+          },
+          "inventory_control": {
+            "type": "STRING",
+            "description": "Nominal code id for the inventory asset (a current asset)."
+          },
+          "accrued_purchases": {
+            "type": "STRING",
+            "description": "Nominal code id for purchase clearing (accrued / prepaid purchases)."
+          },
+          "accounts_receivable": {
+            "type": "STRING",
+            "description": "Nominal code id for accounts receivable."
+          },
+          "accounts_payable": {
+            "type": "STRING",
+            "description": "Nominal code id for accounts payable."
+          },
+          "sales_tax": {
+            "type": "STRING",
+            "description": "Nominal code id for the sales tax liability."
+          }
+        }
+      }
+    }
+  ]
+}
