@@ -49,21 +49,26 @@ One source of truth, three idiomatic outputs. Fix the knowledge in one place; ev
 <!-- BEGIN:skills-table -->
 | Domain | Skill | What it does |
 | --- | --- | --- |
+| `accounting` | **map-gl-accounts** | Map SKU.io's GL roles onto the customer's QuickBooks or Xero accounts, with sign-off |
 | `accounting` | **reconcile-supplier-statement** | Match a supplier's statement and bank payments to SKU.io's payables, and fix the gaps |
 | `accounting` | **record-vendor-credit** | Record a supplier credit memo and apply it to an open bill |
 | `integrations` | **manage-amazon-recovery** | Triage, file and follow up on Amazon reimbursement claims |
 | `integrations` | **optimize-tiktok-listing-quality** | Diagnose and fix POOR/FAIR TikTok Shop listings toward GOOD, reviewed before it lands |
 | `inventory` | **adjust-inventory** | Increase / decrease / set on-hand stock at a warehouse |
 | `inventory` | **set-initial-inventory** | Load opening stock per warehouse as an initial count on the inventory start date |
+| `manufacturing` | **build-boms** | Create BOMs for manufactured products from the user's recipe sheet |
 | `orders` | **create-sales-order** | Create a sales order with line items |
 | `platform` | **connect-to-sku** | Authenticate, verify the token and tenant, and establish scopes before anything else |
 | `platform` | **create-saved-view** | Create and favorite a saved view — columns, filters, sort — on any data table |
 | `platform` | **create-workflow** | Build, validate, publish and test an automation workflow from a node/edge graph |
+| `platform` | **follow-launch-roadmap** | Pick your next Launch Roadmap steps and work them with the matching skill |
 | `platform` | **sync-sops** | Reconcile your internal SOPs against what changed in SKU.io — automatically |
 | `products` | **build-product-catalog** | Import products from a spreadsheet, price list, web page, or pasted text |
+| `products` | **configure-bundles** | Turn bundle and kit listings into products with real components |
 | `products` | **enrich-channel-content** | Amalgamate existing copy into channel-correct descriptions, reviewed before it lands |
 | `products` | **find-matrix-opportunities** | Spot size/colour families hiding in a flat catalog and group them into matrix products |
 | `products` | **find-product** | Resolve a product by SKU, barcode, or fuzzy search |
+| `products` | **map-supplier-costs** | Fill missing supplier costs from price lists or past purchase orders |
 | `products` | **publish-listing** | Draft, validate, and publish a listing to any sales channel |
 | `products` | **update-catalog-pricing** | Apply a supplier's new price file to the existing catalog |
 | `purchase-orders` | **create-purchase-order** | Create a replenishment PO for a supplier from a description or document |

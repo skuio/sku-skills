@@ -1,0 +1,166 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SKU.io — Map GL Accounts to the Chart of Accounts",
+    "description": "Map SKU.io's accounting roles (sales, shipping revenue, COGS, inventory control, purchase clearing, accounts receivable, accounts payable, sales tax, and the optional ones) to the customer's own chart of accounts — the QuickBooks Online or Xero accounts that SKU.io holds as nominal codes. Reads the current mapping and the available accounts, proposes a full mapping table with the reasoning for each choice, waits for the user's explicit approval (ideally their bookkeeper's), then saves only the approved keys and reports what changed. Use it for the Launch Roadmap's \"Map GL accounts\" step or whenever journals fail for a missing nominal code mapping. Finance-sensitive: a wrong mapping posts every future journal to the wrong account.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{tenant}.sku.io",
+      "variables": {
+        "tenant": {
+          "default": "app",
+          "description": "Your SKU.io account subdomain."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v2/settings/nominal-code-mapping": {
+      "get": {
+        "operationId": "get_nominal_code_mapping",
+        "summary": "The current mapping: one key per accounting role (sales_orders, cogs, inventory_control, ...), each holding a nominal code id as a string, or null when unmapped.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      },
+      "put": {
+        "operationId": "update_nominal_code_mapping",
+        "summary": "Save mapping keys. Only the keys in the body are written; send nothing but the approved keys. Values are nominal code ids (from list-nominal-codes); an id with no account behind it is refused with 422, per key. Returns the whole mapping. Needs the settings.update permission.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sales_orders": {
+                    "type": "string",
+                    "description": "Nominal code id for sales income.",
+                    "example": "41"
+                  },
+                  "shipping_sales_orders": {
+                    "type": "string",
+                    "description": "Nominal code id for shipping charged to customers."
+                  },
+                  "cogs": {
+                    "type": "string",
+                    "description": "Nominal code id for cost of goods sold."
+                  },
+                  "inventory_control": {
+                    "type": "string",
+                    "description": "Nominal code id for the inventory asset (a current asset)."
+                  },
+                  "accrued_purchases": {
+                    "type": "string",
+                    "description": "Nominal code id for purchase clearing (accrued / prepaid purchases)."
+                  },
+                  "accounts_receivable": {
+                    "type": "string",
+                    "description": "Nominal code id for accounts receivable."
+                  },
+                  "accounts_payable": {
+                    "type": "string",
+                    "description": "Nominal code id for accounts payable."
+                  },
+                  "sales_tax": {
+                    "type": "string",
+                    "description": "Nominal code id for the sales tax liability."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/nominal-codes": {
+      "get": {
+        "operationId": "list_nominal_codes",
+        "summary": "The chart of accounts as SKU.io holds it: { id, code, name, type, archived_at } per nominal code, mirrored from QuickBooks Online or Xero when connected. Archived codes are excluded unless filter[archived]=all.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Page size (default 10). Iterate page until last_page.",
+            "schema": {
+              "type": "integer",
+              "description": "Page size (default 10). Iterate page until last_page.",
+              "example": 100
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer",
+              "description": "Page number."
+            }
+          },
+          {
+            "name": "filter[search]",
+            "in": "query",
+            "required": false,
+            "description": "Matches id, name or code.",
+            "schema": {
+              "type": "string",
+              "description": "Matches id, name or code."
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "id, name, code or type (prefix - for descending). Default -id.",
+            "schema": {
+              "type": "string",
+              "description": "id, name, code or type (prefix - for descending). Default -id.",
+              "example": "code"
+            }
+          }
+        ]
+      }
+    },
+    "/api/sub-sales-channels/lookup/nominal-codes": {
+      "get": {
+        "operationId": "lookup_nominal_codes",
+        "summary": "Fallback when the token has no accounting:read — every nominal code as { id, name, code } only (no type), ordered by code. Needs settings:read and the sales_channels.show permission.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "SKU.io Personal Access Token."
+      }
+    }
+  }
+}

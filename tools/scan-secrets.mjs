@@ -17,7 +17,7 @@ const MAX_BYTES = 512 * 1024;
 
 // Subdomains of sku.io that are public/expected and must NOT be flagged.
 const ALLOWED_SUBDOMAINS = new Set([
-  'developer', 'www', 'app', 'docs', 'api', 'status', 'blog', 'acme', 'tenant',
+  'developer', 'www', 'app', 'docs', 'api', 'status', 'blog', 'acme', 'tenant', 'mcp',
 ]);
 
 const findings = [];

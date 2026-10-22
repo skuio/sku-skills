@@ -1,0 +1,260 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SKU.io — Map Supplier Costs onto Reorderable Products",
+    "description": "Fill in what the business pays its suppliers for every product it reorders, until at least 95% of active reorderable products (standard, kit, manufactured, blemished) carry a non-zero supplier price. Finds the products with no supplier pricing, sources each cost from the user's supplier price lists (files in their Drive or email) or, failing that, from the last price paid on a past purchase order, proposes a cost table for approval, then writes the supplier tier prices in batches of at most 25 and reports what changed. Use it for the Launch Roadmap's \"Supplier costs\" step or when the Product Data Health report shows products without supplier pricing. It fills gaps; it never unlinks suppliers or deletes prices. To apply a supplier's new price file to products that already have costs, use update-catalog-pricing.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{tenant}.sku.io",
+      "variables": {
+        "tenant": {
+          "default": "app",
+          "description": "Your SKU.io account subdomain."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/product-data-health/metrics": {
+      "get": {
+        "operationId": "get_product_data_health",
+        "summary": "Catalog health counts, including products_with_supplier, products_without_supplier, products_with_non_zero_supplier_price and products_with_zero_supplier_price.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v2/products": {
+      "get": {
+        "operationId": "list_products",
+        "summary": "Bulk-read the catalog. Rows include sku, name, type, archived_at, unit_cost, default_supplier_id, default_supplier_name, default_supplier_sku and default_supplier_price. filter[supplier_price.is_empty]=1 narrows to products whose default supplier link has no price (or that have no default supplier at all).",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "filter[type]",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated types. The roadmap counts standard,kit,manufactured,blemished.",
+            "schema": {
+              "type": "string",
+              "description": "Comma-separated types. The roadmap counts standard,kit,manufactured,blemished.",
+              "example": "standard,kit,manufactured,blemished"
+            }
+          },
+          {
+            "name": "filter[supplier_price.is_empty]",
+            "in": "query",
+            "required": false,
+            "description": "Send 1 to keep only products with no default supplier price.",
+            "schema": {
+              "type": "string",
+              "description": "Send 1 to keep only products with no default supplier price.",
+              "example": "1"
+            }
+          },
+          {
+            "name": "filter[default_supplier_id]",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated supplier ids — products whose default supplier is one of them.",
+            "schema": {
+              "type": "string",
+              "description": "Comma-separated supplier ids — products whose default supplier is one of them."
+            }
+          },
+          {
+            "name": "filter[search]",
+            "in": "query",
+            "required": false,
+            "description": "Free-text search across SKU, name, barcode, MPN and brand.",
+            "schema": {
+              "type": "string",
+              "description": "Free-text search across SKU, name, barcode, MPN and brand."
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Page size (default 10). Iterate page until last_page.",
+            "schema": {
+              "type": "integer",
+              "description": "Page size (default 10). Iterate page until last_page.",
+              "example": 100
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer",
+              "description": "Page number."
+            }
+          }
+        ]
+      }
+    },
+    "/api/products/{productId}/suppliers": {
+      "get": {
+        "operationId": "get_product_suppliers",
+        "summary": "A product's supplier links, each with supplier_sku, is_default and its pricing tiers (tier name and price). This is where the account's real tier name comes from, and it shows prices on non-default suppliers that the list filter can't see.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "description": "The product id.",
+            "schema": {
+              "type": "integer",
+              "description": "The product id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/v2/suppliers": {
+      "get": {
+        "operationId": "find_supplier",
+        "summary": "Resolve a supplier named on a price list to its supplier id.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "description": "Free-text search over supplier name, company and email.",
+            "schema": {
+              "type": "string",
+              "description": "Free-text search over supplier name, company and email.",
+              "example": "Acme Wholesale"
+            }
+          }
+        ]
+      }
+    },
+    "/api/products/{product}/last-purchase-price": {
+      "get": {
+        "operationId": "get_last_purchase_price",
+        "summary": "The most recent non-draft purchase order line for the product with a price above zero: { amount, purchase_order_id, purchase_order_date }, or data null when it was never bought.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "product",
+            "in": "path",
+            "required": true,
+            "description": "The product id.",
+            "schema": {
+              "type": "integer",
+              "description": "The product id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/purchase-orders/{purchase_order}": {
+      "get": {
+        "operationId": "get_purchase_order",
+        "summary": "Read the purchase order behind a last purchase price, to learn which supplier it was bought from and in what currency before proposing it as that supplier's cost.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "purchase_order",
+            "in": "path",
+            "required": true,
+            "description": "The purchase order id.",
+            "schema": {
+              "type": "integer",
+              "description": "The purchase order id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/products/{id}": {
+      "put": {
+        "operationId": "set_supplier_price",
+        "summary": "Write a supplier cost onto one product. Send only suppliers[], with operation \"updateOrCreate\" on every entry so no other supplier link is touched. Creates the supplier link when the product has none for that supplier.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The product id.",
+            "schema": {
+              "type": "integer",
+              "description": "The product id."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "suppliers": {
+                    "type": "array",
+                    "description": "Each { supplier_id, operation: \"updateOrCreate\", pricing: [{ supplier_pricing_tier_name, price }], supplier_sku (optional), is_default (optional, only for a product with no default supplier) }. price is numeric, >= 0 and < 100000. An unknown tier name CREATES a new tier, so use a name read from get-product-suppliers.",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "suppliers"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "SKU.io Personal Access Token."
+      }
+    }
+  }
+}

@@ -70,7 +70,9 @@ mcp:                             # optional; how the SKU.io MCP server exposes t
   `integrations`, `reports`, `subscriptions`, `settings`. These mirror SKU.io PAT scope resources
   (`platform` is for auth/meta skills).
 - **`auth.scopes`** are `{resource}:read` for `GET`/`HEAD` and `{resource}:write` for
-  state-changing verbs. List every scope the skill's operations need (least privilege).
+  state-changing verbs. List every scope the skill's operations need (least privilege). Use the
+  resource name exactly as SKU.io spells it — most are hyphenated (`purchase-orders`), a few use
+  underscores (`launch_plan`, `success_plan`).
 - **`operations`** should be the *real* endpoints from <https://developer.sku.io>. Keep paths and
   fields accurate — an agent will call them verbatim. Prefer the exact path the API exposes (some
   resources live under `/api/v2/…`).
