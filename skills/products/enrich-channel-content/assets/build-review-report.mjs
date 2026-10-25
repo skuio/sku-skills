@@ -27,6 +27,7 @@
  * The output is ONE self-contained HTML file. Serve it from http://localhost:8080 (an origin
  * the SKU.io API accepts) so "Apply approved" can PUT straight to the API with a PAT.
  */
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -47,12 +48,19 @@ const tenantBase = `https://${data.tenant}.sku.io`;
 // Tenant-relative storage paths (/storage/images/…) cannot load from the report's origin.
 const absImage = (u) => (u && String(u).startsWith('/') ? tenantBase + u : u);
 const needSupplier = families.filter((f) => !f.proposal && f.supplier_email);
+// Proposed descriptions are rendered as HTML, and they are generated from product and channel
+// text written by outsiders. Only this page's own script may run: an injected <script>, inline
+// handler or javascript: link could otherwise read the PAT box or post to /apply.
+const nonce = crypto.randomBytes(16).toString('base64');
+const csp = [`default-src 'none'`, `script-src 'nonce-${nonce}'`, `style-src 'unsafe-inline'`, `img-src https: data:`,
+  `connect-src 'self' ${tenantBase}`, `form-action 'none'`, `base-uri 'none'`].join('; ');
 const already = families.filter((f) => f.already_enriched);
 
 const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="${csp}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Enrichment review — ${esc(data.brand)} → ${esc(data.channel?.name)}</title>
 <style>
@@ -138,8 +146,8 @@ const html = `<!DOCTYPE html>
 
   <footer>Decisions are saved in this browser. Nothing is written to SKU.io until you press Apply. Only <code>${esc(data.attribute?.name)}</code> is ever written; names, brands and images are never touched.</footer>
 </main>
-<script>
-const DATA = ${JSON.stringify(data)};
+<script nonce="${nonce}">
+const DATA = ${JSON.stringify(data).replace(/</g, '\\u003c')};
 const KEY = 'enrich:' + DATA.tenant + ':' + (DATA.channel && DATA.channel.id) + ':' + DATA.brand + ':' + [DATA.attribute && DATA.attribute.name, DATA.title_attribute && DATA.title_attribute.name].filter(Boolean).join('+') + ':' + (DATA.fields || ['description']).join(',');
 let state = {};
 try { state = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { state = {}; }
