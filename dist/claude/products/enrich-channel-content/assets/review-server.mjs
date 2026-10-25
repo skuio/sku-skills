@@ -15,6 +15,12 @@
  * Bind is loopback only. The only mutation is PUT /api/products/{id}/attributes
  * for the attributes the page proposed — the same call the reviewer would have
  * made by hand in Step 4 of INSTRUCTIONS.md.
+ *
+ * Loopback is not a trust boundary on its own: any web page the reviewer has
+ * open can send requests to http://localhost:<port>. So every request must name
+ * this server in its Host header (stops DNS rebinding), and POST /apply must
+ * also come from this server's own origin with a JSON body (stops cross-site
+ * form and text/plain posts, which skip the CORS preflight).
  */
 import fs from 'node:fs';
 import http from 'node:http';
@@ -33,6 +39,9 @@ const html = path.resolve(file);
 const dir = path.dirname(html);
 const base = `https://${tenant}.sku.io`;
 
+const ownHosts = new Set([`localhost:${port}`, `127.0.0.1:${port}`]);
+const ownOrigins = new Set([...ownHosts].map((h) => `http://${h}`));
+
 const json = (res, code, body) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(body)); };
 
 async function putAttributes(productId, attributes) {
@@ -45,9 +54,13 @@ async function putAttributes(productId, attributes) {
 }
 
 const server = http.createServer(async (req, res) => {
+  if (!ownHosts.has(req.headers.host)) { res.writeHead(403); return res.end(); }
   const url = new URL(req.url, `http://localhost:${port}`);
   if (req.method === 'GET' && url.pathname === '/session') return json(res, 200, { served: true, tenant });
   if (req.method === 'POST' && url.pathname === '/apply') {
+    if (!ownOrigins.has(req.headers.origin) || !String(req.headers['content-type'] || '').startsWith('application/json')) {
+      return json(res, 403, { error: 'approvals are accepted only from the review page this server serves' });
+    }
     let body = ''; for await (const chunk of req) body += chunk;
     let families;
     try { families = JSON.parse(body).families; } catch { return json(res, 400, { error: 'bad json' }); }
