@@ -1,6 +1,6 @@
 # Create a Workflow (automation)
 
-_Build, validate, publish, test-run and maintain SKU.io automation workflows from the API — the same node/edge graph the visual Workflow Builder draws. Use this whenever a user wants something to happen automatically in response to something else: email or Slack me when an order lands on a given sales channel, tag or note orders that match a rule, post a webhook to another system, import a supplier feed from FTP on a schedule, or route orders to a warehouse — and when an existing workflow needs changing, pausing, or diagnosing because it did not fire. Starts from a template when one fits, discovers the node catalog and credentials live, and publishes only after a dry run the user has seen — including picking the right moment to fire on, which for an order alert is the channel import rather than the sales-order creation._
+_Build, test, publish and fix automation workflows: email or Slack alerts when an order lands on a channel, tag or note orders by rule, post a webhook, import a supplier feed on a schedule, or route orders to a warehouse. Use when something should happen automatically, or a workflow did not fire._
 
 Use this skill to build a SKU.io **automation workflow** from the API — the same directed graph of
 nodes and edges the visual Workflow Builder draws. A workflow is "when X happens, do Y (maybe only

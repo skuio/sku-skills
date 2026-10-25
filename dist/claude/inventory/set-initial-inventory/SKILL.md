@@ -1,6 +1,6 @@
 ---
 name: set-initial-inventory
-description: "Load opening stock into SKU.io as an initial (first-ever) count for one or more warehouses, dated to the account's inventory start date. Use this when going live, onboarding a new warehouse or 3PL, or importing an opening count sheet: it settles the start date (from the source data or by asking — the configured setting is often stale, so confirm it), turns the sheet into one initial stock take per warehouse, and drives each draft → open → closed so the quantities and their cost layers land. It also attaches the source documents to the take, files the rows it could not resolve cleanly — unmapped SKUs, lines with no cost basis, damaged stock nobody split out, sheets declared incomplete — as an HTML anomaly report, and works those anomalies once answers come back: creating missing products, updating lines, posting a revised report. An initial count happens once per warehouse and cannot be re-dated, so date and unit costs must be right before finalizing. For cycle counts or corrections use adjust-inventory."
+description: "Load opening stock into SKU.io as a first-ever count per warehouse, dated to the inventory start date, with unit costs, and report rows it could not resolve. Use when going live, onboarding a warehouse or 3PL, or importing an opening count sheet. For later counts or corrections use adjust-inventory."
 license: MIT
 ---
 

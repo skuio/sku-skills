@@ -82,8 +82,8 @@ Run the build to regenerate `dist/`, `dist/catalog.json` (the machine-readable i
 
 ## Quickstart — use a skill
 
-**Claude** — install into a directory Claude Code scans for skills. `dist/` is committed, so there's
-no build step:
+**Claude** — install into a directory Claude Code scans for skills. `dist/` is committed and the
+installer uses only Node built-ins, so there's no build step and no `npm ci` (Node 18+):
 
 ```bash
 git clone https://github.com/skuio/sku-skills && cd sku-skills

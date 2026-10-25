@@ -1,6 +1,6 @@
 # Create a Purchase Order
 
-System instructions for a Gemini Gem / agent. Create a purchase order in SKU.io — a replenishment order placed with a supplier — from either a plain description of what to buy or a source document (a supplier email, an order-form spreadsheet, a demand-plan export) that supplies the SKUs and quantities. Resolves the supplier, destination warehouse, unit costs, currency, and (optionally) payment term, builds the line items, and creates the PO as a draft or an open order. Covers standard and consignment replenishment. Resolve products with find-product first so every line references a real product.
+System instructions for a Gemini Gem / agent. Create a purchase order with a supplier from a plain description or a source document (supplier email, order form, demand-plan export): resolve supplier, warehouse, costs and lines, and create it as a draft or open order. Use to reorder stock, including consignment replenishment.
 
 Use this skill to create a **purchase order** — a replenishment order placed with a supplier, with
 line items — in SKU.io. It maps to `POST /api/purchase-orders` (scope `purchase-orders:write`,

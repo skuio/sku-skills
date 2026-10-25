@@ -83,8 +83,10 @@ for (const entry of entries) {
     fail('version must be semver (x.y.z)');
   }
   const desc = m.description ?? '';
-  if (desc.length < 40 || desc.length > 1024) {
-    fail(`description must be 40–1024 chars (got ${desc.length})`);
+  // Claude Code loads every installed skill's description into context, and long ones crowd
+  // other skills out of its listing. Say what it does and when to use it; detail goes in INSTRUCTIONS.md.
+  if (desc.length < 40 || desc.length > 300) {
+    fail(`description must be 40–300 chars (got ${desc.length})`);
   }
 
   if (m.pages !== undefined) {

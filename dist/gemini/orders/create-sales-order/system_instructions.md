@@ -1,6 +1,6 @@
 # Create a Sales Order
 
-System instructions for a Gemini Gem / agent. Create a new sales order in SKU.io with one or more line items. Use this to place an order for a customer — capturing the order status, order date, currency, optional customer and store, and the SKUs, quantities, and unit prices being sold. Resolve products first with find-product so each line references a real product.
+System instructions for a Gemini Gem / agent. Create a sales order in SKU.io with one or more line items: status, date, currency, optional customer and store, and the SKUs, quantities and prices sold. Use to place an order for a customer. Resolve products first with find-product.
 
 Use this skill to create a sales order — the record of something being sold to a customer, with
 line items. It maps to `POST /api/sales-orders` (scope `orders:write`). The token also needs

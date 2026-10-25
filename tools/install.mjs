@@ -8,7 +8,8 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ROOT, DIST_DIR, copyDir } from './lib/skills.mjs';
+// Built-ins only: a fresh clone runs this with plain Node, no `npm ci` (js-yaml is a build dependency).
+import { ROOT, DIST_DIR, copyDir } from './lib/fs.mjs';
 
 const CATALOG_PATH = path.join(DIST_DIR, 'catalog.json');
 // Every skill's generated "Step 0 — Connect first" sends the agent here when there is no verified

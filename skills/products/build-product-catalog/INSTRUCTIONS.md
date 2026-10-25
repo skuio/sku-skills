@@ -92,6 +92,9 @@ Mapping rules:
   supplier in `suppliers[]`), and mirror it to `unit_cost` (COGS) too. A "retail"/"MSRP" column is
   the **sell price** → `default_price`. Prioritise the supplier wholesale price — it's the field
   most often forgotten. Don't collapse all three into one.
+- **No cost in the source** ("call for pricing", blank) → omit `default_supplier_price` and
+  `unit_cost` (never send `0`), still link the supplier, and list the row as "needs a cost": SKU.io
+  currently stores a $0 supplier price on the link anyway, which map-supplier-costs then fills.
 - **Capture leftover source columns as attributes — this is the obvious, primary case.** Any column
   the source *explicitly provides* that has no standard field of its own (carton/case pack, cubic
   feet, material, country of origin, care notes, remarks, …) becomes an `attributes[]` entry

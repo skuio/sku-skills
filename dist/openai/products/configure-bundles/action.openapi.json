@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "SKU.io — Configure Bundles and Kits",
-    "description": "Give every bundle and kit in SKU.io its components. Finds bundle/kit products that have no components yet (and standard products whose names look like packs or sets), proposes each recipe from a component list the user supplies (a sheet or file in their Drive or email) or from its channel listing titles, gets the user's approval, then saves the components in batches of at most 25 and reports what changed. Use it for the Launch Roadmap's \"Configure kits & bundles\" step, after importing channel listings that turned out to be multi-packs or sets, or whenever the Product Data Health report shows kits or bundles without components. It never replaces a recipe that already has components and never deletes anything.",
+    "description": "Add components to bundle and kit products that have none, from the user's component sheet or the channel listing titles, after approval. Use for the Launch Roadmap's \"Configure kits & bundles\" step, after importing multi-pack or set listings, or when kits or bundles show no components.",
     "version": "1.0.0"
   },
   "servers": [

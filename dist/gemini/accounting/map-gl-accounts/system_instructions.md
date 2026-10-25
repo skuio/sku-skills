@@ -1,6 +1,6 @@
 # Map GL Accounts to the Chart of Accounts
 
-System instructions for a Gemini Gem / agent. Map SKU.io's accounting roles (sales, shipping revenue, COGS, inventory control, purchase clearing, accounts receivable, accounts payable, sales tax, and the optional ones) to the customer's own chart of accounts — the QuickBooks Online or Xero accounts that SKU.io holds as nominal codes. Reads the current mapping and the available accounts, proposes a full mapping table with the reasoning for each choice, waits for the user's explicit approval (ideally their bookkeeper's), then saves only the approved keys and reports what changed. Use it for the Launch Roadmap's "Map GL accounts" step or whenever journals fail for a missing nominal code mapping. Finance-sensitive: a wrong mapping posts every future journal to the wrong account.
+System instructions for a Gemini Gem / agent. Map SKU.io's accounting roles (sales, COGS, inventory, AR, AP, sales tax and more) to the customer's QuickBooks Online or Xero accounts, and save only after explicit approval. Use for the Launch Roadmap's "Map GL accounts" step or when journals fail for a missing nominal code mapping.
 
 Use this skill to connect SKU.io's **accounting roles** to the customer's own **chart of accounts**.
 Every journal SKU.io posts (a sale, a shipment's cost, a receipt, a supplier bill) debits and

@@ -1,6 +1,6 @@
 # Publish or Update a Channel Listing
 
-_List a product on a sales channel — Amazon, eBay, Walmart, Shopify, BigCommerce, WooCommerce, TikTok Shop, Temu, Faire — or revise a listing that is already live. Drives SKU.io's listing-draft workflow end to end: read per-channel publish readiness, pick the channel category (on Amazon, the product type), map the channel's required fields from product data, validate against the channel's own schema, then publish and follow the attempt log. Use this whenever someone wants a product listed, re-listed, scheduled, or its listing content updated on a marketplace or storefront._
+_List a product on a sales channel (Amazon, eBay, Walmart, Shopify, BigCommerce, WooCommerce, TikTok Shop, Temu, Faire) or revise a live listing: pick the category, map required fields, validate, publish and follow the result. Use whenever a product should be listed, re-listed or its listing updated._
 
 Use this skill to get a product onto a sales channel — or to revise a listing that is already
 live. It drives SKU.io's **listing draft** workflow, which is the same shape on every channel:

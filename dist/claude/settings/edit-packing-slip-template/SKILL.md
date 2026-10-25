@@ -1,6 +1,6 @@
 ---
 name: edit-packing-slip-template
-description: "Edit a SKU.io packing-slip PDF template with the packing-specific rules that keep the footer banner, logo, and per-store layouts consistent. Use this when changing a packing slip's footer banner or branding, or when the banner renders inconsistently — present on some orders or stores, missing or clipped on others. Enforces the exact footer-banner structure the PDF export requires to pin a banner to every page, the banner aspect ratio, cross-store consistency, and a multi-order visual QA pass against real orders. Extends edit-pdf-template — do the base edit/validate/save loop there; this adds the packing rules."
+description: "Edit a packing-slip PDF template with the rules that keep the footer banner, logo and per-store layouts consistent. Use when changing a packing slip's banner or branding, or when the banner is missing or clipped on some orders or stores. Builds on edit-pdf-template."
 license: MIT
 ---
 

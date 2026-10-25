@@ -1,6 +1,6 @@
 ---
 name: create-saved-view
-description: "Create a saved view for any SKU.io data table (products, sales orders, inventory, …) — a named, reusable configuration of visible columns, filters, sort, and search — and favorite it so it appears on the table's favorites bar. Use this to give a user a one-click way back to a specific slice of data: a fresh import, an exception queue, a curated report. Composable — other skills (e.g. build-product-catalog) call it to leave behind a view of what they just created."
+description: "Create and favorite a saved view on any SKU.io data table (products, sales orders, inventory, …): a named set of columns, filters, sort and search. Use to give a user a one-click way back to a slice of data, such as a fresh import or an exception queue. Other skills call it too."
 license: MIT
 ---
 

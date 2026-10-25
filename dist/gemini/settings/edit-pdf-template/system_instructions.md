@@ -1,6 +1,6 @@
 # Edit a PDF Template
 
-System instructions for a Gemini Gem / agent. Edit any SKU.io PDF document template — packing slips, quotes, sales orders, pick lists, purchase orders, and vendor/sales credits — by editing its HTML content directly, then validating, previewing against real and mock documents, and visually QA-ing the rendered PDF before saving. Use this to change branding, layout, a logo or footer banner, or which fields a document shows. Runs a deterministic read → edit → validate → preview → verify → save loop; every save snapshots a version you can restore, so edits are reversible. Prefer this over the in-app AI builder, which is the fallback for users without an agent. For packing slips, load edit-packing-slip-template too.
+System instructions for a Gemini Gem / agent. Edit any SKU.io PDF template (packing slips, quotes, sales orders, pick lists, purchase orders, credits) by editing its HTML, then validate, preview and visually check the PDF before saving. Use to change branding, layout, a logo, a footer banner or which fields a document shows.
 
 Use this skill to change a SKU.io **PDF document template** — a packing slip, quote, sales order,
 pick list, purchase order, or a vendor/sales credit — by editing its HTML directly and proving the

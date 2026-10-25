@@ -93,7 +93,7 @@ Then open a PR against `main` and fill in the template.
 ## What "good" looks like
 
 - **`description`** (in `skill.yaml`) reads as a *when-to-use-this* for a model choosing tools —
-  40–1024 chars, task + trigger.
+  40–300 chars (Claude Code loads every description into context), task + trigger.
 - **`INSTRUCTIONS.md`** contains: when to use it, decision logic (which endpoint when, how to
   disambiguate), a concrete `curl`, response handling (`2xx`/`422`/`403`), and guardrails
   (idempotency, destructive ops, don't-invent-ids, ask-don't-guess).
