@@ -1,6 +1,6 @@
 ---
 name: reconcile-supplier-statement
-description: "Reconcile what a supplier says you owe them against SKU.io's accounts payable, and trace the bank payments in between. Takes the supplier's statement (an emailed QuickBooks/Xero statement, a PDF, or pasted text) plus the bank lines paid to that supplier, compares them with the supplier's bills, vendor credits and payments in SKU.io, and explains every difference: bills a payment settled but SKU.io still shows open, payments recorded twice, credits applied in SKU.io that the supplier has not applied, bill totals that differ from the supplier's invoice (missing freight, a mis-linked line), and documents one side has that the other lacks. Proposes the fix for each and, under the caller's approval policy, applies the SKU.io side: unapply or apply credits, record a supplier payment, remove a duplicate payment. Use for \"does our statement from X match\", \"why does SKU.io say we owe X more than they do\", or a regular supplier account reconciliation."
+description: "Reconcile a supplier's statement and the bank payments to them against SKU.io's bills, credits and payments, explain every difference, and fix the SKU.io side with approval. Use for \"does our statement from X match\", \"why does SKU.io say we owe X more\", or a regular supplier reconciliation."
 license: MIT
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: enrich-channel-content
-description: "Fill in the channel-specific product content a marketplace needs before you can list there — today, a per-channel description attribute such as tiktokshop_description — supplier by supplier or brand by brand. For each product it gathers what already exists (the live Amazon or eBay copy, the product's own attributes), asks SKU.io's AI to amalgamate it into copy that follows the target channel's own rules, and renders an HTML review report — product image, every source side by side, the proposal, and the AI's rationale — with approve/reject per product. Only approved descriptions are written back. When no copy exists anywhere it falls back to the manufacturer's site, and finally to a drafted email asking the supplier. Use it whenever \"we can't list these on TikTok Shop / Walmart / Temu because the descriptions are missing\" — or whenever a channel's content rules differ enough that reusing another channel's description would be wrong."
+description: "Write the channel-specific product descriptions a marketplace needs (e.g. tiktokshop_description) from existing copy, with an HTML review report; only approved copy is saved. Use when products can't list on TikTok Shop, Walmart or Temu because descriptions are missing or break channel rules."
 license: MIT
 ---
 

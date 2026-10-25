@@ -1,6 +1,6 @@
 # Optimize TikTok Shop Listing Quality
 
-_Lift a TikTok Shop integration's listings out of POOR/FAIR Listing Quality toward GOOD, driven by TikTok's own "Diagnose and Optimize Product" results. For each in-scope listing it reads the cached diagnosis (re-diagnosing first when stale or missing), then for every issue TikTok reports — keyed on the field (TITLE / DESCRIPTION / IMAGE), its `code`, `how_to_solve` guidance and the suggested `seo_words` — plans a concrete fix: a rewritten title, an expanded description, and a sourced replacement image (images are never auto-generated). It runs POOR before FAIR, defaults to a dry-run that emits the proposed copy as a diff for approval, and — on the built apply endpoint (`POST .../products/{product}/optimize`, with AI-drafted copy from `.../optimize/draft`) — writes the approved title/description/main-image back to the live listing and re-diagnoses to confirm the tier improved. Use it for "fix our TikTok listing quality", "get these POOR listings to GOOD", or "why are these listings rated FAIR"._
+_Fix TikTok Shop listings rated POOR or FAIR toward GOOD from TikTok's own diagnosis: rewrite titles and descriptions, source better images, and apply only after review. Use for "fix our TikTok listing quality", "get these POOR listings to GOOD", or "why are these listings rated FAIR"._
 
 Use this skill to raise a TikTok Shop integration's **Listing Quality** — to move listings TikTok
 rates **POOR** or **FAIR** toward **GOOD**, driven by TikTok's own *Diagnose and Optimize Product*

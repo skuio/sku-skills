@@ -1,6 +1,6 @@
 ---
 name: build-boms
-description: "Create bills of materials (BOMs, recipes) in SKU.io for manufactured products from a recipe sheet the user already keeps — a spreadsheet or file in their Drive or email listing each finished product's ingredients or parts and quantities. Finds manufactured products with no BOM, maps the sheet's rows to products and units of measure, proposes each BOM for approval, creates them as drafts in batches of at most 25, and reports what changed. Use it for the Launch Roadmap's \"Bills of materials\" step, when onboarding a manufacturer, or whenever a manufactured product has no recipe. It never edits, archives or deletes an existing BOM."
+description: "Create bills of materials (BOMs, recipes) for manufactured products from the user's recipe sheet, after approval. Use for the Launch Roadmap's \"Bills of materials\" step, when onboarding a manufacturer, or when a manufactured product has no recipe. Never edits or deletes an existing BOM."
 license: MIT
 ---
 

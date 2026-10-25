@@ -1,6 +1,6 @@
 ---
 name: create-sales-order
-description: "Create a new sales order in SKU.io with one or more line items. Use this to place an order for a customer — capturing the order status, order date, currency, optional customer and store, and the SKUs, quantities, and unit prices being sold. Resolve products first with find-product so each line references a real product."
+description: "Create a sales order in SKU.io with one or more line items: status, date, currency, optional customer and store, and the SKUs, quantities and prices sold. Use to place an order for a customer. Resolve products first with find-product."
 license: MIT
 ---
 

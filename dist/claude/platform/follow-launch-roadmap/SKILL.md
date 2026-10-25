@@ -1,6 +1,6 @@
 ---
 name: follow-launch-roadmap
-description: "Work through an account's SKU.io Launch Roadmap with the user: read their launch plan, pick the steps that are theirs and unblocked, explain each one (what it is, why it matters, how SKU.io will know it's done), hand off to the matching skill to do the work together — catalog import, bundles, BOMs, supplier costs, opening stock, GL mapping and more — then post a progress comment on the step and re-check it. Use it when the user asks \"what's next on our launch?\", \"help me with my onboarding steps\", or names a roadmap step. SKU.io's own data checks decide when a step is done; this skill never signs off checkpoints or unblocks steps (people do that in the app), ticks a manual step only when the user confirms it, and marks a stuck step blocked with the reason."
+description: "Work through an account's SKU.io Launch Roadmap with the user: pick the next unblocked steps, explain each, hand off to the matching skill to do it, and record progress. Use for \"what's next on our launch?\", \"help me with my onboarding steps\", or when the user names a roadmap step."
 license: MIT
 ---
 

@@ -22,7 +22,7 @@ name: create-sales-order          # kebab-case, unique, == folder name
 title: Create a Sales Order       # human-readable
 domain: orders                    # one of the domains below; == parent folder
 version: 1.0.0                     # semver; bump on any behavioural change
-description: >-                    # 40–1024 chars. Model-facing "when to use this".
+description: >-                    # 40–300 chars. Model-facing "when to use this".
   Create a new sales order in SKU.io with one or more line items. Use this to place an order
   for a customer…
 tags: [orders, sales-order, create]
@@ -65,6 +65,8 @@ mcp:                             # optional; how the SKU.io MCP server exposes t
 - **`description`** is the single most important field — it becomes the Claude `SKILL.md`
   description *and* the OpenAI/Gemini tool description, i.e. the text a model reads when deciding
   whether to use the skill. Write it for that decision: what task it does, and when to reach for it.
+  Keep it to 1–3 sentences (300 chars max): Claude Code loads every installed skill's description
+  into context, and long ones crowd other skills out. Process detail belongs in `INSTRUCTIONS.md`.
 - **`domain`** must be one of: `platform`, `products`, `orders`, `inventory`, `purchase-orders`,
   `suppliers`, `customers`, `warehouses`, `returns`, `manufacturing`, `accounting`,
   `integrations`, `reports`, `subscriptions`, `settings`. These mirror SKU.io PAT scope resources

@@ -1,6 +1,6 @@
 # Update Catalog Pricing from a Price File
 
-System instructions for a Gemini Gem / agent. Apply a new price file to products that already exist in SKU.io — a supplier's updated wholesale/cost list, a new MSRP sheet, or any repriced list. Match each row to an existing product (SKU, supplier SKU, MPN, or barcode), diff old vs new prices, get the user's confirmation, then update supplier pricing tiers (what you pay) and/or product pricing tiers (what you charge). Use this when a supplier sends "new pricing effective <date>" or the business reprices a range; it never creates products (that is build-product-catalog).
+System instructions for a Gemini Gem / agent. Apply a new price file to existing products: match rows by SKU, supplier SKU, MPN or barcode, show old vs new, confirm, then update supplier costs and/or selling prices. Use when a supplier sends new pricing or a range is repriced. Never creates products (that is build-product-catalog).
 
 Use this skill when new pricing arrives for products that **already exist** in SKU.io — most
 commonly a supplier's "new price file effective &lt;date&gt;" email, but also an internal reprice of

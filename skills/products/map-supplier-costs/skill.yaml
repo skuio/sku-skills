@@ -3,15 +3,10 @@ title: Map Supplier Costs onto Reorderable Products
 domain: products
 version: 1.0.0
 description: >-
-  Fill in what the business pays its suppliers for every product it reorders, until at least 95%
-  of active reorderable products (standard, kit, manufactured, blemished) carry a non-zero supplier
-  price. Finds the products with no supplier pricing, sources each cost from the user's supplier
-  price lists (files in their Drive or email) or, failing that, from the last price paid on a past
-  purchase order, proposes a cost table for approval, then writes the supplier tier prices in
-  batches of at most 25 and reports what changed. Use it for the Launch Roadmap's "Supplier costs"
-  step or when the Product Data Health report shows products without supplier pricing. It fills
-  gaps; it never unlinks suppliers or deletes prices. To apply a supplier's new price file to
-  products that already have costs, use update-catalog-pricing.
+  Fill in missing supplier costs for reorderable products from the user's supplier price lists or
+  past purchase orders, after approval. Use for the Launch Roadmap's "Supplier costs" step or
+  products with no supplier pricing. For a new price file on products that have costs, use
+  update-catalog-pricing.
 tagline: Fill missing supplier costs from price lists or past purchase orders
 tags: [products, suppliers, supplier-pricing, costs, wholesale, onboarding, launch-roadmap]
 maintainers: [kmizzi]

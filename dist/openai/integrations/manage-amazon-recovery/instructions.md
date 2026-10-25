@@ -1,6 +1,6 @@
 # Manage Amazon Recovery Cases
 
-_Work Amazon FBA reimbursement claims end to end from SKU.io's Amazon Recovery: triage cases SKU.io found (confirm against the evidence or dismiss), file ready cases with Amazon using the filing pack SKU.io prepares (case text, the details Amazon asks for, files to attach, grouped shipment and product filings), record the Amazon case ID, and follow up on filed cases by recording Amazon's answer and sending the reply or appeal. Use it when asked to file, chase, or clean up Amazon reimbursement claims, lost/damaged inventory, inbound shortages, or FBA fee overcharges. Filing itself happens in Amazon Seller Central, which the calling agent operates; this skill says what to do there and records every outcome back in SKU.io._
+_Work Amazon FBA reimbursement claims from SKU.io's Amazon Recovery: triage found cases, file them in Seller Central with SKU.io's filing pack, and record Amazon's answers and appeals. Use to file, chase or clean up claims for lost or damaged inventory, inbound shortages or FBA fee overcharges._
 
 Use this skill to work Amazon FBA reimbursement claims from SKU.io's **Amazon Recovery**: triage
 what SKU.io found, file ready claims with Amazon, and follow up until Amazon pays or the case is

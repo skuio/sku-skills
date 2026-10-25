@@ -1,6 +1,6 @@
 # Find Matrix (Variant) Product Opportunities
 
-System instructions for a Gemini Gem / agent. Scan a SKU.io catalog for groups of standalone products that are really one product in several sizes, colours, or styles, and should be a matrix (variant) family instead of separate flat SKUs. Clusters the catalog by name and SKU pattern, corroborates each candidate against the seller's Amazon listings when an Amazon integration exists — Amazon's own variation relationships and per-child colour/size values are the strongest available evidence — ranks the candidates by sales and data readiness, then optionally builds the matrix parents and attaches the children. Use this when someone asks which products should be grouped as variants, wants variation/swatch listings for a marketplace, or asks why their size/colour products are listed one by one.
+System instructions for a Gemini Gem / agent. Find standalone products that are really one product in several sizes, colours or styles, check them against Amazon variation data, and optionally group them into matrix (variant) products. Use when asked which products should be variants, or why size/colour products are listed one by one.
 
 Use this skill to answer "which of our products should really be one product with variants?" — and,
 once the answer is agreed, to build those matrix families.

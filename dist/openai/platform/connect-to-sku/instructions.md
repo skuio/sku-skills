@@ -1,6 +1,6 @@
 # Connect to SKU.io
 
-_The entry point for any SKU.io task. Establish an authenticated connection: point at the correct tenant base URL, send a Personal Access Token as a Bearer token, and prove it works with GET /api/me — the scope-free identity call whose tenant_id confirms you are on the account the user meant and whose token.scopes tell you what the token may do, so you can check for a missing scope up front instead of hitting a 403 mid-operation. Use this first whenever you are about to call the SKU.io API._
+_The entry point for any SKU.io API task: set the tenant base URL, send a Personal Access Token as a Bearer token, and verify with GET /api/me that the tenant and token scopes are right before any other call. Use first whenever you are about to call the SKU.io API._
 
 Use this skill to get connected before running any other SKU.io skill. It answers three
 questions: *what URL do I call, how do I authenticate, and what am I allowed to do?*

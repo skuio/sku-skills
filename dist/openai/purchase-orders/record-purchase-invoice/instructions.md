@@ -1,6 +1,6 @@
 # Record a Purchase Invoice
 
-_Record a supplier's invoice (a bill / accounts-payable invoice) against a purchase order in SKU.io, from the invoice document itself — a PDF or email from the supplier — or from a plain description. Handles multi-invoice PDFs (a scanned batch of several invoices in one file) by recording each invoice separately and attaching only its own pages. Resolves the PO, maps the invoice's line items to PO lines and its freight/fee charges to the PO's financial lines, checks for duplicates by supplier invoice number, creates the purchase invoice, attaches the source document, and verifies the result with a three-way match. Also corrects an existing bill that differs from the supplier's invoice: a mis-linked line, a missing freight line, a wrong fee quantity, number or date. Ends by printing a direct link to every invoice recorded. Can also record a payment against the invoice once one has actually been made._
+_Record a supplier invoice (bill) against a purchase order from the invoice PDF, email or a description: map lines and freight, check for duplicates, attach the document, and verify with a three-way match. Also corrects an existing bill that differs from the supplier's invoice, and records payment._
 
 Use this skill to record a **purchase invoice** — the supplier's bill for a purchase order — in
 SKU.io. "Supplier invoice", "vendor bill", and "AP invoice" all mean this document. It maps to

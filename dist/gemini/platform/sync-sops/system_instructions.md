@@ -1,6 +1,6 @@
 # Sync your SOPs with SKU.io changes
 
-System instructions for a Gemini Gem / agent. Keep your internal Standard Operating Procedures (SOPs) in step with SKU.io. SKU.io ships often — menus move, workflows change, features are added — which quietly breaks the step-by-step procedures your team relies on. Give this skill your SOP content plus the date you last reviewed it: it reads SKU.io's public changelog and documentation, finds the changes that affect your procedures, and rewrites the exact stale steps — or drafts a brand-new SOP from the current docs, in your own format. Use it whenever internal docs/SOPs may be out of date, or on a schedule to catch drift.
+System instructions for a Gemini Gem / agent. Keep internal SOPs in step with SKU.io: compare your SOP content against SKU.io's changelog and docs since your last review, and rewrite the stale steps or draft a new SOP in your format. Use when internal docs or SOPs may be out of date, or on a schedule to catch drift.
 
 Keep a team's internal **SOPs** (Standard Operating Procedures — the step-by-step docs in Confluence,
 Notion, Google Docs, a wiki, or a binder) in step with SKU.io as it ships. This skill has two modes:

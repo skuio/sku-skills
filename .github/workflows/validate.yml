@@ -14,6 +14,11 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+      # The README's install is `git clone` + `node tools/install.mjs`: prove it needs no `npm ci`.
+      - name: Installer runs on a fresh clone with plain Node
+        run: |
+          node tools/install.mjs --list > /dev/null
+          node tools/install.mjs all --project "$RUNNER_TEMP/install-check"
       - run: npm ci
       - name: Validate skills
         run: npm run validate

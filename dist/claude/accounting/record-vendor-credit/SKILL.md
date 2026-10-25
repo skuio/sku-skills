@@ -1,6 +1,6 @@
 ---
 name: record-vendor-credit
-description: "Record a supplier's credit memo (vendor credit, credit note) in SKU.io from the memo document — a PDF or email from the supplier — then apply it to the supplier bill(s) it should reduce. Built for non-inventory credits: co-op or advertising credits, marketing allowances, rebates paid as account credit, overbilling and other \"only what we owe changes\" credits. Checks for a duplicate by credit number, follows how the account recorded earlier credits from the same supplier (date, expense account, wording), creates the credit as a draft, previews its accounting impact, authorizes it, allocates it to an open purchase invoice, attaches the source document, and prints direct links. Returned or damaged goods and price corrections against a PO line are flagged and routed rather than forced into a financial-only credit."
+description: "Record a supplier credit memo (vendor credit, credit note) from the PDF or email and apply it to the open bill it reduces. For non-inventory credits such as co-op or advertising credits, rebates, allowances and overbilling. Returned goods and PO price corrections are routed elsewhere."
 license: MIT
 ---
 
