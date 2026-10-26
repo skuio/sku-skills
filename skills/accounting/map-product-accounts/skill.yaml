@@ -1,0 +1,215 @@
+name: map-product-accounts
+title: Map Product Accounts with Account Rules
+domain: accounting
+version: 1.0.0
+description: >-
+  Turn a customer's per-product GL spreadsheet into a few SKU.io account rules (by category,
+  brand, supplier or product type), keep true exceptions as product overrides, and save only after
+  explicit approval. Use for the Launch Roadmap's "Map GL accounts" step or a product GL sheet.
+tagline: Turn a per-product GL sheet into a few account rules, with sign-off
+tags: [accounting, gl, nominal-codes, account-rules, product-accounts, mapping, onboarding, launch-roadmap]
+maintainers: [kmizzi]
+pages:
+  - /ledger
+  - /products/*/accounting
+icon: mdi-call-split
+auth:
+  scopes: [accounting:read, accounting:write, products:read, products:write]
+api:
+  base_url: https://{tenant}.sku.io
+  operations:
+    - id: get-setup-dimensions
+      method: GET
+      path: /api/product-account-rules/setup/dimensions
+      summary: >-
+        How the catalog splits: the company default account per type, the existing rule count, and
+        for each dimension (category, brand, supplier, type) its groups { id, name, product_count },
+        how many products it covers and how many have no value.
+    - id: list-account-rules
+      method: GET
+      path: /api/product-account-rules
+      summary: >-
+        The existing rules in order (first match wins), each with its conditions, accounts,
+        match_count and is_active. Paginated.
+      parameters:
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Page size.
+          example: 100
+    - id: list-products
+      method: GET
+      path: /api/v2/products
+      summary: >-
+        Products with sku, type, brand_id/brand_name, default_supplier_id/default_supplier_name,
+        primary_category_id/primary_category_path, tags, each *_nominal_code_id override and the
+        resolved *_account with *_account_source (product_override, rule, company_default).
+      parameters:
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Page size. Iterate page to last_page.
+          example: 100
+        - name: page
+          in: query
+          type: integer
+          required: false
+          description: Page number.
+        - name: filter[search]
+          in: query
+          type: string
+          required: false
+          description: Matches SKU, name and other searchable fields.
+    - id: list-nominal-codes
+      method: GET
+      path: /api/v2/nominal-codes
+      summary: >-
+        The chart of accounts: { id, code, name, type, archived_at } per account. Rules and
+        overrides take these ids, not account numbers. Archived accounts are excluded by default.
+      parameters:
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Page size.
+          example: 100
+        - name: sort
+          in: query
+          type: string
+          required: false
+          description: Sort field.
+          example: code
+    - id: preview-setup
+      method: POST
+      path: /api/product-account-rules/setup/preview
+      summary: >-
+        Read-only. Given a dimension and accounts per group, returns the rules it would create, the
+        products whose own override disagrees (exceptions), totals (will_change, on_company_default,
+        keep_override) and the before/after account map. Saves nothing.
+      parameters:
+        - name: dimension
+          in: body
+          type: string
+          required: true
+          description: category, brand, supplier or type.
+          example: category
+        - name: groups
+          in: body
+          type: array
+          required: true
+          description: >-
+            One entry per group to give accounts: { id, accounts: { sales, cogs, inventory,
+            inventory_in_transit, accrued_purchases, discount } } with nominal code ids. Group ids come
+            from get-setup-dimensions (a product type's id is the type name). Omit an account to leave
+            it on the company default.
+        - name: use_rule_product_ids
+          in: body
+          type: array
+          required: false
+          description: Product ids whose overrides should be cleared so they follow the new rules.
+        - name: channel_accounts_take_priority
+          in: body
+          type: boolean
+          required: false
+          description: When true, a sales channel's own sales, COGS and discount accounts win over the new rules.
+    - id: apply-setup
+      method: POST
+      path: /api/product-account-rules/setup/apply
+      summary: >-
+        Writes the previewed rules above any existing ones (never edits or deletes a rule) and clears
+        the overrides named in use_rule_product_ids. Same body as preview-setup. Products move in a
+        background job. Needs the accounting.manage_settings permission.
+    - id: preview-rule
+      method: POST
+      path: /api/product-account-rules/preview
+      summary: >-
+        Read-only. What one draft rule would do: matches, will_change, a by-account breakdown and a
+        sample of products that move. Use for a rule the setup dimensions can't express (a tag, a SKU
+        prefix, or two conditions together).
+      parameters:
+        - name: name
+          in: body
+          type: string
+          required: true
+          description: Rule name.
+        - name: conditions
+          in: body
+          type: object
+          required: true
+          description: >-
+            Any of category_ids, include_subcategories, category_scope (primary|any), brand_ids,
+            supplier_ids, product_types, tag_ids, sku_prefixes (max 5). All set conditions must match.
+        - name: accounts
+          in: body
+          type: object
+          required: true
+          description: Account type → nominal code id (sales, cogs, inventory, inventory_in_transit, accrued_purchases, discount).
+    - id: create-rule
+      method: POST
+      path: /api/product-account-rules
+      summary: >-
+        Creates one rule (same body as preview-rule, plus optional position, is_active and
+        channel_accounts_take_priority). A blank position puts it above the first broader rule.
+        Needs the accounting.manage_settings permission.
+    - id: get-account-map
+      method: GET
+      path: /api/product-account-map
+      summary: >-
+        Where the catalog posts now: per group, how many products post to each account and whether
+        from rules, overrides or the company default, plus anomalies (products unlike 80%+ of their
+        category).
+      parameters:
+        - name: account_type
+          in: query
+          type: string
+          required: false
+          description: sales, cogs, inventory, inventory_in_transit, accrued_purchases or discount.
+          example: sales
+        - name: group_by
+          in: query
+          type: string
+          required: false
+          description: category, brand, supplier or type.
+          example: category
+    - id: get-product-accounts
+      method: GET
+      path: /api/products/accounts
+      summary: >-
+        Resolved accounts for up to 200 products: per account type the account, its source, the
+        override id, and whether a rule would apply (rule_would_apply, rule_account).
+      parameters:
+        - name: ids
+          in: query
+          type: string
+          required: true
+          description: Comma-separated product ids (max 200).
+          example: 10,11,12
+    - id: set-product-override
+      method: PUT
+      path: /api/products/{id}
+      summary: >-
+        Sets a single product's own account override. Send only the *_nominal_code_id fields being
+        set. Not available through the SKU.io MCP server's api_write; there, leave exceptions to a
+        person.
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+          description: Product id.
+        - name: sales_nominal_code_id
+          in: body
+          type: integer
+          required: false
+          description: Nominal code id for this product's sales override.
+        - name: cogs_nominal_code_id
+          in: body
+          type: integer
+          required: false
+          description: Nominal code id for this product's COGS override.
+
+# How the SKU.io MCP server exposes this skill (dist/mcp/manifest.json). See SKILL_SPEC.md.
+mcp:
+  prompt_only: true

@@ -1,6 +1,6 @@
 {
   "generatedFrom": "skills/",
-  "count": 26,
+  "count": 27,
   "skills": [
     {
       "name": "map-gl-accounts",
@@ -39,6 +39,46 @@
         "claude": "dist/claude/accounting/map-gl-accounts/SKILL.md",
         "openai": "dist/openai/accounting/map-gl-accounts/",
         "gemini": "dist/gemini/accounting/map-gl-accounts/"
+      }
+    },
+    {
+      "name": "map-product-accounts",
+      "domain": "accounting",
+      "title": "Map Product Accounts with Account Rules",
+      "version": "1.0.0",
+      "description": "Turn a customer's per-product GL spreadsheet into a few SKU.io account rules (by category, brand, supplier or product type), keep true exceptions as product overrides, and save only after explicit approval. Use for the Launch Roadmap's \"Map GL accounts\" step or a product GL sheet.",
+      "tagline": "Turn a per-product GL sheet into a few account rules, with sign-off",
+      "scopes": [
+        "accounting:read",
+        "accounting:write",
+        "products:read",
+        "products:write"
+      ],
+      "operations": 11,
+      "tags": [
+        "accounting",
+        "gl",
+        "nominal-codes",
+        "account-rules",
+        "product-accounts",
+        "mapping",
+        "onboarding",
+        "launch-roadmap"
+      ],
+      "composes": [],
+      "pages": [
+        "/ledger",
+        "/products/*/accounting"
+      ],
+      "icon": "mdi-call-split",
+      "mcp": {
+        "tools": [],
+        "prompt": true
+      },
+      "outputs": {
+        "claude": "dist/claude/accounting/map-product-accounts/SKILL.md",
+        "openai": "dist/openai/accounting/map-product-accounts/",
+        "gemini": "dist/gemini/accounting/map-product-accounts/"
       }
     },
     {

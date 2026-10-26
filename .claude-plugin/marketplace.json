@@ -14,6 +14,7 @@
       "description": "Agent skills for the SKU.io API: products, inventory, orders, purchasing, accounting and settings.",
       "skills": [
         "./dist/claude/accounting/map-gl-accounts",
+        "./dist/claude/accounting/map-product-accounts",
         "./dist/claude/accounting/reconcile-supplier-statement",
         "./dist/claude/accounting/record-vendor-credit",
         "./dist/claude/integrations/manage-amazon-recovery",
