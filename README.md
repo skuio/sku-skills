@@ -50,6 +50,7 @@ One source of truth, three idiomatic outputs. Fix the knowledge in one place; ev
 | Domain | Skill | What it does |
 | --- | --- | --- |
 | `accounting` | **map-gl-accounts** | Map SKU.io's GL roles onto the customer's QuickBooks or Xero accounts, with sign-off |
+| `accounting` | **map-product-accounts** | Turn a per-product GL sheet into a few account rules, with sign-off |
 | `accounting` | **reconcile-supplier-statement** | Match a supplier's statement and bank payments to SKU.io's payables, and fix the gaps |
 | `accounting` | **record-vendor-credit** | Record a supplier credit memo and apply it to an open bill |
 | `integrations` | **manage-amazon-recovery** | Triage, file and follow up on Amazon reimbursement claims |
