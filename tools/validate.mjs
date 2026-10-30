@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { findSkillEntries, loadSkill } from './lib/skills.mjs';
+import { MCP_ARG_KEY, mcpArgName } from './lib/render.mjs';
 
 const DOMAINS = [
   'platform', 'products', 'orders', 'inventory', 'purchase-orders', 'suppliers',
@@ -276,6 +277,20 @@ function validateMcp(m, id, fail) {
       if (paramHit) {
         fail(`${where}: the description of "${p}" gives a cross-tool instruction (${paramHit})`);
       }
+    }
+    const argNames = new Map();
+    for (const p of paramNames) {
+      if ((tool.exclude_params ?? []).includes(p)) {
+        continue;
+      }
+      const arg = mcpArgName(p);
+      if (!MCP_ARG_KEY.test(arg)) {
+        fail(`${where}: parameter "${p}" becomes argument "${arg}", which Claude rejects (keys must match ${MCP_ARG_KEY}); it would drop the whole tool`);
+      }
+      if (argNames.has(arg) && argNames.get(arg) !== p) {
+        fail(`${where}: parameters "${argNames.get(arg)}" and "${p}" both become argument "${arg}"`);
+      }
+      argNames.set(arg, p);
     }
     for (const p of ['idempotency_key', 'dry_run']) {
       if (paramNames.has(p)) {

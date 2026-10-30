@@ -109,6 +109,12 @@ mcp:                             # optional; how the SKU.io MCP server exposes t
     calls a write operation, a write tool without a `:write` scope, a DELETE operation, and
     descriptions that order the model to call other tools ("always call…", "you must use…",
     "invoke the … tool"). Directory reviewers treat that wording as prompt injection.
+  - **Argument names.** Claude rejects a tool whose schema has a property key outside
+    `^[a-zA-Z0-9_.-]{1,64}$` and drops it silently for every user. The build folds brackets into
+    underscores (`filter[tier]` → argument `filter_tier`) and records the API name in the
+    operation's `names` map, which the app uses to rebuild the request. `params` and
+    `exclude_params` still use the API name. `validate` and the build both refuse a parameter
+    whose argument name still fails the pattern, or two parameters that fold to the same name.
   - The manifest's `version` is `package.json`'s. The app refuses to sync a manifest older than
     the one it has, so bump the package version when tool text or shape changes.
 - **`parameters`** — mark `required: true` only when the API rejects the request without it. Path
