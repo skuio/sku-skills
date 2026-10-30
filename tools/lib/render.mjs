@@ -348,6 +348,18 @@ function mcpSchemaFor(param, override) {
 }
 
 /** Every write tool takes these two, so a retry never writes twice and a model can check first. */
+/**
+ * Claude rejects a tool whose input schema has a property key outside this pattern, and drops the
+ * tool for every user without an error (diagnose_tiktok_listing and get_reimbursement_cases, with
+ * `filter[tier]` and `filter[ui_group]`, never reached Claude until 0.4.1).
+ */
+export const MCP_ARG_KEY = /^[a-zA-Z0-9_.-]{1,64}$/;
+
+/** The MCP argument name for an API parameter: brackets fold into underscores (`filter[tier]` → `filter_tier`). */
+export function mcpArgName(name) {
+  return name.replace(/\[([^\]]*)\]/g, '_$1');
+}
+
 export const MCP_WRITE_PARAMS = {
   idempotency_key: {
     type: 'string',
@@ -377,15 +389,24 @@ export function renderMcpTool(skill, tool) {
   const exclude = new Set(tool.exclude_params ?? []);
   const properties = {};
   const required = [];
+  const apiNames = {};
   resolved.forEach((op, index) => {
     for (const param of op.parameters ?? []) {
-      if (exclude.has(param.name) || properties[param.name]) {
+      const arg = mcpArgName(param.name);
+      if (exclude.has(param.name) || properties[arg]) {
         continue;
       }
-      properties[param.name] = mcpSchemaFor(param, tool.params?.[param.name]);
+      if (!MCP_ARG_KEY.test(arg)) {
+        throw new Error(`${skill.domain}/${skill.name}: mcp tool "${tool.tool}" argument "${arg}" does not match ${MCP_ARG_KEY}, so Claude would drop the tool`);
+      }
+      if (apiNames[arg] !== undefined && apiNames[arg] !== param.name) {
+        throw new Error(`${skill.domain}/${skill.name}: mcp tool "${tool.tool}" parameters "${apiNames[arg]}" and "${param.name}" both become argument "${arg}"`);
+      }
+      apiNames[arg] = param.name;
+      properties[arg] = mcpSchemaFor(param, tool.params?.[param.name]);
       // Only the primary operation sets what is required; the others are alternate ways in.
       if (index === 0 && (param.required || param.in === 'path')) {
-        required.push(param.name);
+        required.push(arg);
       }
     }
   });
@@ -410,13 +431,19 @@ export function renderMcpTool(skill, tool) {
       openWorldHint: tool.annotations.open_world,
     },
     operation: { method: resolved[0].method, path: resolved[0].path },
-    operations: resolved.map((op) => ({
-      id: op.id,
-      method: op.method,
-      path: op.path,
-      // Where each exposed argument goes on the request, so the server can build it without guessing.
-      params: Object.fromEntries((op.parameters ?? []).filter((p) => !exclude.has(p.name)).map((p) => [p.name, p.in])),
-    })),
+    operations: resolved.map((op) => {
+      const exposed = (op.parameters ?? []).filter((p) => !exclude.has(p.name));
+      const renamed = exposed.filter((p) => mcpArgName(p.name) !== p.name);
+      return {
+        id: op.id,
+        method: op.method,
+        path: op.path,
+        // Where each exposed argument goes on the request, so the server can build it without guessing.
+        params: Object.fromEntries(exposed.map((p) => [mcpArgName(p.name), p.in])),
+        // The API's own name for each argument renamed to fit MCP clients (filter_tier → filter[tier]).
+        ...(renamed.length ? { names: Object.fromEntries(renamed.map((p) => [mcpArgName(p.name), p.name])) } : {}),
+      };
+    }),
     scope: tool.scope,
     skill: `${skill.domain}/${skill.name}`,
     skill_version: skill.meta.version,
