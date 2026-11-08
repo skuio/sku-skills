@@ -9,7 +9,14 @@ license: MIT
 Use this skill to give every **bundle** and **kit** in SKU.io its components, so that selling one
 draws down (or assembles from) the right parts. It is the agent lane for the Launch Roadmap step
 **Configure kits & bundles**: SKU.io marks that step done on its own when every active bundle and
-kit has at least one component. Nothing you say makes it done; the data does.
+kit has at least one component and no standard product still reads as a multi-pack or kit ("2-pack",
+"pack of 3", "bundle", "kit"). Nothing you say makes it done; the data does.
+
+**Do this before order import is on.** The roadmap puts this step ahead of **Turn on order import**
+for a reason: an order imported against a multi-pack that is still a `standard` product records it
+as one standard item, so its stock and cost are wrong until the product is converted. If the user is
+connecting a sales channel in the same session, configure the bundles first, or tell them plainly
+that orders arriving now will need the conversion to split them.
 
 The pipeline:
 
@@ -186,7 +193,8 @@ Turning a `standard` product into a bundle or kit is a type change, not just a r
 1. `POST /api/v2/products/bundle-workshop/check-restrictions` with `{"product_ids": [...]}`. A
    `true` means the product has sales or assembly history, and **cannot become a bundle**.
 2. Explain the consequence before asking: converting to **bundle** also **splits any open sales
-   order lines** for that product into its components, and from then on the product holds no stock
+   order lines** for that product into its components (including lines that are only waiting for
+   stock, with nothing allocated yet — they do not need deleting), and from then on the product holds no stock
    of its own. Converting to **kit** keeps it stocked.
 3. On an explicit yes, convert with the components in the same call (≤25 products per call):
 
