@@ -40,7 +40,16 @@ curl -sS -X POST "https://$SKU_TENANT.sku.io/api/inventory-adjustments" \
 
 ## Handle the response
 
-- **`200`/`201`** → the adjustment was recorded; on-hand is updated.
+- **`200`/`201`** → the adjustment was recorded; on-hand is updated. Hand the user its page,
+  built from `data.id` in the response:
+
+  ```
+  https://{tenant}.sku.io/v2/inventory/inventory-adjustments/{id}
+  ```
+
+  The page path is `inventory-adjustments`, not `adjustments`: build it from this line, never by
+  shortening the API path. A `set` that equals the current on-hand records nothing and returns a
+  warning with no `data.id`, so there is no page to link; say the stock already matched.
 - **`422`** → validation failed. Common causes: zero `quantity` (not allowed), missing
   `unit_cost` on a first-time increase, or a `product_id`/`warehouse_id` that doesn't exist. Read
   the `errors` map and fix the named field. See [`shared/errors.md`](../../../shared/errors.md).

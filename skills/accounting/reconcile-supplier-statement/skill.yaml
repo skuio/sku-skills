@@ -1,7 +1,7 @@
 name: reconcile-supplier-statement
 title: Reconcile a Supplier Statement
 domain: accounting
-version: 1.0.0
+version: 1.0.1
 description: >-
   Reconcile a supplier's statement and the bank payments to them against SKU.io's bills, credits
   and payments, explain every difference, and fix the SKU.io side with approval. Use for "does our
@@ -12,7 +12,7 @@ tags: [reconciliation, supplier-statement, accounts-payable, vendor-credits, sup
 maintainers: [kmizzi]
 composes: [record-purchase-invoice, record-vendor-credit]
 pages:
-  - /purchases/suppliers
+  - /crm/suppliers
   - /orders/purchase-invoices
   - /purchases/vendor-credits
 icon: mdi-scale-balance

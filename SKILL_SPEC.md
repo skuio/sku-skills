@@ -86,7 +86,12 @@ mcp:                             # optional; how the SKU.io MCP server exposes t
   `/settings/pdf-templates` covers the list page and every template editor under it; `/products$`
   matches only the products list. These end up in `dist/catalog.json` (the machine-readable index the
   app reads); they don't change the model outputs. Omit for skills with no natural home page
-  (auth/meta skills like `connect-to-sku`).
+  (auth/meta skills like `connect-to-sku`). Each entry must match at least one real app page
+  (`tools/data/app-pages.json`); `npm run validate` fails on one that matches none.
+- **Page links in `INSTRUCTIONS.md`** — every `https://{tenant}.sku.io/v2/…` (or bare `/v2/…`) link
+  must be a real app page, checked the same way. A skill that creates or edits a record should give
+  the record's page link, because the build appends a rule telling the agent to use only links the
+  skill gives and never to build one by analogy with the API path.
 - **`icon`** (optional) — the Material Design Icon (`mdi-…`) the SKU.io web app shows beside the
   skill in its contextual skills menu. Like `pages`, it lands in `dist/catalog.json` only.
 - **`mcp`** (optional) — how the hosted SKU.io MCP server exposes the skill. The build

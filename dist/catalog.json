@@ -85,7 +85,7 @@
       "name": "reconcile-supplier-statement",
       "domain": "accounting",
       "title": "Reconcile a Supplier Statement",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "Reconcile a supplier's statement and the bank payments to them against SKU.io's bills, credits and payments, explain every difference, and fix the SKU.io side with approval. Use for \"does our statement from X match\", \"why does SKU.io say we owe X more\", or a regular supplier reconciliation.",
       "tagline": "Match a supplier's statement and bank payments to SKU.io's payables, and fix the gaps",
       "scopes": [
@@ -111,7 +111,7 @@
         "record-vendor-credit"
       ],
       "pages": [
-        "/purchases/suppliers",
+        "/crm/suppliers",
         "/orders/purchase-invoices",
         "/purchases/vendor-credits"
       ],
@@ -256,7 +256,7 @@
       "name": "adjust-inventory",
       "domain": "inventory",
       "title": "Adjust Inventory",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "Adjust the on-hand quantity of a product at a warehouse in SKU.io — an increase, a decrease, or a set-to-value. Use this for stock takes, corrections, damage/shrinkage write-offs, or found stock. Resolve the product with find-product first so the adjustment targets the right product and warehouse.",
       "tagline": "Increase / decrease / set on-hand stock at a warehouse",
       "scopes": [
@@ -497,7 +497,7 @@
       "name": "create-workflow",
       "domain": "platform",
       "title": "Create a Workflow (automation)",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "description": "Build, test, publish and fix automation workflows: email or Slack alerts when an order lands on a channel, tag or note orders by rule, post a webhook, import a supplier feed on a schedule, or route orders to a warehouse. Use when something should happen automatically, or a workflow did not fire.",
       "tagline": "Build, validate, publish and test an automation workflow from a node/edge graph",
       "scopes": [
@@ -516,7 +516,7 @@
       ],
       "composes": [],
       "pages": [
-        "/automation/workflows"
+        "/workflows"
       ],
       "icon": "mdi-sitemap-outline",
       "mcp": {

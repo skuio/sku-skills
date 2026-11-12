@@ -239,6 +239,13 @@ the user should reconnect and grant it.
 - **Coach, don't overwhelm.** Two or three next steps, in plain business language, with the reason
   each matters.
 
+## Links into the SKU.io app
+
+When you point the user at a record or page in the SKU.io web app, use only a link this skill
+gives, with `{tenant}` and the id substituted. Never build one from the API path or by analogy
+with another link: the app's pages are not named after the API, and a guessed link is a 404.
+If this skill gives no link for what you made, report its id and where to find it in the app.
+
 ## API operations
 
 | Method | Path | What it does |

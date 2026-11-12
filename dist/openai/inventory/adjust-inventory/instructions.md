@@ -59,7 +59,16 @@ curl -sS -X POST "https://$SKU_TENANT.sku.io/api/inventory-adjustments" \
 
 ## Handle the response
 
-- **`200`/`201`** → the adjustment was recorded; on-hand is updated.
+- **`200`/`201`** → the adjustment was recorded; on-hand is updated. Hand the user its page,
+  built from `data.id` in the response:
+
+  ```
+  https://{tenant}.sku.io/v2/inventory/inventory-adjustments/{id}
+  ```
+
+  The page path is `inventory-adjustments`, not `adjustments`: build it from this line, never by
+  shortening the API path. A `set` that equals the current on-hand records nothing and returns a
+  warning with no `data.id`, so there is no page to link; say the stock already matched.
 - **`422`** → validation failed. Common causes: zero `quantity` (not allowed), missing
   `unit_cost` on a first-time increase, or a `product_id`/`warehouse_id` that doesn't exist. Read
   the `errors` map and fix the named field. See [`shared/errors.md`](https://github.com/skuio/sku-skills/blob/main/shared/errors.md).
@@ -73,6 +82,13 @@ curl -sS -X POST "https://$SKU_TENANT.sku.io/api/inventory-adjustments" \
 - Always include `notes` with the reason — adjustments are audited.
 - Not idempotent: a blind retry after a timeout can double-apply. On an ambiguous failure, check
   current on-hand before re-posting.
+
+## Links into the SKU.io app
+
+When you point the user at a record or page in the SKU.io web app, use only a link this skill
+gives, with `{tenant}` and the id substituted. Never build one from the API path or by analogy
+with another link: the app's pages are not named after the API, and a guessed link is a 404.
+If this skill gives no link for what you made, report its id and where to find it in the app.
 
 ## API operations
 

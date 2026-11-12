@@ -4,6 +4,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { findSkillEntries, loadSkill } from './lib/skills.mjs';
 import { MCP_ARG_KEY, mcpArgName } from './lib/render.mjs';
+import { ROOT } from './lib/fs.mjs';
+import {
+  loadAppPages, linkResolves, pagesEntryResolves, pageLinksIn, nearestRoutes,
+} from './lib/app-pages.mjs';
 
 const DOMAINS = [
   'platform', 'products', 'orders', 'inventory', 'purchase-orders', 'suppliers',
@@ -330,6 +334,56 @@ function validateMcp(m, id, fail) {
 
 function singleLineOf(s = '') {
   return String(s).replace(/\s+/g, ' ').trim();
+}
+
+// --- page links ------------------------------------------------------------------------------
+// Every in-app link a skill hands back, and every `pages:` entry, must be a real page of the
+// SKU.io web app (tools/data/app-pages.json, from `npm run sync:app-pages`). Without this a
+// link is checked by nobody until a user clicks it and gets a 404.
+const appPages = loadAppPages();
+if (!appPages) {
+  errors.push('tools/data/app-pages.json is missing — run `npm run sync:app-pages -- --source <sku app checkout>`');
+} else {
+  const hint = (link) => `real pages nearby: ${nearestRoutes(appPages, link).join(', ') || 'none'}; `
+    + 'if the app really has it, refresh the route list with `npm run sync:app-pages`';
+  const textFiles = (dir) => {
+    const out = [];
+    const walk = (d) => {
+      for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+        const full = path.join(d, e.name);
+        if (e.isDirectory()) walk(full);
+        else if (/\.(md|ya?ml|mjs|js|json|html|txt)$/.test(e.name)) out.push(full);
+      }
+    };
+    walk(dir);
+    return out;
+  };
+  const sources = [
+    ...entries.flatMap((e) => textFiles(e.dir)),
+    ...textFiles(path.join(ROOT, 'shared')),
+  ];
+  for (const file of sources) {
+    const rel = path.relative(ROOT, file);
+    const text = fs.readFileSync(file, 'utf8');
+    for (const link of new Set(pageLinksIn(text))) {
+      if (!linkResolves(appPages, link)) {
+        errors.push(`${rel}: page link /v2${link} is not a page in the SKU.io app (${hint(link)})`);
+      }
+    }
+  }
+  for (const entry of entries) {
+    let meta;
+    try {
+      meta = loadSkill(entry).meta;
+    } catch {
+      continue; // already reported
+    }
+    for (const p of Array.isArray(meta.pages) ? meta.pages : []) {
+      if (typeof p === 'string' && p.startsWith('/') && !pagesEntryResolves(appPages, p)) {
+        errors.push(`${entry.domain}/${entry.name}: pages entry "${p}" matches no page in the SKU.io app (${hint(p.replace(/\$$/, ''))})`);
+      }
+    }
+  }
 }
 
 for (const { id, ref } of composeRefs) {

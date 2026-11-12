@@ -231,7 +231,7 @@ that channel is the same signal.
 7. **Show the user the rendered result** — the actual subject and body, the actual webhook payload —
    and only then turn preview off (`PUT … {"preview_mode": false}`). A workflow that emails the
    wrong thing on every order is worse than no workflow.
-8. **Hand back the link**: `https://{tenant}.sku.io/v2/automation/workflows/{id}`.
+8. **Hand back the link**: `https://{tenant}.sku.io/v2/workflows/{id}` (the page is `/v2/workflows`, not the API's `/automation/workflows`).
 
 ## Guardrails
 
@@ -286,6 +286,13 @@ fix is a token with the workflow scope, not a retry.
 
 See [shared/errors.md](shared/errors.md) for the standard status-code contract and
 [shared/authentication.md](shared/authentication.md) for token handling.
+
+## Links into the SKU.io app
+
+When you point the user at a record or page in the SKU.io web app, use only a link this skill
+gives, with `{tenant}` and the id substituted. Never build one from the API path or by analogy
+with another link: the app's pages are not named after the API, and a guessed link is a 404.
+If this skill gives no link for what you made, report its id and where to find it in the app.
 
 ## API operations
 

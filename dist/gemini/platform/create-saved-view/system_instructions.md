@@ -161,6 +161,13 @@ call this to drop a favorited view scoped to exactly what was created, so the us
   table opens on (one). Creating a favorited view doesn't change what the table opens on unless you
   also set default.
 
+## Links into the SKU.io app
+
+When you point the user at a record or page in the SKU.io web app, use only a link this skill
+gives, with `{tenant}` and the id substituted. Never build one from the API path or by analogy
+with another link: the app's pages are not named after the API, and a guessed link is a 404.
+If this skill gives no link for what you made, report its id and where to find it in the app.
+
 ## API operations
 
 | Method | Path | What it does |

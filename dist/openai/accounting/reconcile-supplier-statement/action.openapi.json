@@ -3,7 +3,7 @@
   "info": {
     "title": "SKU.io — Reconcile a Supplier Statement",
     "description": "Reconcile a supplier's statement and the bank payments to them against SKU.io's bills, credits and payments, explain every difference, and fix the SKU.io side with approval. Use for \"does our statement from X match\", \"why does SKU.io say we owe X more\", or a regular supplier reconciliation.",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "servers": [
     {
