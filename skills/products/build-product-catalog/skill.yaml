@@ -1,7 +1,7 @@
 name: build-product-catalog
 title: Build a Product Catalog from Any Source
 domain: products
-version: 1.1.1
+version: 1.1.2
 description: >-
   Import products into SKU.io from a spreadsheet, CSV, Google Sheet, supplier price list, web page
   or pasted text: map the fields, de-duplicate against the catalog, then create them. Use to
