@@ -113,7 +113,7 @@ Mapping rules:
   most often forgotten. Don't collapse all three into one.
 - **No cost in the source** ("call for pricing", blank) → omit `default_supplier_price` and
   `unit_cost` (never send `0`), still link the supplier, and list the row as "needs a cost": SKU.io
-  currently stores a $0 supplier price on the link anyway, which map-supplier-costs then fills.
+  stores no cost for it (blank, not $0), and map-supplier-costs fills it later.
 - **Capture leftover source columns as attributes — this is the obvious, primary case.** Any column
   the source *explicitly provides* that has no standard field of its own (carton/case pack, cubic
   feet, material, country of origin, care notes, remarks, …) becomes an `attributes[]` entry
