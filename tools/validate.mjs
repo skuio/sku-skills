@@ -338,6 +338,56 @@ for (const { id, ref } of composeRefs) {
   }
 }
 
+// Web-app links: every `https://<tenant>.sku.io/v2/…` a skill hands the user must use a path from
+// shared/ui-links.md. Agents guessed these from the API route and the guesses 404'd
+// (/v2/inventory/adjustments/653 for /v2/inventory/inventory-adjustments/653, 2026-11-11), so a
+// path not in the verified table is an error, not a warning.
+checkUiLinks();
+
+function checkUiLinks() {
+  const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+  const tablePath = path.join(root, 'shared', 'ui-links.md');
+  if (!fs.existsSync(tablePath)) {
+    errors.push('shared/ui-links.md is missing; it is the table every skill links web-app pages from');
+    return;
+  }
+  // Placeholders ({id}, <id>, {bill id}) and literal numeric ids all stand for one record segment.
+  const normalize = (p) => p
+    .replace(/[?#].*$/, '')
+    .replace(/\/+$/, '')
+    .split('/')
+    .map((seg) => (/^(\{[^}]*\}|<[^>]*>|\d+)$/.test(seg) ? '{id}' : seg))
+    .join('/');
+  const table = fs.readFileSync(tablePath, 'utf8');
+  const [verified] = table.split(/^## Paths that do not exist/m);
+  const allowed = new Set([...verified.matchAll(/^\|[^|]*\|\s*`(\/v2\/[^`]*)`\s*\|/gm)].map((m) => normalize(m[1])));
+
+  const LINK = /\.sku\.io(\/v2\/(?:\{[^}]*\}|[^\s`'")\]>{])*)/g;
+  const scan = (file, label) => {
+    const text = fs.readFileSync(file, 'utf8');
+    for (const m of text.matchAll(LINK)) {
+      const raw = m[1].replace(/[.,;:]+$/, '');
+      const first = raw.split('/')[2] ?? '';
+      // A generic template such as /v2/{page}?view={hash} names no page; nothing to check.
+      if (!first || first.startsWith('{') || first.startsWith('<')) continue;
+      const p = normalize(raw);
+      if (!allowed.has(p)) {
+        errors.push(`${label}: links ${raw}, whose path ${p} is not in shared/ui-links.md — verify the page on a tenant and add it there, or use one that is`);
+      }
+    }
+  };
+  const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((d) => {
+    const p = path.join(dir, d.name);
+    return d.isDirectory() ? walk(p) : /\.(md|ya?ml|mjs|js|json|html)$/.test(d.name) ? [p] : [];
+  });
+  for (const entry of entries) {
+    for (const file of walk(entry.dir)) scan(file, path.relative(root, file));
+  }
+  for (const file of walk(path.join(root, 'shared'))) {
+    if (file !== tablePath) scan(file, path.relative(root, file));
+  }
+}
+
 if (errors.length) {
   console.error(`✗ ${errors.length} validation error(s):\n`);
   for (const e of errors) {

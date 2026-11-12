@@ -129,7 +129,7 @@ curl -sS -X PUT "https://$SKU_TENANT.sku.io/api/v2/settings/nominal-code-mapping
 - Report a before → after table (role, old account, new account), the roles still unmapped, and
   what's left for a person: missing accounts to create, optional roles to decide, the bookkeeper's
   review if it hasn't happened.
-- Link: `https://{tenant}.sku.io/v2/ledger?tab=settings` (Nominal Code Mappings).
+- Link: `https://{tenant}.sku.io/v2/ledger?tab=settings&subtab=nominal-code-mappings` (Nominal Code Mappings).
 
 Working a Launch Roadmap step? Hand this summary to `follow-launch-roadmap` to post as the step's
 progress comment. The roadmap's next finance steps, **Map tax rates** and **Reconcile a test batch**,

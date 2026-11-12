@@ -208,7 +208,8 @@ that channel is the same signal.
 7. **Show the user the rendered result** — the actual subject and body, the actual webhook payload —
    and only then turn preview off (`PUT … {"preview_mode": false}`). A workflow that emails the
    wrong thing on every order is worse than no workflow.
-8. **Hand back the link**: `https://{tenant}.sku.io/v2/automation/workflows/{id}`.
+8. **Hand back the link**: `https://{tenant}.sku.io/v2/workflows/{id}` (not `/v2/automation/workflows/…`, which
+   is a "page not found"; see [`shared/ui-links.md`](../../../shared/ui-links.md)).
 
 ## Guardrails
 

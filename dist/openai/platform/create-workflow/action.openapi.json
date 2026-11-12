@@ -3,7 +3,7 @@
   "info": {
     "title": "SKU.io — Create a Workflow (automation)",
     "description": "Build, test, publish and fix automation workflows: email or Slack alerts when an order lands on a channel, tag or note orders by rule, post a webhook, import a supplier feed on a schedule, or route orders to a warehouse. Use when something should happen automatically, or a workflow did not fire.",
-    "version": "1.2.0"
+    "version": "1.2.1"
   },
   "servers": [
     {

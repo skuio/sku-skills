@@ -136,6 +136,11 @@ practical value lives. A good `INSTRUCTIONS.md`:
 Link to shared references with relative paths, e.g.
 `[shared/errors.md](../../../shared/errors.md)` (three `../` from `skills/<domain>/<name>/`).
 
+When a skill hands the user a link to a page in the SKU.io web app (`https://{tenant}.sku.io/v2/…`),
+take the path from [`shared/ui-links.md`](./shared/ui-links.md), the verified table of page paths.
+Never derive one from the API route. `npm run validate` fails on any `/v2/…` link whose path is
+not in that table; to add a page, open it on a tenant, confirm it renders, and add the row.
+
 Keep it tight and operational. It's guidance for an agent mid-task, not a tutorial.
 
 ## Building & validating

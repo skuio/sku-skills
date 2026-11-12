@@ -59,7 +59,9 @@ curl -sS -X POST "https://$SKU_TENANT.sku.io/api/inventory-adjustments" \
 
 ## Handle the response
 
-- **`200`/`201`** → the adjustment was recorded; on-hand is updated.
+- **`200`/`201`** → the adjustment was recorded; on-hand is updated. Link it for the user as
+  `https://{tenant}.sku.io/v2/inventory/inventory-adjustments/{id}` with the adjustment's `id` from
+  the response (not `/v2/inventory/adjustments/…`, which is a "page not found").
 - **`422`** → validation failed. Common causes: zero `quantity` (not allowed), missing
   `unit_cost` on a first-time increase, or a `product_id`/`warehouse_id` that doesn't exist. Read
   the `errors` map and fix the named field. See [`shared/errors.md`](https://github.com/skuio/sku-skills/blob/main/shared/errors.md).
@@ -95,6 +97,13 @@ Authorization: Bearer <YOUR_SKU_PAT>
 
 Mint a token under **Settings → Developer → Personal Access Tokens** in the SKU.io web app.
 See [`shared/authentication.md`](https://github.com/skuio/sku-skills/blob/main/shared/authentication.md) for the full flow.
+
+## Linking to a SKU.io page
+
+When you hand the user a link to a record or screen in the SKU.io web app, take its path from
+[`shared/ui-links.md`](https://github.com/skuio/sku-skills/blob/main/shared/ui-links.md). Never build one by guessing from the API route: the
+app's paths differ from the API's, and a guessed path opens a "page not found" screen. If the page
+is not in that table, link the closest list page there and name the record instead.
 
 ---
 

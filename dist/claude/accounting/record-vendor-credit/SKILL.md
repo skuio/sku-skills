@@ -264,6 +264,13 @@ Authorization: Bearer <YOUR_SKU_PAT>
 Mint a token under **Settings → Developer → Personal Access Tokens** in the SKU.io web app.
 See [`shared/authentication.md`](shared/authentication.md) for the full flow.
 
+## Linking to a SKU.io page
+
+When you hand the user a link to a record or screen in the SKU.io web app, take its path from
+[`shared/ui-links.md`](shared/ui-links.md). Never build one by guessing from the API route: the
+app's paths differ from the API's, and a guessed path opens a "page not found" screen. If the page
+is not in that table, link the closest list page there and name the record instead.
+
 ---
 
 ## Improve this skill

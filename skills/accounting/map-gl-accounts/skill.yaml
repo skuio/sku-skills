@@ -1,7 +1,7 @@
 name: map-gl-accounts
 title: Map GL Accounts to the Chart of Accounts
 domain: accounting
-version: 1.0.0
+version: 1.0.1
 description: >-
   Map SKU.io's accounting roles (sales, COGS, inventory, AR, AP, sales tax and more) to the
   customer's QuickBooks Online or Xero accounts, and save only after explicit approval. Use for

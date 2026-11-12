@@ -40,7 +40,9 @@ curl -sS -X POST "https://$SKU_TENANT.sku.io/api/inventory-adjustments" \
 
 ## Handle the response
 
-- **`200`/`201`** → the adjustment was recorded; on-hand is updated.
+- **`200`/`201`** → the adjustment was recorded; on-hand is updated. Link it for the user as
+  `https://{tenant}.sku.io/v2/inventory/inventory-adjustments/{id}` with the adjustment's `id` from
+  the response (not `/v2/inventory/adjustments/…`, which is a "page not found").
 - **`422`** → validation failed. Common causes: zero `quantity` (not allowed), missing
   `unit_cost` on a first-time increase, or a `product_id`/`warehouse_id` that doesn't exist. Read
   the `errors` map and fix the named field. See [`shared/errors.md`](../../../shared/errors.md).

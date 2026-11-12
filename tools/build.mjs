@@ -55,6 +55,22 @@ const IMPROVE_FOOTER = [
   '',
 ].join('\n');
 
+// Appended to every generated skill, ahead of the footer. Agents reporting a record build the web
+// app's link by guessing from the API route, and the guesses 404 (/v2/inventory/adjustments/653
+// for what is /v2/inventory/inventory-adjustments/653, 2026-11-11). One verified table in
+// shared/ui-links.md, pointed at from every skill, replaces the guess; validate.mjs rejects any
+// skill link whose path is not in it.
+const LINKS_BLOCK = [
+  '',
+  '',
+  '## Linking to a SKU.io page',
+  '',
+  'When you hand the user a link to a record or screen in the SKU.io web app, take its path from',
+  '[`shared/ui-links.md`](../../../shared/ui-links.md). Never build one by guessing from the API route: the',
+  "app's paths differ from the API's, and a guessed path opens a \"page not found\" screen. If the page",
+  'is not in that table, link the closest list page there and name the record instead.',
+].join('\n');
+
 const catalog = [];
 
 for (const skill of skills) {
@@ -63,7 +79,7 @@ for (const skill of skills) {
 
   // --- Claude: a self-contained Agent Skill folder -------------------------
   const claudeDir = path.join(DIST_DIR, 'claude', domain, name);
-  writeFile(path.join(claudeDir, 'SKILL.md'), localizeShared(renderClaudeSkill(skill)) + IMPROVE_FOOTER);
+  writeFile(path.join(claudeDir, 'SKILL.md'), localizeShared(renderClaudeSkill(skill) + LINKS_BLOCK) + IMPROVE_FOOTER);
   copyDir(path.join(dir, 'examples'), path.join(claudeDir, 'examples'));
   // Bundled helpers a skill ships for the agent to run — report templates,
   // small scripts. Optional; most skills have none.
@@ -72,13 +88,13 @@ for (const skill of skills) {
 
   // --- OpenAI: GPT instructions + importable Action + function tools -------
   const openaiDir = path.join(DIST_DIR, 'openai', domain, name);
-  writeFile(path.join(openaiDir, 'instructions.md'), urlizeShared(renderOpenAiInstructions(skill)) + IMPROVE_FOOTER);
+  writeFile(path.join(openaiDir, 'instructions.md'), urlizeShared(renderOpenAiInstructions(skill) + LINKS_BLOCK) + IMPROVE_FOOTER);
   writeFile(path.join(openaiDir, 'action.openapi.json'), json(renderOpenApi(skill)));
   writeFile(path.join(openaiDir, 'tools.json'), json(renderOpenAiTools(skill)));
 
   // --- Gemini: system instructions + function declarations ----------------
   const geminiDir = path.join(DIST_DIR, 'gemini', domain, name);
-  writeFile(path.join(geminiDir, 'system_instructions.md'), urlizeShared(renderGeminiInstructions(skill)) + IMPROVE_FOOTER);
+  writeFile(path.join(geminiDir, 'system_instructions.md'), urlizeShared(renderGeminiInstructions(skill) + LINKS_BLOCK) + IMPROVE_FOOTER);
   writeFile(path.join(geminiDir, 'function_declarations.json'), json(renderGeminiFunctions(skill)));
 
   const description = singleLine(meta.description);

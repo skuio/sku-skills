@@ -152,7 +152,7 @@ curl -sS -X PUT "https://$SKU_TENANT.sku.io/api/v2/settings/nominal-code-mapping
 - Report a before → after table (role, old account, new account), the roles still unmapped, and
   what's left for a person: missing accounts to create, optional roles to decide, the bookkeeper's
   review if it hasn't happened.
-- Link: `https://{tenant}.sku.io/v2/ledger?tab=settings` (Nominal Code Mappings).
+- Link: `https://{tenant}.sku.io/v2/ledger?tab=settings&subtab=nominal-code-mappings` (Nominal Code Mappings).
 
 Working a Launch Roadmap step? Hand this summary to `follow-launch-roadmap` to post as the step's
 progress comment. The roadmap's next finance steps, **Map tax rates** and **Reconcile a test batch**,
@@ -205,6 +205,13 @@ Authorization: Bearer <YOUR_SKU_PAT>
 
 Mint a token under **Settings → Developer → Personal Access Tokens** in the SKU.io web app.
 See [`shared/authentication.md`](shared/authentication.md) for the full flow.
+
+## Linking to a SKU.io page
+
+When you hand the user a link to a record or screen in the SKU.io web app, take its path from
+[`shared/ui-links.md`](shared/ui-links.md). Never build one by guessing from the API route: the
+app's paths differ from the API's, and a guessed path opens a "page not found" screen. If the page
+is not in that table, link the closest list page there and name the record instead.
 
 ---
 

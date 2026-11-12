@@ -3,7 +3,7 @@
   "info": {
     "title": "SKU.io — Map GL Accounts to the Chart of Accounts",
     "description": "Map SKU.io's accounting roles (sales, COGS, inventory, AR, AP, sales tax and more) to the customer's QuickBooks Online or Xero accounts, and save only after explicit approval. Use for the Launch Roadmap's \"Map GL accounts\" step or when journals fail for a missing nominal code mapping.",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "servers": [
     {
