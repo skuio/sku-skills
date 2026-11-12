@@ -36,6 +36,11 @@ Everything below is for **authoring** skills. Don't run a customer's task throug
   change a skill (CI verifies it's up to date).
 - **Real endpoints only.** Every path/method/field in a `skill.yaml` must come from the live API
   (<https://developer.sku.io>). Do not invent or guess endpoints. When in doubt, verify or leave out.
+- **Real page links only.** Every `https://{tenant}.sku.io/v2/…` link and `pages:` entry must be a
+  page of the SKU.io web app. `npm run validate` checks them against `tools/data/app-pages.json`;
+  when the app adds or moves a page, refresh that list with
+  `npm run sync:app-pages -- --source <sku app checkout> [--ref origin/master]`, never by hand.
+  A skill that creates a record names the record's page link, so the agent never builds one.
 - **Least-privilege scopes.** `auth.scopes` = exactly what the operations require.
 - **Guardrails required** for any create/update/delete/adjust skill (idempotency, confirm-before-send,
   don't-invent-ids).

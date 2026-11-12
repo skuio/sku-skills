@@ -104,12 +104,27 @@ function connectBlock(skill) {
 }
 
 /**
+ * The app's page routes do not follow the API's paths (`POST /api/inventory-adjustments` is the
+ * page `/v2/inventory/inventory-adjustments/{id}`), so an agent that builds a link by analogy
+ * hands back a 404 — one did, recording a demo, on 2026-11-11. Every link a skill names is
+ * checked against the app's routes by `npm run validate`; this tells the agent to use only those.
+ */
+const PAGE_LINKS_BLOCK = [
+  '## Links into the SKU.io app',
+  '',
+  'When you point the user at a record or page in the SKU.io web app, use only a link this skill',
+  'gives, with `{tenant}` and the id substituted. Never build one from the API path or by analogy',
+  'with another link: the app\'s pages are not named after the API, and a guessed link is a 404.',
+  'If this skill gives no link for what you made, report its id and where to find it in the app.',
+].join('\n');
+
+/**
  * Splice the connect step in immediately before the instructions' first `##` section, so the
  * skill's own lead-in still introduces it and Step 0 lands directly above Step 1. Skills with no
  * `##` headings get it appended.
  */
 function withConnectStep(skill) {
-  const { instructions } = skill;
+  const instructions = `${skill.instructions}\n\n${PAGE_LINKS_BLOCK}`;
   if (skill.name === 'connect-to-sku') {
     return instructions;
   }

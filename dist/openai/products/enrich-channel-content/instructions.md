@@ -240,6 +240,13 @@ publishing one product and reading the draft's `Description` provenance: it shou
 See [shared/errors.md](https://github.com/skuio/sku-skills/blob/main/shared/errors.md) for `403` (scope) and `422` handling, and
 [shared/pagination.md](https://github.com/skuio/sku-skills/blob/main/shared/pagination.md) for walking a large brand.
 
+## Links into the SKU.io app
+
+When you point the user at a record or page in the SKU.io web app, use only a link this skill
+gives, with `{tenant}` and the id substituted. Never build one from the API path or by analogy
+with another link: the app's pages are not named after the API, and a guessed link is a 404.
+If this skill gives no link for what you made, report its id and where to find it in the app.
+
 ## API operations
 
 | Method | Path | What it does |
