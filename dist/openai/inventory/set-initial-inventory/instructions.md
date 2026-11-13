@@ -130,8 +130,17 @@ curl -sS "https://$SKU_TENANT.sku.io/api/v2/warehouses" \
   -H "Authorization: Bearer $SKU_PAT" -H "Accept: application/json"
 ```
 
-- A stock take's warehouse must be a **standard (non-virtual)** warehouse — creating against a
-  virtual one is rejected. Skip anything with a non-null `archived_at`.
+- A stock take's warehouse must be one the merchant or a 3PL holds: `type` `direct` or `3pl`.
+  Skip anything with a non-null `archived_at`. Every other warehouse is refused with `422` and the
+  reason in `errors.warehouse_id`, and the CSV load answers `422 warehouse_has_no_stock_takes`.
+- **Amazon FBA and AWD warehouses (`amazon_fba`, `amazon_awd`) never get an initial count.** Amazon
+  reports their units itself (from its inventory report at the FBA inventory start date), so the
+  merchant supplies only the **cost**: each FNSKU's Initial Unit Cost, on Amazon → FBA → FNSKU
+  Products (Initial Costs) (Import Initial Costs takes `sku`, an optional `location` such as `US`,
+  and `initial_unit_cost`). If the source sheet has FBA or AWD rows, leave them out of every stock
+  take, tell the user where their cost goes, and never load them as a count. Walmart WFS
+  (`walmart_wfs`) and TikTok FBT (`tiktok_fbt`) are reported by those channels too: leave their rows
+  out and say so.
 - Match the user's wording to `name` / `display_name`. If a name is ambiguous or absent, **ask** —
   counting the wrong warehouse creates stock in the wrong place and is painful to unwind.
 - **Multiple warehouses:** one initial stock take **per warehouse**. Never merge warehouses into one
