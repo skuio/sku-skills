@@ -111,7 +111,8 @@ curl -sS "https://$SKU_TENANT.sku.io/api/v2/warehouses" \
   -H "Authorization: Bearer $SKU_PAT" -H "Accept: application/json"
 ```
 
-- A stock take's warehouse must be one the merchant or a 3PL holds: `type` `direct` or `3pl`.
+- A stock take's warehouse must be one SKU.io keeps the books for: `type` `direct`, `3pl`, or
+  `faire_fbf` (Faire reports no inventory, so SKU.io's ledger is FBF's record).
   Skip anything with a non-null `archived_at`. Every other warehouse is refused with `422` and the
   reason in `errors.warehouse_id`, and the CSV load answers `422 warehouse_has_no_stock_takes`.
 - **Amazon FBA and AWD warehouses (`amazon_fba`, `amazon_awd`) never get an initial count.** Amazon
