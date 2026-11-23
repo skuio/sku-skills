@@ -31,8 +31,8 @@ npx skills add skuio/sku-skills --skill '*' -a cursor -y        # → .agents/sk
 This needs Node 22.20 or later; on an older one use the clone route below. Always name the agent
 with `-a`: without it, an unattended run also writes folders for agents the user does not have. Add
 `-g` for every project on the machine. For one skill, use its command from the README's "Install
-one skill" table, which also names the skills it hands off to. From this clone, `node
-tools/install.mjs <skill> --agent claude|codex|cursor` does the same and resolves those itself.
+one skill" table, which also names the skills it hands off to. From this clone,
+`node tools/install.mjs <skill> --agent claude|codex|cursor` does the same and resolves those itself.
 
 Then start a session in the project the user actually works in and describe the task normally. The
 skill is selected from the request — it is not invoked by name. It will establish the tenant and a
