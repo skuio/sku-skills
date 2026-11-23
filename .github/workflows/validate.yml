@@ -18,7 +18,7 @@ jobs:
       - name: Installer runs on a fresh clone with plain Node
         run: |
           node tools/install.mjs --list > /dev/null
-          node tools/install.mjs all --project "$RUNNER_TEMP/install-check"
+          node tools/install.mjs all --project "$RUNNER_TEMP/install-check" --agent claude,codex,cursor
       - run: npm ci
       - name: Validate skills
         run: npm run validate
@@ -31,10 +31,14 @@ jobs:
           SECRET_DENYLIST: ${{ secrets.SECRET_DENYLIST }}
       - name: Build all targets
         run: npm run build
-      - name: Verify committed dist/ and README table are up to date
+      - name: Verify committed dist/, plugin manifest and README tables are up to date
         run: |
-          if ! git diff --quiet -- dist README.md; then
-            echo "::error::dist/ or the README skills table is stale — run 'npm run build' and commit the refreshed files."
-            git --no-pager diff --stat -- dist README.md
+          if ! git diff --quiet -- dist README.md .claude-plugin; then
+            echo "::error::dist/, .claude-plugin/ or a generated README table is stale — run 'npm run build' and commit the refreshed files."
+            git --no-pager diff --stat -- dist README.md .claude-plugin
             exit 1
           fi
+      # The README's first line is `npx skills add skuio/sku-skills`. Run that installer on this
+      # checkout, so a change that hides a skill from it fails here and not on someone's machine.
+      - name: npx skills installs every skill for Claude Code, Codex and Cursor
+        run: npm run check:install
