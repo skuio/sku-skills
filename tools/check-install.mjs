@@ -6,7 +6,7 @@
 // because the installer searches skills/ (the source) and the built ones are in dist/. The
 // .claude-plugin manifest fixed it, and nothing else in this repo fails when that breaks again.
 //
-// Needs the network (npx). The installer is pinned so a release of it cannot turn an unrelated PR
+// Needs the network (npx) and the Node the installer needs (22.20+; on 20 it dies with a SyntaxError). The installer is pinned so a release of it cannot turn an unrelated PR
 // red; move SKILLS_CLI forward on purpose.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';

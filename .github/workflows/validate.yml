@@ -40,5 +40,9 @@ jobs:
           fi
       # The README's first line is `npx skills add skuio/sku-skills`. Run that installer on this
       # checkout, so a change that hides a skill from it fails here and not on someone's machine.
+      # The installer needs Node 22.20+; everything above stays on 20, and tools/install.mjs on 18+.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: npx skills installs every skill for Claude Code, Codex and Cursor
         run: npm run check:install
