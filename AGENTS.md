@@ -18,18 +18,25 @@ further, because most of this file is about the second.
 ### Using one — "set up my opening inventory", "import these products"
 
 The user pointed you at this repo to **get a real task done against their SKU.io account**. Cloning
-it does not install anything: the built skills sit in `dist/claude/<domain>/<name>/`, and Claude Code
-only discovers skills in `~/.claude/skills/` (every project) or `<project>/.claude/skills/` (one
-project). So install first, then work in the user's own project — not in this repo.
+it does not install anything: the built skills sit in `dist/claude/<domain>/<name>/`, and a coding
+agent only discovers skills in its own folder. So install first, then work in the user's own
+project — not in this repo. One command, run in the user's project, for the agent you are:
 
 ```bash
-node tools/install.mjs --list                  # what's available
-node tools/install.mjs set-initial-inventory   # → ~/.claude/skills/, with the skills it composes with
+npx skills add skuio/sku-skills --skill '*' -a claude-code -y   # → .claude/skills/
+npx skills add skuio/sku-skills --skill '*' -a codex -y         # → .agents/skills/
+npx skills add skuio/sku-skills --skill '*' -a cursor -y        # → .agents/skills/
 ```
+
+This needs Node 22.20 or later; on an older one use the clone route below. Always name the agent
+with `-a`: without it, an unattended run also writes folders for agents the user does not have. Add
+`-g` for every project on the machine. For one skill, use its command from the README's "Install
+one skill" table, which also names the skills it hands off to. From this clone,
+`node tools/install.mjs <skill> --agent claude|codex|cursor` does the same and resolves those itself.
 
 Then start a session in the project the user actually works in and describe the task normally. The
 skill is selected from the request — it is not invoked by name. It will establish the tenant and a
-Personal Access Token itself (`connect-to-sku` is always installed alongside, and every skill's
+Personal Access Token itself (`connect-to-sku` is installed alongside, and every skill's
 generated **Step 0 — Connect first** routes there), so don't hand-roll auth or ask for a token up
 front.
 
@@ -84,7 +91,7 @@ npm ci
 # 2. Create/edit skills/<domain>/<name>/skill.yaml + INSTRUCTIONS.md  (see SKILL_SPEC.md)
 npm run check                       # 3. validate schema + build all three targets
 git checkout -b add-<domain>-<name> # 4. branch
-git add skills/ shared/ dist/       # 5. stage source AND the rebuilt dist/
+git add skills/ shared/ dist/ README.md .claude-plugin/   # 5. stage source AND everything the build rewrote
 git commit -m "feat(<domain>): add <name> skill"
 ```
 
@@ -115,5 +122,6 @@ Then open a PR against `main` and fill in the template.
 | `npm run validate` | Schema + structural checks over all skills |
 | `npm run build` | Regenerate `dist/` for Claude, OpenAI, Gemini |
 | `npm run check` | `validate` then `build` (run before every PR) |
+| `npm run check:install` | Install from this checkout for Claude Code, Codex and Cursor in a temp folder and check every skill landed |
 
 See [`SKILL_SPEC.md`](./SKILL_SPEC.md) for the full canonical format.

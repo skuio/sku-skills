@@ -39,7 +39,8 @@
         "claude": "dist/claude/accounting/map-gl-accounts/SKILL.md",
         "openai": "dist/openai/accounting/map-gl-accounts/",
         "gemini": "dist/gemini/accounting/map-gl-accounts/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill map-gl-accounts --skill connect-to-sku"
     },
     {
       "name": "map-product-accounts",
@@ -79,7 +80,8 @@
         "claude": "dist/claude/accounting/map-product-accounts/SKILL.md",
         "openai": "dist/openai/accounting/map-product-accounts/",
         "gemini": "dist/gemini/accounting/map-product-accounts/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill map-product-accounts --skill connect-to-sku"
     },
     {
       "name": "reconcile-supplier-statement",
@@ -124,7 +126,8 @@
         "claude": "dist/claude/accounting/reconcile-supplier-statement/SKILL.md",
         "openai": "dist/openai/accounting/reconcile-supplier-statement/",
         "gemini": "dist/gemini/accounting/reconcile-supplier-statement/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill reconcile-supplier-statement --skill connect-to-sku --skill record-purchase-invoice --skill record-vendor-credit --skill create-purchase-order --skill build-product-catalog --skill find-product --skill create-saved-view"
     },
     {
       "name": "record-vendor-credit",
@@ -169,7 +172,8 @@
         "claude": "dist/claude/accounting/record-vendor-credit/SKILL.md",
         "openai": "dist/openai/accounting/record-vendor-credit/",
         "gemini": "dist/gemini/accounting/record-vendor-credit/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill record-vendor-credit --skill connect-to-sku --skill record-purchase-invoice --skill create-purchase-order --skill build-product-catalog --skill find-product --skill create-saved-view"
     },
     {
       "name": "manage-amazon-recovery",
@@ -207,7 +211,8 @@
         "claude": "dist/claude/integrations/manage-amazon-recovery/SKILL.md",
         "openai": "dist/openai/integrations/manage-amazon-recovery/",
         "gemini": "dist/gemini/integrations/manage-amazon-recovery/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill manage-amazon-recovery --skill connect-to-sku"
     },
     {
       "name": "optimize-tiktok-listing-quality",
@@ -250,7 +255,8 @@
         "claude": "dist/claude/integrations/optimize-tiktok-listing-quality/SKILL.md",
         "openai": "dist/openai/integrations/optimize-tiktok-listing-quality/",
         "gemini": "dist/gemini/integrations/optimize-tiktok-listing-quality/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill optimize-tiktok-listing-quality --skill connect-to-sku --skill enrich-channel-content --skill find-product"
     },
     {
       "name": "adjust-inventory",
@@ -291,7 +297,8 @@
         "claude": "dist/claude/inventory/adjust-inventory/SKILL.md",
         "openai": "dist/openai/inventory/adjust-inventory/",
         "gemini": "dist/gemini/inventory/adjust-inventory/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill adjust-inventory --skill connect-to-sku --skill find-product"
     },
     {
       "name": "set-initial-inventory",
@@ -336,7 +343,8 @@
         "claude": "dist/claude/inventory/set-initial-inventory/SKILL.md",
         "openai": "dist/openai/inventory/set-initial-inventory/",
         "gemini": "dist/gemini/inventory/set-initial-inventory/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill set-initial-inventory --skill connect-to-sku --skill build-product-catalog --skill create-saved-view --skill find-product"
     },
     {
       "name": "build-boms",
@@ -376,7 +384,8 @@
         "claude": "dist/claude/manufacturing/build-boms/SKILL.md",
         "openai": "dist/openai/manufacturing/build-boms/",
         "gemini": "dist/gemini/manufacturing/build-boms/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill build-boms --skill connect-to-sku --skill find-product --skill build-product-catalog --skill create-saved-view"
     },
     {
       "name": "create-sales-order",
@@ -416,7 +425,8 @@
         "claude": "dist/claude/orders/create-sales-order/SKILL.md",
         "openai": "dist/openai/orders/create-sales-order/",
         "gemini": "dist/gemini/orders/create-sales-order/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill create-sales-order --skill connect-to-sku --skill find-product"
     },
     {
       "name": "connect-to-sku",
@@ -452,7 +462,8 @@
         "claude": "dist/claude/platform/connect-to-sku/SKILL.md",
         "openai": "dist/openai/platform/connect-to-sku/",
         "gemini": "dist/gemini/platform/connect-to-sku/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill connect-to-sku"
     },
     {
       "name": "create-saved-view",
@@ -491,7 +502,8 @@
         "claude": "dist/claude/platform/create-saved-view/SKILL.md",
         "openai": "dist/openai/platform/create-saved-view/",
         "gemini": "dist/gemini/platform/create-saved-view/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill create-saved-view --skill connect-to-sku"
     },
     {
       "name": "create-workflow",
@@ -529,7 +541,8 @@
         "claude": "dist/claude/platform/create-workflow/SKILL.md",
         "openai": "dist/openai/platform/create-workflow/",
         "gemini": "dist/gemini/platform/create-workflow/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill create-workflow --skill connect-to-sku"
     },
     {
       "name": "follow-launch-roadmap",
@@ -575,7 +588,8 @@
         "claude": "dist/claude/platform/follow-launch-roadmap/SKILL.md",
         "openai": "dist/openai/platform/follow-launch-roadmap/",
         "gemini": "dist/gemini/platform/follow-launch-roadmap/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill follow-launch-roadmap --skill connect-to-sku --skill build-product-catalog --skill configure-bundles --skill build-boms --skill map-supplier-costs --skill set-initial-inventory --skill create-purchase-order --skill create-saved-view --skill map-gl-accounts --skill sync-sops --skill find-product --skill update-catalog-pricing"
     },
     {
       "name": "sync-sops",
@@ -611,7 +625,8 @@
         "claude": "dist/claude/platform/sync-sops/SKILL.md",
         "openai": "dist/openai/platform/sync-sops/",
         "gemini": "dist/gemini/platform/sync-sops/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill sync-sops --skill connect-to-sku --skill create-saved-view --skill find-product"
     },
     {
       "name": "build-product-catalog",
@@ -654,7 +669,8 @@
         "claude": "dist/claude/products/build-product-catalog/SKILL.md",
         "openai": "dist/openai/products/build-product-catalog/",
         "gemini": "dist/gemini/products/build-product-catalog/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill build-product-catalog --skill connect-to-sku --skill create-saved-view --skill find-product"
     },
     {
       "name": "configure-bundles",
@@ -695,7 +711,8 @@
         "claude": "dist/claude/products/configure-bundles/SKILL.md",
         "openai": "dist/openai/products/configure-bundles/",
         "gemini": "dist/gemini/products/configure-bundles/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill configure-bundles --skill connect-to-sku --skill find-product --skill build-product-catalog --skill create-saved-view"
     },
     {
       "name": "enrich-channel-content",
@@ -739,7 +756,8 @@
         "claude": "dist/claude/products/enrich-channel-content/SKILL.md",
         "openai": "dist/openai/products/enrich-channel-content/",
         "gemini": "dist/gemini/products/enrich-channel-content/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill enrich-channel-content --skill connect-to-sku --skill find-product"
     },
     {
       "name": "find-matrix-opportunities",
@@ -782,7 +800,8 @@
         "claude": "dist/claude/products/find-matrix-opportunities/SKILL.md",
         "openai": "dist/openai/products/find-matrix-opportunities/",
         "gemini": "dist/gemini/products/find-matrix-opportunities/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill find-matrix-opportunities --skill connect-to-sku --skill find-product --skill build-product-catalog --skill publish-listing --skill create-saved-view"
     },
     {
       "name": "find-product",
@@ -818,7 +837,8 @@
         "claude": "dist/claude/products/find-product/SKILL.md",
         "openai": "dist/openai/products/find-product/",
         "gemini": "dist/gemini/products/find-product/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill find-product --skill connect-to-sku"
     },
     {
       "name": "map-supplier-costs",
@@ -859,7 +879,8 @@
         "claude": "dist/claude/products/map-supplier-costs/SKILL.md",
         "openai": "dist/openai/products/map-supplier-costs/",
         "gemini": "dist/gemini/products/map-supplier-costs/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill map-supplier-costs --skill connect-to-sku --skill update-catalog-pricing --skill find-product --skill create-saved-view"
     },
     {
       "name": "publish-listing",
@@ -900,7 +921,8 @@
         "claude": "dist/claude/products/publish-listing/SKILL.md",
         "openai": "dist/openai/products/publish-listing/",
         "gemini": "dist/gemini/products/publish-listing/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill publish-listing --skill connect-to-sku --skill find-product"
     },
     {
       "name": "update-catalog-pricing",
@@ -943,7 +965,8 @@
         "claude": "dist/claude/products/update-catalog-pricing/SKILL.md",
         "openai": "dist/openai/products/update-catalog-pricing/",
         "gemini": "dist/gemini/products/update-catalog-pricing/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill update-catalog-pricing --skill connect-to-sku --skill find-product --skill create-saved-view"
     },
     {
       "name": "create-purchase-order",
@@ -987,7 +1010,8 @@
         "claude": "dist/claude/purchase-orders/create-purchase-order/SKILL.md",
         "openai": "dist/openai/purchase-orders/create-purchase-order/",
         "gemini": "dist/gemini/purchase-orders/create-purchase-order/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill create-purchase-order --skill connect-to-sku --skill build-product-catalog --skill find-product --skill create-saved-view"
     },
     {
       "name": "record-purchase-invoice",
@@ -1029,7 +1053,8 @@
         "claude": "dist/claude/purchase-orders/record-purchase-invoice/SKILL.md",
         "openai": "dist/openai/purchase-orders/record-purchase-invoice/",
         "gemini": "dist/gemini/purchase-orders/record-purchase-invoice/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill record-purchase-invoice --skill connect-to-sku --skill create-purchase-order --skill build-product-catalog --skill find-product --skill create-saved-view"
     },
     {
       "name": "edit-packing-slip-template",
@@ -1067,7 +1092,8 @@
         "claude": "dist/claude/settings/edit-packing-slip-template/SKILL.md",
         "openai": "dist/openai/settings/edit-packing-slip-template/",
         "gemini": "dist/gemini/settings/edit-packing-slip-template/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill edit-packing-slip-template --skill connect-to-sku --skill edit-pdf-template"
     },
     {
       "name": "edit-pdf-template",
@@ -1103,7 +1129,8 @@
         "claude": "dist/claude/settings/edit-pdf-template/SKILL.md",
         "openai": "dist/openai/settings/edit-pdf-template/",
         "gemini": "dist/gemini/settings/edit-pdf-template/"
-      }
+      },
+      "install": "npx skills add skuio/sku-skills --skill edit-pdf-template --skill connect-to-sku"
     }
   ]
 }

@@ -14,17 +14,18 @@ Claude / OpenAI / Gemini outputs under `dist/`.
 If the user's ask is a **real SKU.io task** ("load our opening stock", "import this price list")
 rather than a change to this library, you are in the wrong directory and none of the rules below
 apply to you. Cloning this repo installs nothing — built skills live in `dist/claude/<domain>/<name>/`,
-but Claude Code only scans `~/.claude/skills/` and `<project>/.claude/skills/`.
+but Claude Code only scans `~/.claude/skills/` and `<project>/.claude/skills/` (Codex and Cursor:
+`.agents/skills/`). Run one of these:
 
 ```bash
-node tools/install.mjs --list                  # what's available
-node tools/install.mjs set-initial-inventory   # → ~/.claude/skills/, with the skills it composes with
+npx skills add skuio/sku-skills --skill '*' -a claude-code -g -y     # no clone needed; every project
+node tools/install.mjs set-initial-inventory   # from this clone → ~/.claude/skills/, with what it composes
 node tools/install.mjs build-product-catalog --project ~/work/acme   # or scope it to one project
 ```
 
 Then start a session **in the user's own project** and describe the task in plain terms — the skill
 is chosen from the request, not invoked by name. Auth is the skill's job: `connect-to-sku` installs
-alongside every skill and each one opens with a generated **Step 0 — Connect first**, so let it
+alongside the skills and each one opens with a generated **Step 0 — Connect first**, so let it
 establish the tenant and mint the PAT rather than asking for a token yourself.
 
 Everything below is for **authoring** skills. Don't run a customer's task through it.
