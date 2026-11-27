@@ -122,6 +122,10 @@ Use a video with `status: ready`. Check its `tiktok_fit`:
   3. **complete-video-upload**. A `422` lists the missing part numbers: PUT those and complete
      again. If the URLs expired (12 hours), fetch fresh ones with **get-video-upload-urls**.
 
+If the one-request upload comes back `422` with "The file failed to upload", or `413`, the
+server refused the request body before SKU.io could read it. Upload the same file with the
+multipart flow instead: its parts go straight to storage.
+
 Either way, poll **get-video** every few seconds until `status` is `ready` (then check
 `tiktok_fit` as above) or `failed` (report `failure_reason`).
 
