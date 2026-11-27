@@ -1,7 +1,7 @@
 name: post-to-tiktok
 title: Post Product Videos to TikTok
 domain: integrations
-version: 1.0.0
+version: 1.1.0
 description: >-
   Post a product video or product photos to a store's TikTok account through SKU.io: upload the
   video, create the post for approval or a schedule, and follow it to published. Use for "post
@@ -331,7 +331,7 @@ api:
           required: false
           description: >-
             Comma-separated: draft, needs_approval, scheduled, queued, uploading, processing,
-            sent_to_inbox, published, failed, cancelled, rejected, needs_review.
+            sent_to_inbox, deleted_in_tiktok, published, failed, cancelled, rejected, needs_review.
         - name: filter[store_id]
           in: query
           type: string
@@ -395,6 +395,20 @@ api:
       method: POST
       path: /api/tiktok-posting/posts/{tikTokPost}/cancel
       summary: Cancel a post that has not started uploading (draft, needs_approval, scheduled or queued).
+      parameters:
+        - name: tikTokPost
+          in: path
+          type: integer
+          required: true
+          description: The post id.
+
+    - id: mark-tiktok-post-deleted-in-tiktok
+      method: POST
+      path: /api/tiktok-posting/posts/{tikTokPost}/deleted-in-tiktok
+      summary: >-
+        Record that a person deleted a sent_to_inbox post's draft in the TikTok app. SKU.io's record
+        only (TikTok can't delete drafts for apps or report it): the post becomes deleted_in_tiktok
+        and is archived. 409 for any other status.
       parameters:
         - name: tikTokPost
           in: path

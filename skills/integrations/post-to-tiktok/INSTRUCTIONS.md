@@ -180,6 +180,7 @@ state that waits on someone else:
 | `queued`, `uploading`, `processing` | SKU.io is sending it and TikTok is processing | Keep polling. TikTok can take a few minutes |
 | `published` | Live on the profile | Report `tiktok_url` |
 | `sent_to_inbox` | In the account's TikTok drafts | Report that a person posts it from the TikTok app |
+| `deleted_in_tiktok` | A person deleted that draft in the TikTok app; it never posted | Stop. Never re-create it unless asked |
 | `failed` | Didn't post | See below |
 | `needs_review` | TikTok may have received it, but SKU.io lost the answer | Stop. Never retry. A person checks the account in TikTok and settles it in SKU.io |
 | `rejected`, `cancelled` | A person said no, or it was cancelled | Stop. Never re-create it |
@@ -220,6 +221,10 @@ Show `error_message` as it is: it is already written for a person.
   a scheduled post. `409` means it can no longer be edited (it's already sending or done).
 - **cancel-tiktok-post** cancels a post that hasn't started uploading. A published TikTok video can
   only be deleted in the TikTok app.
+- **mark-tiktok-post-deleted-in-tiktok** is for a `sent_to_inbox` post whose draft a person deleted
+  in the TikTok app. TikTok can't delete a draft for an app or tell SKU.io one was deleted, so this
+  only updates SKU.io's record (to `deleted_in_tiktok`, archived). Call it only after the person
+  says they deleted it; `409` for any other status.
 
 ## Results
 

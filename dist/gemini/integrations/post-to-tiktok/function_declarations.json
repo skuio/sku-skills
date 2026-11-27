@@ -307,7 +307,7 @@
         "properties": {
           "filter[status]": {
             "type": "STRING",
-            "description": "Comma-separated: draft, needs_approval, scheduled, queued, uploading, processing, sent_to_inbox, published, failed, cancelled, rejected, needs_review."
+            "description": "Comma-separated: draft, needs_approval, scheduled, queued, uploading, processing, sent_to_inbox, deleted_in_tiktok, published, failed, cancelled, rejected, needs_review."
           },
           "filter[store_id]": {
             "type": "STRING",
@@ -371,6 +371,22 @@
     {
       "name": "cancel_tiktok_post",
       "description": "Cancel a post that has not started uploading (draft, needs_approval, scheduled or queued). (POST /api/tiktok-posting/posts/{tikTokPost}/cancel)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "tikTokPost": {
+            "type": "INTEGER",
+            "description": "The post id."
+          }
+        },
+        "required": [
+          "tikTokPost"
+        ]
+      }
+    },
+    {
+      "name": "mark_tiktok_post_deleted_in_tiktok",
+      "description": "Record that a person deleted a sent_to_inbox post's draft in the TikTok app. SKU.io's record only (TikTok can't delete drafts for apps or report it): the post becomes deleted_in_tiktok and is archived. 409 for any other status. (POST /api/tiktok-posting/posts/{tikTokPost}/deleted-in-tiktok)",
       "parameters": {
         "type": "OBJECT",
         "properties": {

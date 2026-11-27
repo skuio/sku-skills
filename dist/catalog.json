@@ -256,7 +256,7 @@
       "name": "post-to-tiktok",
       "domain": "integrations",
       "title": "Post Product Videos to TikTok",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "description": "Post a product video or product photos to a store's TikTok account through SKU.io: upload the video, create the post for approval or a schedule, and follow it to published. Use for \"post this video to TikTok\", \"schedule TikTok posts\", or \"why did this TikTok post fail\".",
       "tagline": "Upload a product video, post or schedule it on TikTok, and follow it to published",
       "scopes": [
@@ -264,7 +264,7 @@
         "tiktok-posts:write",
         "products:read"
       ],
-      "operations": 18,
+      "operations": 19,
       "tags": [
         "tiktok",
         "social",
