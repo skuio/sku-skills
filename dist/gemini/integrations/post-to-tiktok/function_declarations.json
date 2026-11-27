@@ -1,0 +1,420 @@
+{
+  "functionDeclarations": [
+    {
+      "name": "list_tiktok_accounts",
+      "description": "Every active store with its connected TikTok account (or null). Each account has id, store_id, username, status, scopes, can_direct_post, can_upload_to_inbox, health (healthy, expiring or reconnect_needed) and usage (direct_posts_24h, pending_inbox_24h). app.audited and app.photo_posts_available say what SKU.io's TikTok app may do. (GET /api/tiktok-posting/accounts)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {}
+      }
+    },
+    {
+      "name": "get_tiktok_creator_info",
+      "description": "The account's live TikTok settings, read from TikTok on every call: privacy_level_options (the only values privacy_level may take; there is no default), comment_disabled, duet_disabled, stitch_disabled, max_video_post_duration_sec and can_post. When TikTok refuses, data is null and error has code, message, retryable and category. (GET /api/tiktok-posting/accounts/{tikTokAccount}/creator-info)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "tikTokAccount": {
+            "type": "INTEGER",
+            "description": "The TikTok account id from list-tiktok-accounts (account.id, not the store id)."
+          }
+        },
+        "required": [
+          "tikTokAccount"
+        ]
+      }
+    },
+    {
+      "name": "list_product_videos",
+      "description": "A product's videos in sort order. Each has id, status (uploading, processing, ready, failed), tiktok_fit (ready, letterboxed or unsupported) with tiktok_fit_reason, duration_ms, width, height and fps. Only a ready video can be posted. (GET /api/products/{product}/videos)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "product": {
+            "type": "INTEGER",
+            "description": "The SKU.io product id (from find-product)."
+          }
+        },
+        "required": [
+          "product"
+        ]
+      }
+    },
+    {
+      "name": "upload_video",
+      "description": "Upload a video of at most 64 MB in one multipart/form-data request (form fields file, optional filename, optional product_id). Larger files use start-video-upload. The video is checked in the background: poll get-video until status is ready or failed. (POST /api/videos)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "product_id": {
+            "type": "INTEGER",
+            "description": "Attach the video to this product, so it shows on the product's Videos."
+          },
+          "filename": {
+            "type": "STRING",
+            "description": "Display name for the video."
+          }
+        }
+      }
+    },
+    {
+      "name": "start_video_upload",
+      "description": "Start a multipart upload for a video up to 1 GB. Returns video_id, part_size and one presigned part_urls entry per part (valid 12 hours). PUT part n's bytes to its URL with no Authorization header, then call complete-video-upload. (POST /api/videos/uploads)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "filename": {
+            "type": "STRING",
+            "description": "The file name, e.g. kit-install-1080x1920.mp4."
+          },
+          "size": {
+            "type": "INTEGER",
+            "description": "The file size in bytes (at most 1 GB)."
+          },
+          "mime": {
+            "type": "STRING",
+            "description": "video/mp4, video/quicktime or video/webm."
+          },
+          "product_id": {
+            "type": "INTEGER",
+            "description": "Attach the video to this product."
+          }
+        },
+        "required": [
+          "filename",
+          "size",
+          "mime"
+        ]
+      }
+    },
+    {
+      "name": "get_video_upload_urls",
+      "description": "Fresh part URLs for an upload still in progress, for example after the first ones expired. (GET /api/videos/{video}/upload-urls)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "video": {
+            "type": "INTEGER",
+            "description": "The video id from start-video-upload."
+          }
+        },
+        "required": [
+          "video"
+        ]
+      }
+    },
+    {
+      "name": "complete_video_upload",
+      "description": "Finish a multipart upload after every part was PUT. The server joins the parts and checks the video. 422 lists missing part numbers (the upload stays open, so send them and call again). Completing twice returns the video unchanged. (POST /api/videos/{video}/complete)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "video": {
+            "type": "INTEGER",
+            "description": "The video id from start-video-upload."
+          }
+        },
+        "required": [
+          "video"
+        ]
+      }
+    },
+    {
+      "name": "get_video",
+      "description": "One video with its status (uploading, processing, ready, failed), failure_reason and the TikTok fit check (tiktok_fit, tiktok_fit_label, tiktok_fit_reason). Poll every few seconds until ready or failed. (GET /api/videos/{video})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "video": {
+            "type": "INTEGER",
+            "description": "The video id."
+          }
+        },
+        "required": [
+          "video"
+        ]
+      }
+    },
+    {
+      "name": "optimize_video",
+      "description": "Make a TikTok-ready copy of a video that TikTok would reject or that is not vertical. The copy is a new video (source_video_id points at the original) that starts in processing. (POST /api/videos/{video}/optimize)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "video": {
+            "type": "INTEGER",
+            "description": "The video id to copy."
+          }
+        },
+        "required": [
+          "video"
+        ]
+      }
+    },
+    {
+      "name": "list_product_photos",
+      "description": "A product's photos in display order, for a photo post: photos[].id (send as photo_image_ids), max_photos (35) and photo_posts_available. (GET /api/tiktok-posting/product-photos)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "sku": {
+            "type": "STRING",
+            "description": "The product's SKU, exact match. Give this or product_id."
+          },
+          "product_id": {
+            "type": "INTEGER",
+            "description": "The product id. Wins when both are given."
+          }
+        }
+      }
+    },
+    {
+      "name": "suggest_tiktok_caption",
+      "description": "Draft a caption from the product's data and the store's caption template, hashtags and voice notes. Returns text only; nothing is saved. 422 when AI is off for the account. (POST /api/tiktok-posting/caption-suggestions)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "product_id": {
+            "type": "INTEGER",
+            "description": "The product the caption is about."
+          },
+          "store_id": {
+            "type": "INTEGER",
+            "description": "The store whose template, hashtags and voice notes to follow."
+          },
+          "current_caption": {
+            "type": "STRING",
+            "description": "A caption to improve instead of starting fresh."
+          },
+          "include_price": {
+            "type": "BOOLEAN",
+            "description": "Mention the price (off by default)."
+          }
+        },
+        "required": [
+          "product_id"
+        ]
+      }
+    },
+    {
+      "name": "create_tiktok_post",
+      "description": "Create a video or photo post. With an API token it waits in needs_approval until a person approves it in SKU.io. Requires an Idempotency-Key header; repeating a key returns the original post (200) instead of a second one. (POST /api/tiktok-posting/posts)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "Idempotency-Key": {
+            "type": "STRING",
+            "description": "1–128 characters, stable per intended post (e.g. your item id + \"tiktok\")."
+          },
+          "account_id": {
+            "type": "INTEGER",
+            "description": "The TikTok account id from list-tiktok-accounts."
+          },
+          "media_type": {
+            "type": "STRING",
+            "description": "video (default) or photo."
+          },
+          "video_id": {
+            "type": "INTEGER",
+            "description": "A ready video. Required for a video post."
+          },
+          "photo_image_ids": {
+            "type": "ARRAY",
+            "description": "1–35 product image ids in TikTok order. Required for a photo post.",
+            "items": {
+              "type": "STRING"
+            }
+          },
+          "photo_cover_index": {
+            "type": "INTEGER",
+            "description": "0-based position of the cover photo in photo_image_ids (default 0)."
+          },
+          "title": {
+            "type": "STRING",
+            "description": "Photo posts only, up to 90 characters."
+          },
+          "product_id": {
+            "type": "INTEGER",
+            "description": "The product the post is about."
+          },
+          "caption": {
+            "type": "STRING",
+            "description": "Up to 2,200 characters for a video, 4,000 for a photo post, counted in UTF-16 units (an emoji counts as 2)."
+          },
+          "mode": {
+            "type": "STRING",
+            "description": "direct (post to the profile) or inbox (send to the account's TikTok drafts)."
+          },
+          "privacy_level": {
+            "type": "STRING",
+            "description": "PUBLIC_TO_EVERYONE, MUTUAL_FOLLOW_FRIENDS, FOLLOWER_OF_CREATOR or SELF_ONLY. Required for direct, refused for inbox, and must be one of creator-info's options."
+          },
+          "allow_comment": {
+            "type": "BOOLEAN",
+            "description": "Default false. A setting the creator turned off stays off."
+          },
+          "allow_duet": {
+            "type": "BOOLEAN",
+            "description": "Default false. Ignored for photo posts."
+          },
+          "allow_stitch": {
+            "type": "BOOLEAN",
+            "description": "Default false. Ignored for photo posts."
+          },
+          "disclose": {
+            "type": "BOOLEAN",
+            "description": "Commercial content disclosure. When true, brand_organic and/or brand_content must be true."
+          },
+          "brand_organic": {
+            "type": "BOOLEAN",
+            "description": "Promotes your own brand (labelled Promotional content)."
+          },
+          "brand_content": {
+            "type": "BOOLEAN",
+            "description": "Paid partnership. Cannot be combined with SELF_ONLY."
+          },
+          "is_aigc": {
+            "type": "BOOLEAN",
+            "description": "The content is AI-generated."
+          },
+          "publish": {
+            "type": "STRING",
+            "description": "submit (wait for approval), schedule, now, or draft (kept in SKU.io)."
+          },
+          "scheduled_at": {
+            "type": "STRING",
+            "description": "ISO-8601 UTC, 5 minutes to 60 days ahead. Required when publish is schedule."
+          },
+          "stock_gate_min_units": {
+            "type": "INTEGER",
+            "description": "Post only while the product has at least this many sellable units, checked at publish time."
+          }
+        },
+        "required": [
+          "Idempotency-Key",
+          "account_id",
+          "caption",
+          "mode",
+          "publish"
+        ]
+      }
+    },
+    {
+      "name": "list_tiktok_posts",
+      "description": "Posts, newest first, paginated (10 per page). Filter by status, store, account, product, source or mode. (GET /api/tiktok-posting/posts)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "filter[status]": {
+            "type": "STRING",
+            "description": "Comma-separated: draft, needs_approval, scheduled, queued, uploading, processing, sent_to_inbox, published, failed, cancelled, rejected, needs_review."
+          },
+          "filter[store_id]": {
+            "type": "STRING",
+            "description": "Comma-separated store ids."
+          },
+          "filter[product_id]": {
+            "type": "STRING",
+            "description": "Comma-separated product ids."
+          },
+          "filter[source]": {
+            "type": "STRING",
+            "description": "ui or api."
+          },
+          "filter[search]": {
+            "type": "STRING",
+            "description": "Caption text, product SKU or name, or an exact post id."
+          },
+          "page": {
+            "type": "INTEGER",
+            "description": "Page number."
+          },
+          "per_page": {
+            "type": "INTEGER",
+            "description": "Items per page (default 10)."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_tiktok_post",
+      "description": "One post with status, status_label, attention_reason, error_code, error_message, retryable, tiktok_url, published_at and its events timeline. Poll it while queued, uploading or processing. (GET /api/tiktok-posting/posts/{tikTokPost})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "tikTokPost": {
+            "type": "INTEGER",
+            "description": "The post id."
+          }
+        },
+        "required": [
+          "tikTokPost"
+        ]
+      }
+    },
+    {
+      "name": "update_tiktok_post",
+      "description": "Edit a draft, needs_approval, scheduled or failed post with any create fields. Any change clears the approval, except moving only scheduled_at of a scheduled post. 409 when the post can no longer be edited. (PATCH /api/tiktok-posting/posts/{tikTokPost})",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "tikTokPost": {
+            "type": "INTEGER",
+            "description": "The post id."
+          }
+        },
+        "required": [
+          "tikTokPost"
+        ]
+      }
+    },
+    {
+      "name": "cancel_tiktok_post",
+      "description": "Cancel a post that has not started uploading (draft, needs_approval, scheduled or queued). (POST /api/tiktok-posting/posts/{tikTokPost}/cancel)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "tikTokPost": {
+            "type": "INTEGER",
+            "description": "The post id."
+          }
+        },
+        "required": [
+          "tikTokPost"
+        ]
+      }
+    },
+    {
+      "name": "retry_tiktok_post",
+      "description": "Retry a failed post whose retryable is true. Unchanged since approval → queued again; otherwise it waits for approval. (POST /api/tiktok-posting/posts/{tikTokPost}/retry)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "tikTokPost": {
+            "type": "INTEGER",
+            "description": "The post id."
+          }
+        },
+        "required": [
+          "tikTokPost"
+        ]
+      }
+    },
+    {
+      "name": "get_tiktok_post_metrics",
+      "description": "A published post's TikTok counters (views, likes, comments, shares): the latest daily capture and the daily series. stats_enabled is false when the account has not granted video stats. (GET /api/tiktok-posting/posts/{tikTokPost}/metrics)",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "tikTokPost": {
+            "type": "INTEGER",
+            "description": "The post id."
+          }
+        },
+        "required": [
+          "tikTokPost"
+        ]
+      }
+    }
+  ]
+}

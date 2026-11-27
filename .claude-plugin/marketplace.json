@@ -19,6 +19,7 @@
         "./dist/claude/accounting/record-vendor-credit",
         "./dist/claude/integrations/manage-amazon-recovery",
         "./dist/claude/integrations/optimize-tiktok-listing-quality",
+        "./dist/claude/integrations/post-to-tiktok",
         "./dist/claude/inventory/adjust-inventory",
         "./dist/claude/inventory/set-initial-inventory",
         "./dist/claude/manufacturing/build-boms",

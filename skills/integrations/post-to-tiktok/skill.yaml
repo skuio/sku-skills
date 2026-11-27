@@ -1,0 +1,433 @@
+name: post-to-tiktok
+title: Post Product Videos to TikTok
+domain: integrations
+version: 1.0.0
+description: >-
+  Post a product video or product photos to a store's TikTok account through SKU.io: upload the
+  video, create the post for approval or a schedule, and follow it to published. Use for "post
+  this video to TikTok", "schedule TikTok posts", or "why did this TikTok post fail".
+tagline: Upload a product video, post or schedule it on TikTok, and follow it to published
+tags: [tiktok, social, video, posting, content, schedule, approval]
+maintainers: [kmizzi]
+composes: [find-product]
+pages:
+  - /tiktok-posting
+icon: mdi-music-note
+auth:
+  scopes: [tiktok-posts:read, tiktok-posts:write, products:read]
+api:
+  base_url: https://{tenant}.sku.io
+  operations:
+    - id: list-tiktok-accounts
+      method: GET
+      path: /api/tiktok-posting/accounts
+      summary: >-
+        Every active store with its connected TikTok account (or null). Each account has id,
+        store_id, username, status, scopes, can_direct_post, can_upload_to_inbox, health
+        (healthy, expiring or reconnect_needed) and usage (direct_posts_24h, pending_inbox_24h).
+        app.audited and app.photo_posts_available say what SKU.io's TikTok app may do.
+
+    - id: get-tiktok-creator-info
+      method: GET
+      path: /api/tiktok-posting/accounts/{tikTokAccount}/creator-info
+      summary: >-
+        The account's live TikTok settings, read from TikTok on every call: privacy_level_options
+        (the only values privacy_level may take; there is no default), comment_disabled,
+        duet_disabled, stitch_disabled, max_video_post_duration_sec and can_post. When TikTok
+        refuses, data is null and error has code, message, retryable and category.
+      parameters:
+        - name: tikTokAccount
+          in: path
+          type: integer
+          required: true
+          description: The TikTok account id from list-tiktok-accounts (account.id, not the store id).
+
+    - id: list-product-videos
+      method: GET
+      path: /api/products/{product}/videos
+      summary: >-
+        A product's videos in sort order. Each has id, status (uploading, processing, ready,
+        failed), tiktok_fit (ready, letterboxed or unsupported) with tiktok_fit_reason, duration_ms,
+        width, height and fps. Only a ready video can be posted.
+      parameters:
+        - name: product
+          in: path
+          type: integer
+          required: true
+          description: The SKU.io product id (from find-product).
+
+    - id: upload-video
+      method: POST
+      path: /api/videos
+      summary: >-
+        Upload a video of at most 64 MB in one multipart/form-data request (form fields file,
+        optional filename, optional product_id). Larger files use start-video-upload. The video is
+        checked in the background: poll get-video until status is ready or failed.
+      parameters:
+        - name: product_id
+          in: body
+          type: integer
+          required: false
+          description: Attach the video to this product, so it shows on the product's Videos.
+        - name: filename
+          in: body
+          type: string
+          required: false
+          description: Display name for the video.
+
+    - id: start-video-upload
+      method: POST
+      path: /api/videos/uploads
+      summary: >-
+        Start a multipart upload for a video up to 1 GB. Returns video_id, part_size and one
+        presigned part_urls entry per part (valid 12 hours). PUT part n's bytes to its URL with no
+        Authorization header, then call complete-video-upload.
+      parameters:
+        - name: filename
+          in: body
+          type: string
+          required: true
+          description: The file name, e.g. kit-install-1080x1920.mp4.
+        - name: size
+          in: body
+          type: integer
+          required: true
+          description: The file size in bytes (at most 1 GB).
+        - name: mime
+          in: body
+          type: string
+          required: true
+          description: video/mp4, video/quicktime or video/webm.
+        - name: product_id
+          in: body
+          type: integer
+          required: false
+          description: Attach the video to this product.
+
+    - id: get-video-upload-urls
+      method: GET
+      path: /api/videos/{video}/upload-urls
+      summary: Fresh part URLs for an upload still in progress, for example after the first ones expired.
+      parameters:
+        - name: video
+          in: path
+          type: integer
+          required: true
+          description: The video id from start-video-upload.
+
+    - id: complete-video-upload
+      method: POST
+      path: /api/videos/{video}/complete
+      summary: >-
+        Finish a multipart upload after every part was PUT. The server joins the parts and checks
+        the video. 422 lists missing part numbers (the upload stays open, so send them and call
+        again). Completing twice returns the video unchanged.
+      parameters:
+        - name: video
+          in: path
+          type: integer
+          required: true
+          description: The video id from start-video-upload.
+
+    - id: get-video
+      method: GET
+      path: /api/videos/{video}
+      summary: >-
+        One video with its status (uploading, processing, ready, failed), failure_reason and the
+        TikTok fit check (tiktok_fit, tiktok_fit_label, tiktok_fit_reason). Poll every few seconds
+        until ready or failed.
+      parameters:
+        - name: video
+          in: path
+          type: integer
+          required: true
+          description: The video id.
+
+    - id: optimize-video
+      method: POST
+      path: /api/videos/{video}/optimize
+      summary: >-
+        Make a TikTok-ready copy of a video that TikTok would reject or that is not vertical. The
+        copy is a new video (source_video_id points at the original) that starts in processing.
+      parameters:
+        - name: video
+          in: path
+          type: integer
+          required: true
+          description: The video id to copy.
+
+    - id: list-product-photos
+      method: GET
+      path: /api/tiktok-posting/product-photos
+      summary: >-
+        A product's photos in display order, for a photo post: photos[].id (send as
+        photo_image_ids), max_photos (35) and photo_posts_available.
+      parameters:
+        - name: sku
+          in: query
+          type: string
+          required: false
+          description: The product's SKU, exact match. Give this or product_id.
+        - name: product_id
+          in: query
+          type: integer
+          required: false
+          description: The product id. Wins when both are given.
+
+    - id: suggest-tiktok-caption
+      method: POST
+      path: /api/tiktok-posting/caption-suggestions
+      summary: >-
+        Draft a caption from the product's data and the store's caption template, hashtags and
+        voice notes. Returns text only; nothing is saved. 422 when AI is off for the account.
+      parameters:
+        - name: product_id
+          in: body
+          type: integer
+          required: true
+          description: The product the caption is about.
+        - name: store_id
+          in: body
+          type: integer
+          required: false
+          description: The store whose template, hashtags and voice notes to follow.
+        - name: current_caption
+          in: body
+          type: string
+          required: false
+          description: A caption to improve instead of starting fresh.
+        - name: include_price
+          in: body
+          type: boolean
+          required: false
+          description: Mention the price (off by default).
+
+    - id: create-tiktok-post
+      method: POST
+      path: /api/tiktok-posting/posts
+      summary: >-
+        Create a video or photo post. With an API token it waits in needs_approval until a person
+        approves it in SKU.io. Requires an Idempotency-Key header; repeating a key returns the
+        original post (200) instead of a second one.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          type: string
+          required: true
+          description: 1–128 characters, stable per intended post (e.g. your item id + "tiktok").
+        - name: account_id
+          in: body
+          type: integer
+          required: true
+          description: The TikTok account id from list-tiktok-accounts.
+        - name: media_type
+          in: body
+          type: string
+          required: false
+          description: video (default) or photo.
+        - name: video_id
+          in: body
+          type: integer
+          required: false
+          description: A ready video. Required for a video post.
+        - name: photo_image_ids
+          in: body
+          type: array
+          required: false
+          description: 1–35 product image ids in TikTok order. Required for a photo post.
+        - name: photo_cover_index
+          in: body
+          type: integer
+          required: false
+          description: 0-based position of the cover photo in photo_image_ids (default 0).
+        - name: title
+          in: body
+          type: string
+          required: false
+          description: Photo posts only, up to 90 characters.
+        - name: product_id
+          in: body
+          type: integer
+          required: false
+          description: The product the post is about.
+        - name: caption
+          in: body
+          type: string
+          required: true
+          description: >-
+            Up to 2,200 characters for a video, 4,000 for a photo post, counted in UTF-16 units
+            (an emoji counts as 2).
+        - name: mode
+          in: body
+          type: string
+          required: true
+          description: direct (post to the profile) or inbox (send to the account's TikTok drafts).
+        - name: privacy_level
+          in: body
+          type: string
+          required: false
+          description: >-
+            PUBLIC_TO_EVERYONE, MUTUAL_FOLLOW_FRIENDS, FOLLOWER_OF_CREATOR or SELF_ONLY. Required
+            for direct, refused for inbox, and must be one of creator-info's options.
+        - name: allow_comment
+          in: body
+          type: boolean
+          required: false
+          description: Default false. A setting the creator turned off stays off.
+        - name: allow_duet
+          in: body
+          type: boolean
+          required: false
+          description: Default false. Ignored for photo posts.
+        - name: allow_stitch
+          in: body
+          type: boolean
+          required: false
+          description: Default false. Ignored for photo posts.
+        - name: disclose
+          in: body
+          type: boolean
+          required: false
+          description: Commercial content disclosure. When true, brand_organic and/or brand_content must be true.
+        - name: brand_organic
+          in: body
+          type: boolean
+          required: false
+          description: Promotes your own brand (labelled Promotional content).
+        - name: brand_content
+          in: body
+          type: boolean
+          required: false
+          description: Paid partnership. Cannot be combined with SELF_ONLY.
+        - name: is_aigc
+          in: body
+          type: boolean
+          required: false
+          description: The content is AI-generated.
+        - name: publish
+          in: body
+          type: string
+          required: true
+          description: submit (wait for approval), schedule, now, or draft (kept in SKU.io).
+        - name: scheduled_at
+          in: body
+          type: string
+          required: false
+          description: ISO-8601 UTC, 5 minutes to 60 days ahead. Required when publish is schedule.
+        - name: stock_gate_min_units
+          in: body
+          type: integer
+          required: false
+          description: Post only while the product has at least this many sellable units, checked at publish time.
+
+    - id: list-tiktok-posts
+      method: GET
+      path: /api/tiktok-posting/posts
+      summary: Posts, newest first, paginated (10 per page). Filter by status, store, account, product, source or mode.
+      parameters:
+        - name: filter[status]
+          in: query
+          type: string
+          required: false
+          description: >-
+            Comma-separated: draft, needs_approval, scheduled, queued, uploading, processing,
+            sent_to_inbox, published, failed, cancelled, rejected, needs_review.
+        - name: filter[store_id]
+          in: query
+          type: string
+          required: false
+          description: Comma-separated store ids.
+        - name: filter[product_id]
+          in: query
+          type: string
+          required: false
+          description: Comma-separated product ids.
+        - name: filter[source]
+          in: query
+          type: string
+          required: false
+          description: ui or api.
+        - name: filter[search]
+          in: query
+          type: string
+          required: false
+          description: Caption text, product SKU or name, or an exact post id.
+        - name: page
+          in: query
+          type: integer
+          required: false
+          description: Page number.
+        - name: per_page
+          in: query
+          type: integer
+          required: false
+          description: Items per page (default 10).
+
+    - id: get-tiktok-post
+      method: GET
+      path: /api/tiktok-posting/posts/{tikTokPost}
+      summary: >-
+        One post with status, status_label, attention_reason, error_code, error_message,
+        retryable, tiktok_url, published_at and its events timeline. Poll it while queued,
+        uploading or processing.
+      parameters:
+        - name: tikTokPost
+          in: path
+          type: integer
+          required: true
+          description: The post id.
+
+    - id: update-tiktok-post
+      method: PATCH
+      path: /api/tiktok-posting/posts/{tikTokPost}
+      summary: >-
+        Edit a draft, needs_approval, scheduled or failed post with any create fields. Any change
+        clears the approval, except moving only scheduled_at of a scheduled post. 409 when the post
+        can no longer be edited.
+      parameters:
+        - name: tikTokPost
+          in: path
+          type: integer
+          required: true
+          description: The post id.
+
+    - id: cancel-tiktok-post
+      method: POST
+      path: /api/tiktok-posting/posts/{tikTokPost}/cancel
+      summary: Cancel a post that has not started uploading (draft, needs_approval, scheduled or queued).
+      parameters:
+        - name: tikTokPost
+          in: path
+          type: integer
+          required: true
+          description: The post id.
+
+    - id: retry-tiktok-post
+      method: POST
+      path: /api/tiktok-posting/posts/{tikTokPost}/retry
+      summary: >-
+        Retry a failed post whose retryable is true. Unchanged since approval → queued again;
+        otherwise it waits for approval.
+      parameters:
+        - name: tikTokPost
+          in: path
+          type: integer
+          required: true
+          description: The post id.
+
+    - id: get-tiktok-post-metrics
+      method: GET
+      path: /api/tiktok-posting/posts/{tikTokPost}/metrics
+      summary: >-
+        A published post's TikTok counters (views, likes, comments, shares): the latest daily
+        capture and the daily series. stats_enabled is false when the account has not granted
+        video stats.
+      parameters:
+        - name: tikTokPost
+          in: path
+          type: integer
+          required: true
+          description: The post id.
+
+mcp:
+  prompt_only: true

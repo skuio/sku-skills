@@ -1,6 +1,6 @@
 {
   "generatedFrom": "skills/",
-  "count": 27,
+  "count": 28,
   "skills": [
     {
       "name": "map-gl-accounts",
@@ -250,6 +250,45 @@
         "claude": "dist/claude/integrations/optimize-tiktok-listing-quality/SKILL.md",
         "openai": "dist/openai/integrations/optimize-tiktok-listing-quality/",
         "gemini": "dist/gemini/integrations/optimize-tiktok-listing-quality/"
+      }
+    },
+    {
+      "name": "post-to-tiktok",
+      "domain": "integrations",
+      "title": "Post Product Videos to TikTok",
+      "version": "1.0.0",
+      "description": "Post a product video or product photos to a store's TikTok account through SKU.io: upload the video, create the post for approval or a schedule, and follow it to published. Use for \"post this video to TikTok\", \"schedule TikTok posts\", or \"why did this TikTok post fail\".",
+      "tagline": "Upload a product video, post or schedule it on TikTok, and follow it to published",
+      "scopes": [
+        "tiktok-posts:read",
+        "tiktok-posts:write",
+        "products:read"
+      ],
+      "operations": 18,
+      "tags": [
+        "tiktok",
+        "social",
+        "video",
+        "posting",
+        "content",
+        "schedule",
+        "approval"
+      ],
+      "composes": [
+        "find-product"
+      ],
+      "pages": [
+        "/tiktok-posting"
+      ],
+      "icon": "mdi-music-note",
+      "mcp": {
+        "tools": [],
+        "prompt": true
+      },
+      "outputs": {
+        "claude": "dist/claude/integrations/post-to-tiktok/SKILL.md",
+        "openai": "dist/openai/integrations/post-to-tiktok/",
+        "gemini": "dist/gemini/integrations/post-to-tiktok/"
       }
     },
     {
