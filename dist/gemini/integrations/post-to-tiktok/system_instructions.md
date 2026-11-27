@@ -199,6 +199,7 @@ state that waits on someone else:
 | `queued`, `uploading`, `processing` | SKU.io is sending it and TikTok is processing | Keep polling. TikTok can take a few minutes |
 | `published` | Live on the profile | Report `tiktok_url` |
 | `sent_to_inbox` | In the account's TikTok drafts | Report that a person posts it from the TikTok app |
+| `deleted_in_tiktok` | A person deleted that draft in the TikTok app; it never posted | Stop. Never re-create it unless asked |
 | `failed` | Didn't post | See below |
 | `needs_review` | TikTok may have received it, but SKU.io lost the answer | Stop. Never retry. A person checks the account in TikTok and settles it in SKU.io |
 | `rejected`, `cancelled` | A person said no, or it was cancelled | Stop. Never re-create it |
@@ -239,6 +240,10 @@ Show `error_message` as it is: it is already written for a person.
   a scheduled post. `409` means it can no longer be edited (it's already sending or done).
 - **cancel-tiktok-post** cancels a post that hasn't started uploading. A published TikTok video can
   only be deleted in the TikTok app.
+- **mark-tiktok-post-deleted-in-tiktok** is for a `sent_to_inbox` post whose draft a person deleted
+  in the TikTok app. TikTok can't delete a draft for an app or tell SKU.io one was deleted, so this
+  only updates SKU.io's record (to `deleted_in_tiktok`, archived). Call it only after the person
+  says they deleted it; `409` for any other status.
 
 ## Results
 
@@ -291,6 +296,7 @@ If this skill gives no link for what you made, report its id and where to find i
 | `GET` | `/api/tiktok-posting/posts/{tikTokPost}` | One post with status, status_label, attention_reason, error_code, error_message, retryable, tiktok_url, published_at and its events timeline. Poll it while queued, uploading or processing. |
 | `PATCH` | `/api/tiktok-posting/posts/{tikTokPost}` | Edit a draft, needs_approval, scheduled or failed post with any create fields. Any change clears the approval, except moving only scheduled_at of a scheduled post. 409 when the post can no longer be edited. |
 | `POST` | `/api/tiktok-posting/posts/{tikTokPost}/cancel` | Cancel a post that has not started uploading (draft, needs_approval, scheduled or queued). |
+| `POST` | `/api/tiktok-posting/posts/{tikTokPost}/deleted-in-tiktok` | Record that a person deleted a sent_to_inbox post's draft in the TikTok app. SKU.io's record only (TikTok can't delete drafts for apps or report it): the post becomes deleted_in_tiktok and is archived. 409 for any other status. |
 | `POST` | `/api/tiktok-posting/posts/{tikTokPost}/retry` | Retry a failed post whose retryable is true. Unchanged since approval → queued again; otherwise it waits for approval. |
 | `GET` | `/api/tiktok-posting/posts/{tikTokPost}/metrics` | A published post's TikTok counters (views, likes, comments, shares): the latest daily capture and the daily series. stats_enabled is false when the account has not granted video stats. |
 

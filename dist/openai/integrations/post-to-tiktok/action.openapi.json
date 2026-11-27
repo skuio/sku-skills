@@ -3,7 +3,7 @@
   "info": {
     "title": "SKU.io — Post Product Videos to TikTok",
     "description": "Post a product video or product photos to a store's TikTok account through SKU.io: upload the video, create the post for approval or a schedule, and follow it to published. Use for \"post this video to TikTok\", \"schedule TikTok posts\", or \"why did this TikTok post fail\".",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "servers": [
     {
@@ -457,10 +457,10 @@
             "name": "filter[status]",
             "in": "query",
             "required": false,
-            "description": "Comma-separated: draft, needs_approval, scheduled, queued, uploading, processing, sent_to_inbox, published, failed, cancelled, rejected, needs_review.",
+            "description": "Comma-separated: draft, needs_approval, scheduled, queued, uploading, processing, sent_to_inbox, deleted_in_tiktok, published, failed, cancelled, rejected, needs_review.",
             "schema": {
               "type": "string",
-              "description": "Comma-separated: draft, needs_approval, scheduled, queued, uploading, processing, sent_to_inbox, published, failed, cancelled, rejected, needs_review."
+              "description": "Comma-separated: draft, needs_approval, scheduled, queued, uploading, processing, sent_to_inbox, deleted_in_tiktok, published, failed, cancelled, rejected, needs_review."
             }
           },
           {
@@ -574,6 +574,29 @@
       "post": {
         "operationId": "cancel_tiktok_post",
         "summary": "Cancel a post that has not started uploading (draft, needs_approval, scheduled or queued).",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "parameters": [
+          {
+            "name": "tikTokPost",
+            "in": "path",
+            "required": true,
+            "description": "The post id.",
+            "schema": {
+              "type": "integer",
+              "description": "The post id."
+            }
+          }
+        ]
+      }
+    },
+    "/api/tiktok-posting/posts/{tikTokPost}/deleted-in-tiktok": {
+      "post": {
+        "operationId": "mark_tiktok_post_deleted_in_tiktok",
+        "summary": "Record that a person deleted a sent_to_inbox post's draft in the TikTok app. SKU.io's record only (TikTok can't delete drafts for apps or report it): the post becomes deleted_in_tiktok and is archived. 409 for any other status.",
         "responses": {
           "200": {
             "description": "Successful response"
