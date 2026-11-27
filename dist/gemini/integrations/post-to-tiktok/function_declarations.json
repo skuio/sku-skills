@@ -42,7 +42,7 @@
     },
     {
       "name": "upload_video",
-      "description": "Upload a video of at most 64 MB in one multipart/form-data request (form fields file, optional filename, optional product_id). Larger files use start-video-upload. The video is checked in the background: poll get-video until status is ready or failed. (POST /api/videos)",
+      "description": "Upload a video of at most 20 MB in one multipart/form-data request (form fields file, optional filename, optional product_id). Larger files use start-video-upload. The video is checked in the background: poll get-video until status is ready or failed. (POST /api/videos)",
       "parameters": {
         "type": "OBJECT",
         "properties": {

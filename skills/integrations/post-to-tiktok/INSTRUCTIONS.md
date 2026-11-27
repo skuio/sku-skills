@@ -81,7 +81,7 @@ Use a video with `status: ready`. Check its `tiktok_fit`:
 
 **A file you have?** Upload it with the product's id, so it also shows on the product:
 
-- **Up to 64 MB:** **upload-video**, one `multipart/form-data` request.
+- **Up to 20 MB:** **upload-video**, one `multipart/form-data` request.
 
   ```bash
   curl -sS -X POST "https://$SKU_TENANT.sku.io/api/videos" \
@@ -89,7 +89,7 @@ Use a video with `status: ready`. Check its `tiktok_fit`:
     -F "file=@kit-install-1080x1920.mp4" -F "product_id=512"
   ```
 
-- **Larger (up to 1 GB):** a multipart upload.
+- **Larger than 20 MB (up to 1 GB):** a multipart upload.
   1. **start-video-upload** with `filename`, `size` (bytes) and `mime`. Keep `video_id`,
      `part_size` and `part_urls`.
   2. Cut the file into `part_size`-byte parts (part n = bytes `(n-1)*part_size` up to

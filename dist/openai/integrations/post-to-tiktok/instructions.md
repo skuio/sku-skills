@@ -100,7 +100,7 @@ Use a video with `status: ready`. Check its `tiktok_fit`:
 
 **A file you have?** Upload it with the product's id, so it also shows on the product:
 
-- **Up to 64 MB:** **upload-video**, one `multipart/form-data` request.
+- **Up to 20 MB:** **upload-video**, one `multipart/form-data` request.
 
   ```bash
   curl -sS -X POST "https://$SKU_TENANT.sku.io/api/videos" \
@@ -108,7 +108,7 @@ Use a video with `status: ready`. Check its `tiktok_fit`:
     -F "file=@kit-install-1080x1920.mp4" -F "product_id=512"
   ```
 
-- **Larger (up to 1 GB):** a multipart upload.
+- **Larger than 20 MB (up to 1 GB):** a multipart upload.
   1. **start-video-upload** with `filename`, `size` (bytes) and `mime`. Keep `video_id`,
      `part_size` and `part_urls`.
   2. Cut the file into `part_size`-byte parts (part n = bytes `(n-1)*part_size` up to
@@ -278,7 +278,7 @@ If this skill gives no link for what you made, report its id and where to find i
 | `GET` | `/api/tiktok-posting/accounts` | Every active store with its connected TikTok account (or null). Each account has id, store_id, username, status, scopes, can_direct_post, can_upload_to_inbox, health (healthy, expiring or reconnect_needed) and usage (direct_posts_24h, pending_inbox_24h). app.audited and app.photo_posts_available say what SKU.io's TikTok app may do. |
 | `GET` | `/api/tiktok-posting/accounts/{tikTokAccount}/creator-info` | The account's live TikTok settings, read from TikTok on every call: privacy_level_options (the only values privacy_level may take; there is no default), comment_disabled, duet_disabled, stitch_disabled, max_video_post_duration_sec and can_post. When TikTok refuses, data is null and error has code, message, retryable and category. |
 | `GET` | `/api/products/{product}/videos` | A product's videos in sort order. Each has id, status (uploading, processing, ready, failed), tiktok_fit (ready, letterboxed or unsupported) with tiktok_fit_reason, duration_ms, width, height and fps. Only a ready video can be posted. |
-| `POST` | `/api/videos` | Upload a video of at most 64 MB in one multipart/form-data request (form fields file, optional filename, optional product_id). Larger files use start-video-upload. The video is checked in the background: poll get-video until status is ready or failed. |
+| `POST` | `/api/videos` | Upload a video of at most 20 MB in one multipart/form-data request (form fields file, optional filename, optional product_id). Larger files use start-video-upload. The video is checked in the background: poll get-video until status is ready or failed. |
 | `POST` | `/api/videos/uploads` | Start a multipart upload for a video up to 1 GB. Returns video_id, part_size and one presigned part_urls entry per part (valid 12 hours). PUT part n's bytes to its URL with no Authorization header, then call complete-video-upload. |
 | `GET` | `/api/videos/{video}/upload-urls` | Fresh part URLs for an upload still in progress, for example after the first ones expired. |
 | `POST` | `/api/videos/{video}/complete` | Finish a multipart upload after every part was PUT. The server joins the parts and checks the video. 422 lists missing part numbers (the upload stays open, so send them and call again). Completing twice returns the video unchanged. |
