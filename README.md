@@ -55,6 +55,7 @@ One source of truth, three idiomatic outputs. Fix the knowledge in one place; ev
 | `accounting` | **record-vendor-credit** | Record a supplier credit memo and apply it to an open bill |
 | `integrations` | **manage-amazon-recovery** | Triage, file and follow up on Amazon reimbursement claims |
 | `integrations` | **optimize-tiktok-listing-quality** | Diagnose and fix POOR/FAIR TikTok Shop listings toward GOOD, reviewed before it lands |
+| `integrations` | **post-to-tiktok** | Upload a product video, post or schedule it on TikTok, and follow it to published |
 | `inventory` | **adjust-inventory** | Increase / decrease / set on-hand stock at a warehouse |
 | `inventory` | **set-initial-inventory** | Load opening stock per warehouse as an initial count on the inventory start date |
 | `manufacturing` | **build-boms** | Create BOMs for manufactured products from the user's recipe sheet |
